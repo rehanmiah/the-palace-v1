@@ -357,9 +357,11 @@ function MenuItemRow({ item, quantity, onAdd, onUpdateQuantity }: any) {
   const renderChilies = (count: number) => {
     if (count === 0) return null;
     return (
-      <Text style={styles.spiceLevelEmojis}>
-        {'🌶️'.repeat(count)}
-      </Text>
+      <View style={styles.spiceLevelContainer}>
+        {Array.from({ length: count }, (_, i) => (
+          <Text key={i} style={styles.chilliEmoji}>🌶️</Text>
+        ))}
+      </View>
     );
   };
 
@@ -699,7 +701,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#000000',
   },
-  spiceLevelEmojis: {
+  spiceLevelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  chilliEmoji: {
     fontSize: 14,
   },
   menuTags: {
