@@ -445,7 +445,7 @@ function MenuItemRow({ item, quantity, onAdd, onUpdateQuantity }: any) {
 
 // Inline Spice Button Component
 function SpiceButtonInline({ menuItemId }: { menuItemId: string }) {
-  const { spiceLevel, incrementSpiceLevel, decrementSpiceLevel, updateSpiceLevel } = useSpiceLevel(menuItemId);
+  const { spiceLevel, incrementSpiceLevel, decrementSpiceLevel } = useSpiceLevel(menuItemId);
   const [showControls, setShowControls] = useState(false);
 
   const handlePress = () => {
@@ -468,28 +468,10 @@ function SpiceButtonInline({ menuItemId }: { menuItemId: string }) {
     decrementSpiceLevel();
   };
 
-  const handleDelete = (e: any) => {
-    e.stopPropagation();
-    updateSpiceLevel(0);
-    setShowControls(false);
-  };
-
   // Show controls if spice level > 0 and controls are visible
   if (spiceLevel > 0 && showControls) {
     return (
       <View style={styles.spiceControlsContainer}>
-        <TouchableOpacity
-          style={styles.spiceControlButton}
-          onPress={handleDelete}
-          activeOpacity={0.8}
-        >
-          <IconSymbol
-            ios_icon_name="trash.fill"
-            android_material_icon_name="delete"
-            size={16}
-            color="#FFFFFF"
-          />
-        </TouchableOpacity>
         <TouchableOpacity
           style={styles.spiceControlButton}
           onPress={handleDecrement}
