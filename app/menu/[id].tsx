@@ -250,25 +250,24 @@ export default function MenuScreen() {
               </Text>
             </TouchableOpacity>
             {categories.map((category, index) => (
-              <React.Fragment key={index}>
-                <TouchableOpacity
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.categoryChip,
+                  selectedCategory === category && styles.categoryChipActive,
+                ]}
+                onPress={() => setSelectedCategory(category)}
+              >
+                <Text
                   style={[
-                    styles.categoryChip,
-                    selectedCategory === category && styles.categoryChipActive,
+                    styles.categoryChipText,
+                    selectedCategory === category &&
+                      styles.categoryChipTextActive,
                   ]}
-                  onPress={() => setSelectedCategory(category)}
                 >
-                  <Text
-                    style={[
-                      styles.categoryChipText,
-                      selectedCategory === category &&
-                        styles.categoryChipTextActive,
-                    ]}
-                  >
-                    {category}
-                  </Text>
-                </TouchableOpacity>
-              </React.Fragment>
+                  {category}
+                </Text>
+              </TouchableOpacity>
             ))}
           </ScrollView>
           <TouchableOpacity style={styles.seeAllButton}>
@@ -281,79 +280,77 @@ export default function MenuScreen() {
           {filteredItems.map((item, index) => {
             const quantity = getDishQuantity(item.id);
             return (
-              <React.Fragment key={index}>
-                <View style={styles.menuItem}>
-                  <View style={styles.menuInfo}>
-                    <View style={styles.menuHeader}>
-                      <Text style={styles.menuName}>{item.name}</Text>
-                    </View>
-                    <Text style={styles.menuDescription} numberOfLines={2}>
-                      {item.description}
-                    </Text>
-                    <View style={styles.menuFooter}>
-                      <Text style={styles.menuPrice}>
-                        £{item.price.toFixed(2)}
-                      </Text>
-                      <View style={styles.menuTags}>
-                        {item.isVegetarian && (
-                          <View style={styles.vegTag}>
-                            <Text style={styles.vegTagText}>VEG</Text>
-                          </View>
-                        )}
-                        {item.isSpicy && <Text style={styles.spicyIcon}>🌶️</Text>}
-                      </View>
-                      <View style={styles.ratingContainer}>
-                        <IconSymbol
-                          ios_icon_name="hand.thumbsup.fill"
-                          android_material_icon_name="thumb-up"
-                          size={14}
-                          color={colors.text}
-                        />
-                        <Text style={styles.ratingText}>
-                          {Math.floor(Math.random() * 10) + 85}% ({Math.floor(Math.random() * 100) + 20})
-                        </Text>
-                      </View>
-                    </View>
+              <View key={index} style={styles.menuItem}>
+                <View style={styles.menuInfo}>
+                  <View style={styles.menuHeader}>
+                    <Text style={styles.menuName}>{item.name}</Text>
                   </View>
-                  <View style={styles.menuImageContainer}>
-                    <Image source={{ uri: item.image }} style={styles.menuImage} />
-                    {quantity === 0 ? (
-                      <TouchableOpacity
-                        style={styles.addButtonUber}
-                        onPress={() => handleAddToCart(item)}
-                      >
-                        <Text style={styles.addButtonTextUber}>Add</Text>
-                      </TouchableOpacity>
-                    ) : (
-                      <View style={styles.quantityControlUber}>
-                        <TouchableOpacity
-                          style={styles.quantityButtonUber}
-                          onPress={() => updateQuantity(item.id, quantity - 1)}
-                        >
-                          <IconSymbol
-                            ios_icon_name={quantity === 1 ? "trash.fill" : "minus"}
-                            android_material_icon_name={quantity === 1 ? "delete" : "remove"}
-                            size={16}
-                            color="#FFFFFF"
-                          />
-                        </TouchableOpacity>
-                        <Text style={styles.quantityTextUber}>{quantity}</Text>
-                        <TouchableOpacity
-                          style={styles.quantityButtonUber}
-                          onPress={() => handleAddToCart(item)}
-                        >
-                          <IconSymbol
-                            ios_icon_name="plus"
-                            android_material_icon_name="add"
-                            size={16}
-                            color="#FFFFFF"
-                          />
-                        </TouchableOpacity>
-                      </View>
-                    )}
+                  <Text style={styles.menuDescription} numberOfLines={2}>
+                    {item.description}
+                  </Text>
+                  <View style={styles.menuFooter}>
+                    <Text style={styles.menuPrice}>
+                      £{item.price.toFixed(2)}
+                    </Text>
+                    <View style={styles.menuTags}>
+                      {item.isVegetarian && (
+                        <View style={styles.vegTag}>
+                          <Text style={styles.vegTagText}>VEG</Text>
+                        </View>
+                      )}
+                      {item.isSpicy && <Text style={styles.spicyIcon}>🌶️</Text>}
+                    </View>
+                    <View style={styles.ratingContainer}>
+                      <IconSymbol
+                        ios_icon_name="hand.thumbsup.fill"
+                        android_material_icon_name="thumb-up"
+                        size={14}
+                        color={colors.text}
+                      />
+                      <Text style={styles.ratingText}>
+                        {Math.floor(Math.random() * 10) + 85}% ({Math.floor(Math.random() * 100) + 20})
+                      </Text>
+                    </View>
                   </View>
                 </View>
-              </React.Fragment>
+                <View style={styles.menuImageContainer}>
+                  <Image source={{ uri: item.image }} style={styles.menuImage} />
+                  {quantity === 0 ? (
+                    <TouchableOpacity
+                      style={styles.addButtonUber}
+                      onPress={() => handleAddToCart(item)}
+                    >
+                      <Text style={styles.addButtonTextUber}>Add</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <View style={styles.quantityControlUber}>
+                      <TouchableOpacity
+                        style={styles.quantityButtonUber}
+                        onPress={() => updateQuantity(item.id, quantity - 1)}
+                      >
+                        <IconSymbol
+                          ios_icon_name={quantity === 1 ? "trash.fill" : "minus"}
+                          android_material_icon_name={quantity === 1 ? "delete" : "remove"}
+                          size={16}
+                          color="#FFFFFF"
+                        />
+                      </TouchableOpacity>
+                      <Text style={styles.quantityTextUber}>{quantity}</Text>
+                      <TouchableOpacity
+                        style={styles.quantityButtonUber}
+                        onPress={() => handleAddToCart(item)}
+                      >
+                        <IconSymbol
+                          ios_icon_name="plus"
+                          android_material_icon_name="add"
+                          size={16}
+                          color="#FFFFFF"
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              </View>
             );
           })}
         </View>
@@ -381,39 +378,38 @@ export default function MenuScreen() {
             </View>
             <ScrollView style={styles.modalScroll}>
               {addresses.map((address, index) => (
-                <React.Fragment key={index}>
-                  <TouchableOpacity
-                    style={[
-                      styles.addressOption,
-                      selectedAddress.id === address.id && styles.addressOptionSelected,
-                    ]}
-                    onPress={() => {
-                      setSelectedAddress(address);
-                      setShowAddressModal(false);
-                    }}
-                  >
-                    <View style={styles.addressOptionContent}>
-                      <IconSymbol
-                        ios_icon_name="location.fill"
-                        android_material_icon_name="location-on"
-                        size={24}
-                        color={selectedAddress.id === address.id ? colors.primary : colors.textSecondary}
-                      />
-                      <View style={styles.addressOptionText}>
-                        <Text style={styles.addressOptionLabel}>{address.label}</Text>
-                        <Text style={styles.addressOptionAddress}>{address.address}</Text>
-                      </View>
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.addressOption,
+                    selectedAddress.id === address.id && styles.addressOptionSelected,
+                  ]}
+                  onPress={() => {
+                    setSelectedAddress(address);
+                    setShowAddressModal(false);
+                  }}
+                >
+                  <View style={styles.addressOptionContent}>
+                    <IconSymbol
+                      ios_icon_name="location.fill"
+                      android_material_icon_name="location-on"
+                      size={24}
+                      color={selectedAddress.id === address.id ? colors.primary : colors.textSecondary}
+                    />
+                    <View style={styles.addressOptionText}>
+                      <Text style={styles.addressOptionLabel}>{address.label}</Text>
+                      <Text style={styles.addressOptionAddress}>{address.address}</Text>
                     </View>
-                    {selectedAddress.id === address.id && (
-                      <IconSymbol
-                        ios_icon_name="checkmark.circle.fill"
-                        android_material_icon_name="check-circle"
-                        size={24}
-                        color={colors.primary}
-                      />
-                    )}
-                  </TouchableOpacity>
-                </React.Fragment>
+                  </View>
+                  {selectedAddress.id === address.id && (
+                    <IconSymbol
+                      ios_icon_name="checkmark.circle.fill"
+                      android_material_icon_name="check-circle"
+                      size={24}
+                      color={colors.primary}
+                    />
+                  )}
+                </TouchableOpacity>
               ))}
               <TouchableOpacity
                 style={styles.addAddressButton}

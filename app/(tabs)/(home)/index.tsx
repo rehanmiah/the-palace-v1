@@ -129,35 +129,34 @@ export default function HomeScreen() {
               contentContainerStyle={styles.horizontalScroll}
             >
               {popularDishes.map((dish, index) => (
-                <React.Fragment key={index}>
-                  <TouchableOpacity
-                    style={styles.dishCard}
-                    onPress={() =>
-                      router.push({
-                        pathname: '/menu/[id]',
-                        params: { id: dish.restaurantId },
-                      })
-                    }
-                  >
-                    <Image source={{ uri: dish.image }} style={styles.dishImage} />
-                    <View style={styles.dishInfo}>
-                      <Text style={styles.dishName} numberOfLines={1}>
-                        {dish.name}
-                      </Text>
-                      <Text style={styles.dishPrice}>£{dish.price.toFixed(2)}</Text>
-                      <View style={styles.dishTags}>
-                        {dish.isVegetarian && (
-                          <View style={styles.vegTag}>
-                            <Text style={styles.vegTagText}>VEG</Text>
-                          </View>
-                        )}
-                        {dish.isSpicy && (
-                          <Text style={styles.spicyIcon}>🌶️</Text>
-                        )}
-                      </View>
+                <TouchableOpacity
+                  key={index}
+                  style={styles.dishCard}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/menu/[id]',
+                      params: { id: dish.restaurantId },
+                    })
+                  }
+                >
+                  <Image source={{ uri: dish.image }} style={styles.dishImage} />
+                  <View style={styles.dishInfo}>
+                    <Text style={styles.dishName} numberOfLines={1}>
+                      {dish.name}
+                    </Text>
+                    <Text style={styles.dishPrice}>£{dish.price.toFixed(2)}</Text>
+                    <View style={styles.dishTags}>
+                      {dish.isVegetarian && (
+                        <View style={styles.vegTag}>
+                          <Text style={styles.vegTagText}>VEG</Text>
+                        </View>
+                      )}
+                      {dish.isSpicy && (
+                        <Text style={styles.spicyIcon}>🌶️</Text>
+                      )}
                     </View>
-                  </TouchableOpacity>
-                </React.Fragment>
+                  </View>
+                </TouchableOpacity>
               ))}
             </ScrollView>
           </View>
@@ -193,36 +192,35 @@ export default function HomeScreen() {
               </Text>
             </View>
             {filteredItems.map((item, index) => (
-              <React.Fragment key={index}>
-                <TouchableOpacity
-                  style={styles.searchResultCard}
-                  onPress={() =>
-                    router.push({
-                      pathname: '/menu/[id]',
-                      params: { id: restaurant.id },
-                    })
-                  }
-                >
-                  <Image source={{ uri: item.image }} style={styles.resultImage} />
-                  <View style={styles.resultInfo}>
-                    <Text style={styles.resultName}>{item.name}</Text>
-                    <Text style={styles.resultDescription} numberOfLines={2}>
-                      {item.description}
-                    </Text>
-                    <View style={styles.resultFooter}>
-                      <Text style={styles.resultPrice}>£{item.price.toFixed(2)}</Text>
-                      <View style={styles.resultTags}>
-                        {item.isVegetarian && (
-                          <View style={styles.vegTag}>
-                            <Text style={styles.vegTagText}>VEG</Text>
-                          </View>
-                        )}
-                        {item.isSpicy && <Text style={styles.spicyIcon}>🌶️</Text>}
-                      </View>
+              <TouchableOpacity
+                key={index}
+                style={styles.searchResultCard}
+                onPress={() =>
+                  router.push({
+                    pathname: '/menu/[id]',
+                    params: { id: restaurant.id },
+                  })
+                }
+              >
+                <Image source={{ uri: item.image }} style={styles.resultImage} />
+                <View style={styles.resultInfo}>
+                  <Text style={styles.resultName}>{item.name}</Text>
+                  <Text style={styles.resultDescription} numberOfLines={2}>
+                    {item.description}
+                  </Text>
+                  <View style={styles.resultFooter}>
+                    <Text style={styles.resultPrice}>£{item.price.toFixed(2)}</Text>
+                    <View style={styles.resultTags}>
+                      {item.isVegetarian && (
+                        <View style={styles.vegTag}>
+                          <Text style={styles.vegTagText}>VEG</Text>
+                        </View>
+                      )}
+                      {item.isSpicy && <Text style={styles.spicyIcon}>🌶️</Text>}
                     </View>
                   </View>
-                </TouchableOpacity>
-              </React.Fragment>
+                </View>
+              </TouchableOpacity>
             ))}
           </View>
         )}
