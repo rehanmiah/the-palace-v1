@@ -17,6 +17,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { restaurants } from '@/data/restaurants';
 import { useCart } from '@/contexts/CartContext';
 import { useMenu } from '@/hooks/useMenu';
+import { useSpiceLevel } from '@/hooks/useSpiceLevel';
 import AddressModal from '@/components/AddressModal';
 
 const { width } = Dimensions.get('window');
@@ -74,8 +75,13 @@ export default function HomeScreen() {
     return cartItem ? cartItem.quantity : 0;
   };
 
-  const handleAddToCart = (menuItem: any) => {
-    console.log('Adding to cart from home:', menuItem.name);
+  const getDishSpiceLevel = (dishId: string) => {
+    const cartItem = cart.find((item) => item.dish.id === dishId);
+    return cartItem?.spiceLevel || 0;
+  };
+
+  const handleAddToCart = (menuItem: any, spiceLevel?: number) => {
+    console.log('Adding to cart from home:', menuItem.name, 'spice level:', spiceLevel);
     // Convert menu item to Dish format for cart
     const dish = {
       id: menuItem.id,
@@ -88,7 +94,7 @@ export default function HomeScreen() {
       isSpicy: menuItem.spicy || false,
       isPopular: menuItem.is_popular || false,
     };
-    addToCart(dish, restaurant.id);
+    addToCart(dish, restaurant.id, spiceLevel);
   };
 
   const handleCategorySelect = (category: string | null) => {
@@ -115,6 +121,16 @@ export default function HomeScreen() {
   const getPostcode = (address: string) => {
     const parts = address.split(',').map(part => part.trim());
     return parts[parts.length - 1] || '';
+  };
+
+  // Render chili emojis based on spice level
+  const renderChilies = (count: number) => {
+    if (count === 0) return null;
+    return (
+      <Text style={styles.spiceLevelEmojis}>
+        {'🌶️'.repeat(count)}
+      </Text>
+    );
   };
 
   if (isLoading) {
@@ -275,22 +291,31 @@ export default function HomeScreen() {
             >
               {popularDishes.map((dish, index) => {
                 const quantity = getDishQuantity(dish.id);
+                const spiceLevel = getDishSpiceLevel(dish.id);
                 return (
                   <View key={index} style={styles.dishCard}>
-                    <Image source={{ uri: dish.image_id || '' }} style={styles.dishImage} />
+                    <View style={styles.dishImageContainer}>
+                      <Image source={{ uri: dish.image_id || '' }} style={styles.dishImage} />
+                      {dish.spicy && (
+                        <SpiceButtonInline
+                          menuItemId={dish.id}
+                          onAddWithSpice={(level) => handleAddToCart(dish, level)}
+                        />
+                      )}
+                    </View>
                     <View style={styles.dishInfo}>
                       <Text style={styles.dishName} numberOfLines={1}>
                         {dish.name}
                       </Text>
-                      <Text style={styles.dishPrice}>£{dish.price.toFixed(2)}</Text>
+                      <View style={styles.priceRow}>
+                        <Text style={styles.dishPrice}>£{dish.price.toFixed(2)}</Text>
+                        {spiceLevel > 0 && renderChilies(spiceLevel)}
+                      </View>
                       <View style={styles.dishTags}>
                         {dish.is_vegetarian && (
                           <View style={styles.vegTag}>
                             <Text style={styles.vegTagText}>VEG</Text>
                           </View>
-                        )}
-                        {dish.spicy && (
-                          <Text style={styles.spicyIcon}>🌶️</Text>
                         )}
                       </View>
                       {quantity === 0 ? (
@@ -442,6 +467,7 @@ export default function HomeScreen() {
             </View>
             {filteredItems.map((item, index) => {
               const quantity = getDishQuantity(item.id);
+              const spiceLevel = getDishSpiceLevel(item.id);
               return (
                 <View key={index} style={styles.menuItem}>
                   <View style={styles.menuInfo}>
@@ -455,18 +481,24 @@ export default function HomeScreen() {
                       <Text style={styles.menuPrice}>
                         £{item.price.toFixed(2)}
                       </Text>
+                      {spiceLevel > 0 && renderChilies(spiceLevel)}
                       <View style={styles.menuTags}>
                         {item.is_vegetarian && (
                           <View style={styles.vegTag}>
                             <Text style={styles.vegTagText}>VEG</Text>
                           </View>
                         )}
-                        {item.spicy && <Text style={styles.spicyIcon}>🌶️</Text>}
                       </View>
                     </View>
                   </View>
                   <View style={styles.menuImageContainer}>
                     <Image source={{ uri: item.image_id || '' }} style={styles.menuImage} />
+                    {item.spicy && (
+                      <SpiceButtonInline
+                        menuItemId={item.id}
+                        onAddWithSpice={(level) => handleAddToCart(item, level)}
+                      />
+                    )}
                     {quantity === 0 ? (
                       <TouchableOpacity
                         style={styles.addButtonUber}
@@ -522,6 +554,38 @@ export default function HomeScreen() {
         onCollectionNameChange={setCollectionName}
       />
     </View>
+  );
+}
+
+// Inline Spice Button Component
+function SpiceButtonInline({ 
+  menuItemId, 
+  onAddWithSpice 
+}: { 
+  menuItemId: string; 
+  onAddWithSpice: (level: number) => void;
+}) {
+  const { spiceLevel, incrementSpiceLevel } = useSpiceLevel(menuItemId);
+
+  const handleClick = () => {
+    const newLevel = Math.min(3, spiceLevel + 1);
+    incrementSpiceLevel();
+    onAddWithSpice(newLevel);
+  };
+
+  return (
+    <TouchableOpacity
+      style={styles.spiceButtonInline}
+      onPress={handleClick}
+      activeOpacity={0.8}
+    >
+      <Text style={styles.chilliEmoji}>🌶️</Text>
+      {spiceLevel > 0 && (
+        <View style={styles.spiceBadge}>
+          <Text style={styles.spiceBadgeText}>{spiceLevel}</Text>
+        </View>
+      )}
+    </TouchableOpacity>
   );
 }
 
@@ -776,9 +840,14 @@ const styles = StyleSheet.create({
     boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
     elevation: 3,
   },
-  dishImage: {
+  dishImageContainer: {
+    position: 'relative',
     width: '100%',
     height: 120,
+  },
+  dishImage: {
+    width: '100%',
+    height: '100%',
     backgroundColor: colors.border,
   },
   dishInfo: {
@@ -790,11 +859,19 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: 4,
   },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
   dishPrice: {
     fontSize: 18,
     fontWeight: '700',
     color: colors.text,
-    marginBottom: 8,
+  },
+  spiceLevelEmojis: {
+    fontSize: 14,
   },
   dishTags: {
     flexDirection: 'row',
@@ -978,5 +1055,36 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.text,
     paddingHorizontal: 12,
+  },
+  spiceButtonInline: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 20,
+    padding: 6,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.2)',
+    elevation: 4,
+    zIndex: 10,
+  },
+  chilliEmoji: {
+    fontSize: 20,
+  },
+  spiceBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    backgroundColor: colors.primary,
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  spiceBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
   },
 });
