@@ -81,7 +81,10 @@ export function useSpiceLevel(menuItemId: string) {
 
     // Clamp level between 0 and 3
     const clampedLevel = Math.max(0, Math.min(3, newLevel));
+    
+    // Update local state immediately for instant UI feedback
     setSpiceLevel(clampedLevel);
+    console.log('Updated local spice level to:', clampedLevel);
 
     try {
       if (clampedLevel === 0) {
@@ -100,6 +103,8 @@ export function useSpiceLevel(menuItemId: string) {
         const { error } = await deleteQuery;
         if (error) {
           console.error('Error deleting spice level:', error);
+          // Revert on error
+          await fetchSpiceLevel();
         } else {
           console.log('Deleted spice level for item:', menuItemId);
         }
@@ -120,12 +125,16 @@ export function useSpiceLevel(menuItemId: string) {
 
         if (error) {
           console.error('Error updating spice level:', error);
+          // Revert on error
+          await fetchSpiceLevel();
         } else {
-          console.log('Updated spice level to:', clampedLevel);
+          console.log('Updated spice level in database to:', clampedLevel);
         }
       }
     } catch (err) {
       console.error('Error in updateSpiceLevel:', err);
+      // Revert on error
+      await fetchSpiceLevel();
     }
   }, [menuItemId, user, sessionId]);
 

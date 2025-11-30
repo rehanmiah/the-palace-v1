@@ -138,9 +138,16 @@ export default function CartScreen() {
   };
 
   const renderChillies = (count: number) => {
-    return Array.from({ length: count }, (_, i) => (
-      <Text key={i} style={styles.chilliEmoji}>🌶️</Text>
-    ));
+    if (count === 0) return null;
+    
+    const chilies = [];
+    for (let i = 0; i < count; i++) {
+      chilies.push(
+        <Text key={i} style={styles.chilliEmoji}>🌶️</Text>
+      );
+    }
+    
+    return chilies;
   };
 
   if (cart.length === 0) {

@@ -356,14 +356,22 @@ function MenuItemRow({ item, quantity, onAdd, onUpdateQuantity }: any) {
 
   const renderChilies = (count: number) => {
     if (count === 0) return null;
+    
+    const chilies = [];
+    for (let i = 0; i < count; i++) {
+      chilies.push(
+        <Text key={i} style={styles.chilliEmoji}>🌶️</Text>
+      );
+    }
+    
     return (
       <View style={styles.spiceLevelContainer}>
-        {Array.from({ length: count }, (_, i) => (
-          <Text key={i} style={styles.chilliEmoji}>🌶️</Text>
-        ))}
+        {chilies}
       </View>
     );
   };
+
+  console.log('MenuItemRow render - Item:', item.name, 'Spice Level:', spiceLevel);
 
   return (
     <View style={styles.menuItem}>
