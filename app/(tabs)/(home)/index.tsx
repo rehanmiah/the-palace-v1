@@ -225,7 +225,7 @@ export default function HomeScreen() {
             <IconSymbol
               ios_icon_name={isDelivery ? "location.fill" : "person.fill"}
               android_material_icon_name={isDelivery ? "location-on" : "person"}
-              size={16}
+              size={20}
               color={colors.text}
             />
             <View style={styles.addressTextContainer}>
