@@ -1,3 +1,4 @@
+
 {
   "expo": {
     "name": "The Palace",
@@ -34,7 +35,13 @@
     "plugins": [
       "expo-font",
       "expo-router",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "Allow The Palace to access your contacts to autofill delivery addresses."
+        }
+      ]
     ],
     "scheme": "natively",
     "experiments": {

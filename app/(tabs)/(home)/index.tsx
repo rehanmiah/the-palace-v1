@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
-  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors, commonStyles } from '@/styles/commonStyles';
@@ -17,6 +16,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { restaurants, dishes } from '@/data/restaurants';
 import { Dish } from '@/types/restaurant';
 import { useCart } from '@/contexts/CartContext';
+import AddressModal from '@/components/AddressModal';
 
 const { width } = Dimensions.get('window');
 
@@ -28,7 +28,7 @@ interface Address {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { addToCart, updateQuantity, cart } = useCart();
+  const { addToCart, updateQuantity, cart, getCartItemCount } = useCart();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isDelivery, setIsDelivery] = useState(true);
@@ -39,7 +39,7 @@ export default function HomeScreen() {
     address: '123 Main Street, London, SW1A 1AA',
   });
 
-  const [addresses] = useState<Address[]>([
+  const [addresses, setAddresses] = useState<Address[]>([
     { id: '1', label: 'Home', address: '123 Main Street, London, SW1A 1AA' },
     { id: '2', label: 'Work', address: '456 Office Road, London, EC1A 1BB' },
     { id: '3', label: 'Other', address: '789 Park Avenue, London, W1A 1CC' },
@@ -101,6 +101,13 @@ export default function HomeScreen() {
     }
   };
 
+  const handleAddAddress = (address: Address) => {
+    setAddresses([...addresses, address]);
+    setSelectedAddress(address);
+  };
+
+  const cartItemCount = getCartItemCount();
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -125,6 +132,11 @@ export default function HomeScreen() {
               size={28}
               color="#FFFFFF"
             />
+            {cartItemCount > 0 && (
+              <View style={styles.cartBadge}>
+                <Text style={styles.cartBadgeText}>{cartItemCount}</Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -477,79 +489,14 @@ export default function HomeScreen() {
       </ScrollView>
 
       {/* Address Selection Modal */}
-      <Modal
+      <AddressModal
         visible={showAddressModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowAddressModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Delivery Address</Text>
-              <TouchableOpacity onPress={() => setShowAddressModal(false)}>
-                <IconSymbol
-                  ios_icon_name="xmark"
-                  android_material_icon_name="close"
-                  size={24}
-                  color={colors.text}
-                />
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.modalScroll}>
-              {addresses.map((address, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={[
-                    styles.addressOption,
-                    selectedAddress.id === address.id && styles.addressOptionSelected,
-                  ]}
-                  onPress={() => {
-                    setSelectedAddress(address);
-                    setShowAddressModal(false);
-                  }}
-                >
-                  <View style={styles.addressOptionContent}>
-                    <IconSymbol
-                      ios_icon_name="location.fill"
-                      android_material_icon_name="location-on"
-                      size={24}
-                      color={colors.text}
-                    />
-                    <View style={styles.addressOptionText}>
-                      <Text style={styles.addressOptionLabel}>{address.label}</Text>
-                      <Text style={styles.addressOptionAddress}>{address.address}</Text>
-                    </View>
-                  </View>
-                  {selectedAddress.id === address.id && (
-                    <IconSymbol
-                      ios_icon_name="checkmark.circle.fill"
-                      android_material_icon_name="check-circle"
-                      size={24}
-                      color={colors.highlight}
-                    />
-                  )}
-                </TouchableOpacity>
-              ))}
-              <TouchableOpacity
-                style={styles.addAddressButton}
-                onPress={() => {
-                  setShowAddressModal(false);
-                  console.log('Add new address clicked');
-                }}
-              >
-                <IconSymbol
-                  ios_icon_name="plus.circle"
-                  android_material_icon_name="add-circle-outline"
-                  size={24}
-                  color={colors.text}
-                />
-                <Text style={styles.addAddressText}>Add New Address</Text>
-              </TouchableOpacity>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+        onClose={() => setShowAddressModal(false)}
+        addresses={addresses}
+        selectedAddress={selectedAddress}
+        onSelectAddress={setSelectedAddress}
+        onAddAddress={handleAddAddress}
+      />
     </View>
   );
 }
@@ -613,6 +560,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.3)',
     elevation: 5,
+  },
+  cartBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: colors.primary,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  cartBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
   },
   infoCard: {
     backgroundColor: colors.card,
@@ -986,79 +950,5 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.text,
     paddingHorizontal: 12,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: colors.card,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '80%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  modalScroll: {
-    padding: 16,
-  },
-  addressOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: '#000000',
-  },
-  addressOptionSelected: {
-    borderColor: '#000000',
-    backgroundColor: colors.highlight,
-  },
-  addressOptionContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    gap: 12,
-  },
-  addressOptionText: {
-    flex: 1,
-  },
-  addressOptionLabel: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 4,
-  },
-  addressOptionAddress: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  addAddressButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#E0E0E0',
-    borderRadius: 12,
-    gap: 12,
-  },
-  addAddressText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text,
   },
 });
