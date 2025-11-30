@@ -15,13 +15,14 @@ export interface Restaurant {
   id: string;
   name: string;
   description: string;
-  image: string;
+  image: any;
   rating: number;
   deliveryTime: string;
   deliveryFee: number;
   minimumOrder: number;
   cuisine: string[];
   isOpen: boolean;
+  address: string;
 }
 
 export interface CartItem {

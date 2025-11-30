@@ -35,7 +35,6 @@ export default function MenuScreen() {
     address: '123 Main Street, London, SW1A 1AA',
   });
 
-  // Sample addresses - in a real app, these would come from user profile
   const [addresses] = useState<Address[]>([
     { id: '1', label: 'Home', address: '123 Main Street, London, SW1A 1AA' },
     { id: '2', label: 'Work', address: '456 Office Road, London, EC1A 1BB' },
@@ -53,10 +52,8 @@ export default function MenuScreen() {
     );
   }
 
-  // Get unique categories
   const categories = Array.from(new Set(menuItems.map((item) => item.category)));
 
-  // Filter menu items by category
   const filteredItems = selectedCategory
     ? menuItems.filter((item) => item.category === selectedCategory)
     : menuItems;
@@ -72,7 +69,6 @@ export default function MenuScreen() {
 
   const cartItemCount = getCartItemCount();
 
-  // Get quantity for a specific dish
   const getDishQuantity = (dishId: string) => {
     const cartItem = cart.find((item) => item.dish.id === dishId);
     return cartItem ? cartItem.quantity : 0;
@@ -187,7 +183,7 @@ export default function MenuScreen() {
         {/* Restaurant Info */}
         <View style={styles.restaurantSection}>
           <Image
-            source={{ uri: restaurant.image }}
+            source={restaurant.image}
             style={styles.restaurantImage}
           />
           <View style={styles.restaurantInfo}>
@@ -201,6 +197,7 @@ export default function MenuScreen() {
             <Text style={styles.restaurantDescription}>
               {restaurant.description}
             </Text>
+            <Text style={styles.restaurantAddress}>{restaurant.address}</Text>
             <View style={styles.restaurantMeta}>
               <View style={styles.metaItem}>
                 <IconSymbol
@@ -334,8 +331,8 @@ export default function MenuScreen() {
                           onPress={() => updateQuantity(item.id, quantity - 1)}
                         >
                           <IconSymbol
-                            ios_icon_name="minus"
-                            android_material_icon_name="remove"
+                            ios_icon_name={quantity === 1 ? "trash.fill" : "minus"}
+                            android_material_icon_name={quantity === 1 ? "delete" : "remove"}
                             size={16}
                             color="#FFFFFF"
                           />
@@ -596,9 +593,15 @@ const styles = StyleSheet.create({
   },
   restaurantDescription: {
     fontSize: 14,
+    color: colors.text,
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  restaurantAddress: {
+    fontSize: 13,
     color: colors.textSecondary,
     marginBottom: 12,
-    lineHeight: 20,
+    lineHeight: 18,
   },
   restaurantMeta: {
     flexDirection: 'row',
@@ -611,8 +614,8 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 14,
-    color: colors.textSecondary,
-    fontWeight: '500',
+    color: colors.text,
+    fontWeight: '600',
   },
   categorySection: {
     paddingVertical: 12,
@@ -771,7 +774,7 @@ const styles = StyleSheet.create({
   quantityButtonUber: {
     width: 32,
     height: 32,
-    backgroundColor: colors.primary,
+    backgroundColor: '#000000',
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',

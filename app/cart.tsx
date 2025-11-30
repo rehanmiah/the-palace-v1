@@ -97,13 +97,13 @@ export default function CartScreen() {
           />
           <Text style={styles.emptyTitle}>Your cart is empty</Text>
           <Text style={styles.emptyText}>
-            Add items from a restaurant to get started
+            Add items from the menu to get started
           </Text>
           <TouchableOpacity
             style={[buttonStyles.primary, styles.browseButton]}
-            onPress={() => router.push('/(tabs)/restaurants')}
+            onPress={() => router.push('/(tabs)/(home)/')}
           >
-            <Text style={buttonStyles.text}>Browse Restaurants</Text>
+            <Text style={buttonStyles.text}>Browse Menu</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -167,10 +167,10 @@ export default function CartScreen() {
                       }
                     >
                       <IconSymbol
-                        ios_icon_name="minus"
-                        android_material_icon_name="remove"
+                        ios_icon_name={item.quantity === 1 ? "trash.fill" : "minus"}
+                        android_material_icon_name={item.quantity === 1 ? "delete" : "remove"}
                         size={16}
-                        color={colors.text}
+                        color="#FFFFFF"
                       />
                     </TouchableOpacity>
                     <Text style={styles.quantityText}>{item.quantity}</Text>
@@ -184,7 +184,7 @@ export default function CartScreen() {
                         ios_icon_name="plus"
                         android_material_icon_name="add"
                         size={16}
-                        color={colors.text}
+                        color="#FFFFFF"
                       />
                     </TouchableOpacity>
                   </View>
@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
   itemPrice: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#000000',
+    color: colors.text,
   },
   quantityContainer: {
     flexDirection: 'row',
@@ -356,10 +356,10 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   quantityButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.background,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#000000',
     justifyContent: 'center',
     alignItems: 'center',
   },

@@ -13,12 +13,6 @@ export default function TabLayout() {
       label: 'Home',
     },
     {
-      name: 'restaurants',
-      route: '/(tabs)/restaurants',
-      icon: 'restaurant',
-      label: 'Restaurants',
-    },
-    {
       name: 'profile',
       route: '/(tabs)/profile',
       icon: 'person',
@@ -35,7 +29,6 @@ export default function TabLayout() {
         }}
       >
         <Stack.Screen key="home" name="(home)" />
-        <Stack.Screen key="restaurants" name="restaurants" />
         <Stack.Screen key="profile" name="profile" />
       </Stack>
       <FloatingTabBar tabs={tabs} />

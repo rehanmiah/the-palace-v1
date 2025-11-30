@@ -1,16 +1,17 @@
+
 {
   "expo": {
-    "name": "Curry Dash",
-    "slug": "Curry Dash",
+    "name": "The Palace",
+    "slug": "The Palace",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/natively-dark.png",
+    "icon": "./assets/images/7d34c77e-831d-4ee0-b02c-b042a09f6fa5.jpeg",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/natively-dark.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#000000"
+      "image": "./assets/images/7d34c77e-831d-4ee0-b02c-b042a09f6fa5.jpeg",
+      "resizeMode": "cover",
+      "backgroundColor": "#1A1A1A"
     },
     "ios": {
       "supportsTablet": true,
@@ -21,14 +22,14 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/natively-dark.png",
-        "backgroundColor": "#000000"
+        "foregroundImage": "./assets/images/7d34c77e-831d-4ee0-b02c-b042a09f6fa5.jpeg",
+        "backgroundColor": "#1A1A1A"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.anonymous.Natively"
     },
     "web": {
-      "favicon": "./assets/images/final_quest_240x240.png",
+      "favicon": "./assets/images/7d34c77e-831d-4ee0-b02c-b042a09f6fa5.jpeg",
       "bundler": "metro"
     },
     "plugins": [
@@ -44,5 +45,5 @@
       "router": {}
     }
   },
-  "scheme": "Curry Dash"
+  "scheme": "The Palace"
 }

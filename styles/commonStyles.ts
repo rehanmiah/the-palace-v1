@@ -3,7 +3,7 @@ import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
 
 export const colors = {
   background: '#F8F8FF',      // Almost White
-  text: '#282828',            // Dark Gray
+  text: '#000000',            // Black
   textSecondary: '#585858',   // Medium Gray
   primary: '#FF7F50',         // Coral
   secondary: '#6495ED',       // Cornflower Blue
