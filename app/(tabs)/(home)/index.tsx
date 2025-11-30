@@ -16,6 +16,7 @@ import { colors, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { restaurants, dishes } from '@/data/restaurants';
 import { Dish } from '@/types/restaurant';
+import { useCart } from '@/contexts/CartContext';
 
 const { width } = Dimensions.get('window');
 
@@ -27,6 +28,7 @@ interface Address {
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { addToCart, updateQuantity, cart } = useCart();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isDelivery, setIsDelivery] = useState(true);
@@ -75,6 +77,29 @@ export default function HomeScreen() {
 
     return matchesSearch && matchesCategory;
   });
+
+  const getDishQuantity = (dishId: string) => {
+    const cartItem = cart.find((item) => item.dish.id === dishId);
+    return cartItem ? cartItem.quantity : 0;
+  };
+
+  const handleAddToCart = (dish: Dish) => {
+    console.log('Adding to cart from home:', dish.name);
+    addToCart(dish, restaurant.id);
+  };
+
+  const handleCategorySelect = (category: string | null) => {
+    if (category === 'All Items') {
+      // Navigate to menu page for "All Items"
+      router.push({
+        pathname: '/menu/[id]',
+        params: { id: restaurant.id },
+      });
+    } else {
+      // Stay on home page and filter
+      setSelectedCategory(category);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -201,6 +226,82 @@ export default function HomeScreen() {
           </TouchableOpacity>
         )}
 
+        {/* Popular Dishes - Moved above search */}
+        {!searchQuery && !selectedCategory && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Popular Dishes</Text>
+              <TouchableOpacity onPress={() => router.push({ pathname: '/menu/[id]', params: { id: restaurant.id } })}>
+                <Text style={styles.seeAllText}>See All</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalScroll}
+            >
+              {popularDishes.map((dish, index) => {
+                const quantity = getDishQuantity(dish.id);
+                return (
+                  <View key={index} style={styles.dishCard}>
+                    <Image source={{ uri: dish.image }} style={styles.dishImage} />
+                    <View style={styles.dishInfo}>
+                      <Text style={styles.dishName} numberOfLines={1}>
+                        {dish.name}
+                      </Text>
+                      <Text style={styles.dishPrice}>£{dish.price.toFixed(2)}</Text>
+                      <View style={styles.dishTags}>
+                        {dish.isVegetarian && (
+                          <View style={styles.vegTag}>
+                            <Text style={styles.vegTagText}>VEG</Text>
+                          </View>
+                        )}
+                        {dish.isSpicy && (
+                          <Text style={styles.spicyIcon}>🌶️</Text>
+                        )}
+                      </View>
+                      {quantity === 0 ? (
+                        <TouchableOpacity
+                          style={styles.addButton}
+                          onPress={() => handleAddToCart(dish)}
+                        >
+                          <Text style={styles.addButtonText}>Add</Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <View style={styles.quantityControl}>
+                          <TouchableOpacity
+                            style={styles.quantityButton}
+                            onPress={() => updateQuantity(dish.id, quantity - 1)}
+                          >
+                            <IconSymbol
+                              ios_icon_name={quantity === 1 ? "trash.fill" : "minus"}
+                              android_material_icon_name={quantity === 1 ? "delete" : "remove"}
+                              size={14}
+                              color="#FFFFFF"
+                            />
+                          </TouchableOpacity>
+                          <Text style={styles.quantityText}>{quantity}</Text>
+                          <TouchableOpacity
+                            style={styles.quantityButton}
+                            onPress={() => handleAddToCart(dish)}
+                          >
+                            <IconSymbol
+                              ios_icon_name="plus"
+                              android_material_icon_name="add"
+                              size={14}
+                              color="#FFFFFF"
+                            />
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
         {/* Search Bar */}
         <View style={styles.searchContainer}>
           <IconSymbol
@@ -238,6 +339,14 @@ export default function HomeScreen() {
                   !selectedCategory && styles.categoryChipTextActive,
                 ]}
               >
+                Picked for you
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.categoryChip}
+              onPress={() => handleCategorySelect('All Items')}
+            >
+              <Text style={styles.categoryChipText}>
                 All Items
               </Text>
             </TouchableOpacity>
@@ -248,7 +357,7 @@ export default function HomeScreen() {
                   styles.categoryChip,
                   selectedCategory === category && styles.categoryChipActive,
                 ]}
-                onPress={() => setSelectedCategory(category)}
+                onPress={() => handleCategorySelect(category)}
               >
                 <Text
                   style={[
@@ -267,52 +376,6 @@ export default function HomeScreen() {
         {/* Menu Items Display */}
         {!searchQuery && !selectedCategory && (
           <React.Fragment>
-            {/* Popular Dishes */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Popular Dishes</Text>
-                <TouchableOpacity onPress={() => router.push({ pathname: '/menu/[id]', params: { id: restaurant.id } })}>
-                  <Text style={styles.seeAllText}>See All</Text>
-                </TouchableOpacity>
-              </View>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.horizontalScroll}
-              >
-                {popularDishes.map((dish, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={styles.dishCard}
-                    onPress={() =>
-                      router.push({
-                        pathname: '/menu/[id]',
-                        params: { id: dish.restaurantId },
-                      })
-                    }
-                  >
-                    <Image source={{ uri: dish.image }} style={styles.dishImage} />
-                    <View style={styles.dishInfo}>
-                      <Text style={styles.dishName} numberOfLines={1}>
-                        {dish.name}
-                      </Text>
-                      <Text style={styles.dishPrice}>£{dish.price.toFixed(2)}</Text>
-                      <View style={styles.dishTags}>
-                        {dish.isVegetarian && (
-                          <View style={styles.vegTag}>
-                            <Text style={styles.vegTagText}>VEG</Text>
-                          </View>
-                        )}
-                        {dish.isSpicy && (
-                          <Text style={styles.spicyIcon}>🌶️</Text>
-                        )}
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-
             {/* Full Menu Button */}
             <View style={styles.menuButtonContainer}>
               <TouchableOpacity
@@ -336,45 +399,79 @@ export default function HomeScreen() {
           </React.Fragment>
         )}
 
-        {/* Filtered Results */}
+        {/* Filtered Results - When search or category is selected */}
         {(searchQuery || selectedCategory) && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>
-                {filteredItems.length} {filteredItems.length === 1 ? 'Result' : 'Results'}
+                {selectedCategory || `${filteredItems.length} ${filteredItems.length === 1 ? 'Result' : 'Results'}`}
               </Text>
             </View>
-            {filteredItems.map((item, index) => (
-              <TouchableOpacity
-                key={index}
-                style={styles.searchResultCard}
-                onPress={() =>
-                  router.push({
-                    pathname: '/menu/[id]',
-                    params: { id: restaurant.id },
-                  })
-                }
-              >
-                <Image source={{ uri: item.image }} style={styles.resultImage} />
-                <View style={styles.resultInfo}>
-                  <Text style={styles.resultName}>{item.name}</Text>
-                  <Text style={styles.resultDescription} numberOfLines={2}>
-                    {item.description}
-                  </Text>
-                  <View style={styles.resultFooter}>
-                    <Text style={styles.resultPrice}>£{item.price.toFixed(2)}</Text>
-                    <View style={styles.resultTags}>
-                      {item.isVegetarian && (
-                        <View style={styles.vegTag}>
-                          <Text style={styles.vegTagText}>VEG</Text>
-                        </View>
-                      )}
-                      {item.isSpicy && <Text style={styles.spicyIcon}>🌶️</Text>}
+            {filteredItems.map((item, index) => {
+              const quantity = getDishQuantity(item.id);
+              return (
+                <View key={index} style={styles.menuItem}>
+                  <View style={styles.menuInfo}>
+                    <View style={styles.menuHeader}>
+                      <Text style={styles.menuName}>{item.name}</Text>
+                    </View>
+                    <Text style={styles.menuDescription} numberOfLines={2}>
+                      {item.description}
+                    </Text>
+                    <View style={styles.menuFooter}>
+                      <Text style={styles.menuPrice}>
+                        £{item.price.toFixed(2)}
+                      </Text>
+                      <View style={styles.menuTags}>
+                        {item.isVegetarian && (
+                          <View style={styles.vegTag}>
+                            <Text style={styles.vegTagText}>VEG</Text>
+                          </View>
+                        )}
+                        {item.isSpicy && <Text style={styles.spicyIcon}>🌶️</Text>}
+                      </View>
                     </View>
                   </View>
+                  <View style={styles.menuImageContainer}>
+                    <Image source={{ uri: item.image }} style={styles.menuImage} />
+                    {quantity === 0 ? (
+                      <TouchableOpacity
+                        style={styles.addButtonUber}
+                        onPress={() => handleAddToCart(item)}
+                      >
+                        <Text style={styles.addButtonTextUber}>Add</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <View style={styles.quantityControlUber}>
+                        <TouchableOpacity
+                          style={styles.quantityButtonUber}
+                          onPress={() => updateQuantity(item.id, quantity - 1)}
+                        >
+                          <IconSymbol
+                            ios_icon_name={quantity === 1 ? "trash.fill" : "minus"}
+                            android_material_icon_name={quantity === 1 ? "delete" : "remove"}
+                            size={16}
+                            color="#FFFFFF"
+                          />
+                        </TouchableOpacity>
+                        <Text style={styles.quantityTextUber}>{quantity}</Text>
+                        <TouchableOpacity
+                          style={styles.quantityButtonUber}
+                          onPress={() => handleAddToCart(item)}
+                        >
+                          <IconSymbol
+                            ios_icon_name="plus"
+                            android_material_icon_name="add"
+                            size={16}
+                            color="#FFFFFF"
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
                 </View>
-              </TouchableOpacity>
-            ))}
+              );
+            })}
           </View>
         )}
       </ScrollView>
@@ -711,6 +808,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    marginBottom: 8,
   },
   vegTag: {
     backgroundColor: colors.highlight,
@@ -725,6 +823,48 @@ const styles = StyleSheet.create({
   },
   spicyIcon: {
     fontSize: 14,
+  },
+  addButton: {
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+    elevation: 2,
+  },
+  addButtonText: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  quantityControl: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+    elevation: 2,
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+  },
+  quantityButton: {
+    width: 28,
+    height: 28,
+    backgroundColor: '#000000',
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  quantityText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.text,
+    paddingHorizontal: 10,
   },
   menuButtonContainer: {
     paddingHorizontal: 16,
@@ -746,52 +886,106 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
   },
-  searchResultCard: {
+  menuItem: {
     flexDirection: 'row',
     backgroundColor: colors.card,
-    borderRadius: 12,
-    marginHorizontal: 16,
-    marginBottom: 12,
-    overflow: 'hidden',
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
-    elevation: 3,
+    borderRadius: 0,
+    marginBottom: 0,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
-  resultImage: {
-    width: 100,
-    height: 100,
-    backgroundColor: colors.border,
-  },
-  resultInfo: {
+  menuInfo: {
     flex: 1,
-    padding: 12,
+    paddingRight: 12,
     justifyContent: 'space-between',
   },
-  resultName: {
+  menuHeader: {
+    marginBottom: 6,
+  },
+  menuName: {
     fontSize: 16,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 4,
   },
-  resultDescription: {
-    fontSize: 13,
+  menuDescription: {
+    fontSize: 14,
     color: colors.textSecondary,
     marginBottom: 8,
-    lineHeight: 18,
+    lineHeight: 20,
   },
-  resultFooter: {
+  menuFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 8,
   },
-  resultPrice: {
+  menuPrice: {
     fontSize: 16,
     fontWeight: '700',
-    color: colors.text,
+    color: '#000000',
   },
-  resultTags: {
+  menuTags: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
+  },
+  menuImageContainer: {
+    position: 'relative',
+    width: 120,
+    height: 120,
+  },
+  menuImage: {
+    width: 120,
+    height: 120,
+    borderRadius: 8,
+    backgroundColor: colors.border,
+  },
+  addButtonUber: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.15)',
+    elevation: 4,
+  },
+  addButtonTextUber: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  quantityControlUber: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.15)',
+    elevation: 4,
+  },
+  quantityButtonUber: {
+    width: 32,
+    height: 32,
+    backgroundColor: '#000000',
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  quantityTextUber: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.text,
+    paddingHorizontal: 12,
   },
   modalOverlay: {
     flex: 1,
