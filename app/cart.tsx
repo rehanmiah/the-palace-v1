@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,12 +8,24 @@ import {
   TouchableOpacity,
   Image,
   Alert,
+  TextInput,
+  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors, buttonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { useCart } from '@/contexts/CartContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { restaurants } from '@/data/restaurants';
+import AddressModal from '@/components/AddressModal';
+
+interface Address {
+  id: string;
+  label: string;
+  address: string;
+}
+
+type PaymentMethodType = 'card' | 'cash';
 
 export default function CartScreen() {
   const router = useRouter();
@@ -25,14 +37,49 @@ export default function CartScreen() {
     getCartTotal,
     currentRestaurantId,
   } = useCart();
+  const { user, paymentMethods } = useAuth();
+
+  const [isDelivery, setIsDelivery] = useState(true);
+  const [phoneNumber, setPhoneNumber] = useState(user?.phone || '');
+  const [showPhoneInput, setShowPhoneInput] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethodType>('card');
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [collectionName, setCollectionName] = useState('');
+
+  const [selectedAddress, setSelectedAddress] = useState<Address>({
+    id: '1',
+    label: 'Home',
+    address: '123 Main Street, London, SW1A 1AA',
+  });
+
+  const [addresses, setAddresses] = useState<Address[]>([
+    { id: '1', label: 'Home', address: '123 Main Street, London, SW1A 1AA' },
+    { id: '2', label: 'Work', address: '456 Office Road, London, EC1A 1BB' },
+    { id: '3', label: 'Other', address: '789 Park Avenue, London, W1A 1CC' },
+  ]);
 
   const restaurant = currentRestaurantId
     ? restaurants.find((r) => r.id === currentRestaurantId)
     : null;
 
+  // Calculate pricing
   const subtotal = getCartTotal();
-  const deliveryFee = restaurant?.deliveryFee || 0;
-  const total = subtotal + deliveryFee;
+  
+  // Delivery fee logic: £2.99 if under £15, otherwise free
+  const deliveryFee = isDelivery && subtotal < 15 ? 2.99 : 0;
+  
+  // 10% discount on collection orders above £15
+  const collectionDiscount = !isDelivery && subtotal > 15 ? subtotal * 0.1 : 0;
+  
+  const total = subtotal + deliveryFee - collectionDiscount;
+
+  // Check if phone number is provided
+  useEffect(() => {
+    if (!phoneNumber && user?.phone) {
+      setPhoneNumber(user.phone);
+    }
+  }, [user]);
 
   const handleCheckout = () => {
     if (cart.length === 0) {
@@ -40,17 +87,27 @@ export default function CartScreen() {
       return;
     }
 
-    if (restaurant && subtotal < restaurant.minimumOrder) {
-      Alert.alert(
-        'Minimum Order',
-        `Minimum order amount is £${restaurant.minimumOrder.toFixed(2)}`
-      );
+    // Validate phone number
+    if (!phoneNumber || phoneNumber.trim() === '') {
+      setShowPhoneInput(true);
+      Alert.alert('Phone Number Required', 'Please provide your phone number to continue.');
       return;
     }
 
+    // Validate collection name
+    if (!isDelivery && (!collectionName || collectionName.trim() === '')) {
+      Alert.alert('Collection Name Required', 'Please provide the name of the person collecting.');
+      return;
+    }
+
+    const orderType = isDelivery ? 'delivery' : 'collection';
+    const paymentMethodText = selectedPaymentMethod === 'cash' 
+      ? `Cash on ${isDelivery ? 'Delivery' : 'Collection'}` 
+      : 'Card Payment';
+
     Alert.alert(
       'Order Placed!',
-      'Your order has been placed successfully. You will receive a confirmation shortly.',
+      `Your ${orderType} order has been placed successfully.\n\nPayment: ${paymentMethodText}\nTotal: £${total.toFixed(2)}\n\nYou will receive a confirmation shortly.`,
       [
         {
           text: 'OK',
@@ -68,6 +125,16 @@ export default function CartScreen() {
       { text: 'Cancel', style: 'cancel' },
       { text: 'Clear', style: 'destructive', onPress: clearCart },
     ]);
+  };
+
+  const handleAddAddress = (address: Address) => {
+    setAddresses([...addresses, address]);
+    setSelectedAddress(address);
+  };
+
+  const getPostcode = (address: string) => {
+    const parts = address.split(',').map(part => part.trim());
+    return parts[parts.length - 1] || '';
   };
 
   if (cart.length === 0) {
@@ -124,7 +191,7 @@ export default function CartScreen() {
             color={colors.text}
           />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Cart</Text>
+        <Text style={styles.headerTitle}>Checkout</Text>
         <TouchableOpacity style={styles.clearButton} onPress={handleClearCart}>
           <Text style={styles.clearButtonText}>Clear</Text>
         </TouchableOpacity>
@@ -145,96 +212,295 @@ export default function CartScreen() {
           </View>
         )}
 
-        {/* Cart Items */}
-        <View style={styles.itemsSection}>
-          {cart.map((item, index) => (
-            <React.Fragment key={index}>
-              <View style={styles.cartItem}>
-                <Image
-                  source={{ uri: item.dish.image }}
-                  style={styles.itemImage}
-                />
-                <View style={styles.itemInfo}>
-                  <Text style={styles.itemName}>{item.dish.name}</Text>
-                  <Text style={styles.itemPrice}>
-                    £{item.dish.price.toFixed(2)}
-                  </Text>
-                  <View style={styles.quantityContainer}>
-                    <TouchableOpacity
-                      style={styles.quantityButton}
-                      onPress={() =>
-                        updateQuantity(item.dish.id, item.quantity - 1)
-                      }
-                    >
-                      <IconSymbol
-                        ios_icon_name={item.quantity === 1 ? "trash.fill" : "minus"}
-                        android_material_icon_name={item.quantity === 1 ? "delete" : "remove"}
-                        size={16}
-                        color="#FFFFFF"
-                      />
-                    </TouchableOpacity>
-                    <Text style={styles.quantityText}>{item.quantity}</Text>
-                    <TouchableOpacity
-                      style={styles.quantityButton}
-                      onPress={() =>
-                        updateQuantity(item.dish.id, item.quantity + 1)
-                      }
-                    >
-                      <IconSymbol
-                        ios_icon_name="plus"
-                        android_material_icon_name="add"
-                        size={16}
-                        color="#FFFFFF"
-                      />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-                <TouchableOpacity
-                  style={styles.removeButton}
-                  onPress={() => removeFromCart(item.dish.id)}
-                >
-                  <IconSymbol
-                    ios_icon_name="trash"
-                    android_material_icon_name="delete"
-                    size={20}
-                    color={colors.error}
-                  />
-                </TouchableOpacity>
-              </View>
-            </React.Fragment>
-          ))}
+        {/* Delivery/Collection Toggle */}
+        <View style={styles.toggleSection}>
+          <View style={styles.toggleContainer}>
+            <TouchableOpacity
+              style={[
+                styles.toggleButton,
+                isDelivery && styles.toggleButtonActive,
+              ]}
+              onPress={() => setIsDelivery(true)}
+            >
+              <Text
+                style={[
+                  styles.toggleButtonText,
+                  isDelivery && styles.toggleButtonTextActive,
+                ]}
+              >
+                Delivery
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.toggleButton,
+                !isDelivery && styles.toggleButtonActive,
+              ]}
+              onPress={() => setIsDelivery(false)}
+            >
+              <Text
+                style={[
+                  styles.toggleButtonText,
+                  !isDelivery && styles.toggleButtonTextActive,
+                ]}
+              >
+                Collection
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* Order Summary */}
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryTitle}>Order Summary</Text>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Subtotal</Text>
-            <Text style={styles.summaryValue}>£{subtotal.toFixed(2)}</Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Delivery Fee</Text>
-            <Text style={styles.summaryValue}>£{deliveryFee.toFixed(2)}</Text>
-          </View>
-          <View style={styles.divider} />
-          <View style={styles.summaryRow}>
-            <Text style={styles.totalLabel}>Total</Text>
-            <Text style={styles.totalValue}>£{total.toFixed(2)}</Text>
-          </View>
-          {restaurant && subtotal < restaurant.minimumOrder && (
-            <View style={styles.warningBox}>
+        {/* Delivery Address or Collection Name */}
+        {isDelivery ? (
+          <View style={styles.infoCard}>
+            <View style={styles.infoHeader}>
+              <Text style={styles.infoTitle}>Delivery Address</Text>
+              <TouchableOpacity onPress={() => setShowAddressModal(true)}>
+                <Text style={styles.editText}>Edit</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.addressDisplay}>
               <IconSymbol
-                ios_icon_name="exclamationmark.triangle.fill"
-                android_material_icon_name="warning"
-                size={16}
-                color={colors.accent}
+                ios_icon_name="location.fill"
+                android_material_icon_name="location-on"
+                size={20}
+                color={colors.primary}
               />
-              <Text style={styles.warningText}>
-                Minimum order: £{restaurant.minimumOrder.toFixed(2)}
-              </Text>
+              <View style={styles.addressTextContainer}>
+                <Text style={styles.addressLabel}>{selectedAddress.label}</Text>
+                <Text style={styles.addressText}>{selectedAddress.address}</Text>
+              </View>
+            </View>
+          </View>
+        ) : (
+          <View style={styles.infoCard}>
+            <Text style={styles.infoTitle}>Collection Details</Text>
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Person collecting</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter name"
+                placeholderTextColor={colors.textSecondary}
+                value={collectionName}
+                onChangeText={setCollectionName}
+              />
+            </View>
+          </View>
+        )}
+
+        {/* Phone Number */}
+        <View style={styles.infoCard}>
+          <View style={styles.infoHeader}>
+            <Text style={styles.infoTitle}>Contact Number</Text>
+            {!showPhoneInput && phoneNumber && (
+              <TouchableOpacity onPress={() => setShowPhoneInput(true)}>
+                <Text style={styles.editText}>Edit</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          {showPhoneInput || !phoneNumber ? (
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter phone number"
+                placeholderTextColor={colors.textSecondary}
+                value={phoneNumber}
+                onChangeText={setPhoneNumber}
+                keyboardType="phone-pad"
+                autoFocus={showPhoneInput}
+              />
+              {showPhoneInput && (
+                <TouchableOpacity
+                  style={styles.doneButton}
+                  onPress={() => setShowPhoneInput(false)}
+                >
+                  <Text style={styles.doneButtonText}>Done</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          ) : (
+            <View style={styles.phoneDisplay}>
+              <IconSymbol
+                ios_icon_name="phone.fill"
+                android_material_icon_name="phone"
+                size={20}
+                color={colors.primary}
+              />
+              <Text style={styles.phoneText}>{phoneNumber}</Text>
             </View>
           )}
         </View>
+
+        {/* Order Summary - Receipt View */}
+        <View style={styles.receiptCard}>
+          <Text style={styles.receiptTitle}>Order Summary</Text>
+          <View style={styles.receiptDivider} />
+          
+          {/* List all items */}
+          {cart.map((item, index) => (
+            <React.Fragment key={index}>
+              <View style={styles.receiptItem}>
+                <View style={styles.receiptItemLeft}>
+                  <Text style={styles.receiptItemQty}>{item.quantity}x</Text>
+                  <Text style={styles.receiptItemName}>{item.dish.name}</Text>
+                </View>
+                <Text style={styles.receiptItemPrice}>
+                  £{(item.dish.price * item.quantity).toFixed(2)}
+                </Text>
+              </View>
+            </React.Fragment>
+          ))}
+
+          <View style={styles.receiptDivider} />
+
+          {/* Subtotal */}
+          <View style={styles.receiptRow}>
+            <Text style={styles.receiptLabel}>Subtotal</Text>
+            <Text style={styles.receiptValue}>£{subtotal.toFixed(2)}</Text>
+          </View>
+
+          {/* Delivery Fee */}
+          {isDelivery && (
+            <View style={styles.receiptRow}>
+              <View style={styles.receiptLabelContainer}>
+                <Text style={styles.receiptLabel}>Delivery Fee</Text>
+                {subtotal >= 15 && (
+                  <Text style={styles.freeText}>(Free over £15)</Text>
+                )}
+              </View>
+              <Text style={styles.receiptValue}>
+                {deliveryFee > 0 ? `£${deliveryFee.toFixed(2)}` : 'FREE'}
+              </Text>
+            </View>
+          )}
+
+          {/* Collection Discount */}
+          {!isDelivery && collectionDiscount > 0 && (
+            <View style={styles.receiptRow}>
+              <View style={styles.receiptLabelContainer}>
+                <Text style={styles.receiptLabel}>Collection Discount</Text>
+                <Text style={styles.discountText}>(10% off over £15)</Text>
+              </View>
+              <Text style={styles.discountValue}>-£{collectionDiscount.toFixed(2)}</Text>
+            </View>
+          )}
+
+          {/* No delivery fee for collection */}
+          {!isDelivery && (
+            <View style={styles.receiptRow}>
+              <Text style={styles.receiptLabel}>Delivery Fee</Text>
+              <Text style={styles.freeValue}>FREE</Text>
+            </View>
+          )}
+
+          <View style={styles.receiptDividerBold} />
+
+          {/* Total */}
+          <View style={styles.receiptRow}>
+            <Text style={styles.totalLabel}>Total</Text>
+            <Text style={styles.totalValue}>£{total.toFixed(2)}</Text>
+          </View>
+        </View>
+
+        {/* Payment Method Selection */}
+        <View style={styles.infoCard}>
+          <Text style={styles.infoTitle}>Payment Method</Text>
+          
+          <TouchableOpacity
+            style={[
+              styles.paymentOption,
+              selectedPaymentMethod === 'card' && styles.paymentOptionSelected,
+            ]}
+            onPress={() => setSelectedPaymentMethod('card')}
+          >
+            <View style={styles.paymentOptionLeft}>
+              <View style={[
+                styles.radioButton,
+                selectedPaymentMethod === 'card' && styles.radioButtonSelected,
+              ]}>
+                {selectedPaymentMethod === 'card' && (
+                  <View style={styles.radioButtonInner} />
+                )}
+              </View>
+              <IconSymbol
+                ios_icon_name="creditcard.fill"
+                android_material_icon_name="credit-card"
+                size={24}
+                color={colors.text}
+              />
+              <View>
+                <Text style={styles.paymentOptionTitle}>Card Payment</Text>
+                {paymentMethods.length > 0 && (
+                  <Text style={styles.paymentOptionSubtitle}>
+                    {paymentMethods[0].brand} •••• {paymentMethods[0].last4}
+                  </Text>
+                )}
+              </View>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.paymentOption,
+              selectedPaymentMethod === 'cash' && styles.paymentOptionSelected,
+            ]}
+            onPress={() => setSelectedPaymentMethod('cash')}
+          >
+            <View style={styles.paymentOptionLeft}>
+              <View style={[
+                styles.radioButton,
+                selectedPaymentMethod === 'cash' && styles.radioButtonSelected,
+              ]}>
+                {selectedPaymentMethod === 'cash' && (
+                  <View style={styles.radioButtonInner} />
+                )}
+              </View>
+              <IconSymbol
+                ios_icon_name="banknote.fill"
+                android_material_icon_name="payments"
+                size={24}
+                color={colors.text}
+              />
+              <View>
+                <Text style={styles.paymentOptionTitle}>
+                  Cash on {isDelivery ? 'Delivery' : 'Collection'}
+                </Text>
+                <Text style={styles.paymentOptionSubtitle}>
+                  Pay when you receive your order
+                </Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* Info Messages */}
+        {isDelivery && subtotal < 15 && (
+          <View style={styles.infoMessage}>
+            <IconSymbol
+              ios_icon_name="info.circle.fill"
+              android_material_icon_name="info"
+              size={20}
+              color={colors.secondary}
+            />
+            <Text style={styles.infoMessageText}>
+              £2.99 delivery fee applies for orders under £15
+            </Text>
+          </View>
+        )}
+
+        {!isDelivery && subtotal > 15 && (
+          <View style={styles.successMessage}>
+            <IconSymbol
+              ios_icon_name="checkmark.circle.fill"
+              android_material_icon_name="check-circle"
+              size={20}
+              color="#4CAF50"
+            />
+            <Text style={styles.successMessageText}>
+              10% collection discount applied!
+            </Text>
+          </View>
+        )}
       </ScrollView>
 
       {/* Checkout Button */}
@@ -243,9 +509,24 @@ export default function CartScreen() {
           style={[buttonStyles.primary, styles.checkoutButton]}
           onPress={handleCheckout}
         >
-          <Text style={buttonStyles.text}>Place Order • £{total.toFixed(2)}</Text>
+          <Text style={buttonStyles.text}>
+            Place Order • £{total.toFixed(2)}
+          </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Address Selection Modal */}
+      <AddressModal
+        visible={showAddressModal}
+        onClose={() => setShowAddressModal(false)}
+        addresses={addresses}
+        selectedAddress={selectedAddress}
+        onSelectAddress={setSelectedAddress}
+        onAddAddress={handleAddAddress}
+        isDelivery={isDelivery}
+        collectionName={collectionName}
+        onCollectionNameChange={setCollectionName}
+      />
     </View>
   );
 }
@@ -316,96 +597,211 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
   },
-  itemsSection: {
+  toggleSection: {
     paddingHorizontal: 16,
-    marginTop: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
   },
-  cartItem: {
+  toggleContainer: {
     flexDirection: 'row',
     backgroundColor: colors.card,
-    borderRadius: 12,
-    marginBottom: 12,
-    padding: 12,
+    borderRadius: 8,
+    padding: 4,
     boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
     elevation: 2,
   },
-  itemImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-    backgroundColor: colors.border,
-  },
-  itemInfo: {
+  toggleButton: {
     flex: 1,
-    marginLeft: 12,
-    justifyContent: 'space-between',
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 6,
   },
-  itemName: {
-    fontSize: 16,
+  toggleButtonActive: {
+    backgroundColor: '#000000',
+  },
+  toggleButtonText: {
+    fontSize: 15,
     fontWeight: '600',
     color: colors.text,
   },
-  itemPrice: {
+  toggleButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  infoCard: {
+    backgroundColor: colors.card,
+    padding: 16,
+    marginHorizontal: 16,
+    marginTop: 12,
+    borderRadius: 12,
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
+    elevation: 2,
+  },
+  infoHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  infoTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: colors.text,
   },
-  quantityContainer: {
+  editText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  addressDisplay: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  addressTextContainer: {
+    flex: 1,
+  },
+  addressLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  addressText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    lineHeight: 20,
+  },
+  inputContainer: {
+    marginTop: 8,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: colors.background,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 15,
+    color: colors.text,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  doneButton: {
+    backgroundColor: '#000000',
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  doneButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  phoneDisplay: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
-  quantityButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#000000',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  quantityText: {
-    fontSize: 16,
-    fontWeight: '600',
+  phoneText: {
+    fontSize: 15,
     color: colors.text,
-    minWidth: 24,
-    textAlign: 'center',
+    fontWeight: '500',
   },
-  removeButton: {
-    padding: 8,
-  },
-  summaryCard: {
+  receiptCard: {
     backgroundColor: colors.card,
-    padding: 16,
+    padding: 20,
     marginHorizontal: 16,
-    marginTop: 16,
+    marginTop: 12,
     borderRadius: 12,
     boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
     elevation: 2,
   },
-  summaryTitle: {
+  receiptTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: colors.text,
     marginBottom: 12,
+    textAlign: 'center',
   },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  summaryLabel: {
-    fontSize: 16,
-    color: colors.textSecondary,
-  },
-  summaryValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  divider: {
+  receiptDivider: {
     height: 1,
     backgroundColor: colors.border,
     marginVertical: 12,
+  },
+  receiptDividerBold: {
+    height: 2,
+    backgroundColor: colors.text,
+    marginVertical: 12,
+  },
+  receiptItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 10,
+  },
+  receiptItemLeft: {
+    flexDirection: 'row',
+    flex: 1,
+    gap: 8,
+  },
+  receiptItemQty: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+    minWidth: 30,
+  },
+  receiptItemName: {
+    fontSize: 14,
+    color: colors.text,
+    flex: 1,
+  },
+  receiptItemPrice: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  receiptRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  receiptLabelContainer: {
+    flex: 1,
+  },
+  receiptLabel: {
+    fontSize: 15,
+    color: colors.textSecondary,
+  },
+  receiptValue: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  freeText: {
+    fontSize: 12,
+    color: '#4CAF50',
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  freeValue: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#4CAF50',
+  },
+  discountText: {
+    fontSize: 12,
+    color: colors.primary,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  discountValue: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.primary,
   },
   totalLabel: {
     fontSize: 18,
@@ -413,23 +809,89 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   totalValue: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     color: colors.primary,
   },
-  warningBox: {
+  paymentOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.highlight,
+    justifyContent: 'space-between',
+    padding: 14,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: colors.border,
+    marginBottom: 12,
+    backgroundColor: colors.background,
+  },
+  paymentOptionSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.card,
+  },
+  paymentOptionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  radioButton: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  radioButtonSelected: {
+    borderColor: colors.primary,
+  },
+  radioButtonInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: colors.primary,
+  },
+  paymentOptionTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  paymentOptionSubtitle: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  infoMessage: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E3F2FD',
     padding: 12,
     borderRadius: 8,
+    marginHorizontal: 16,
     marginTop: 12,
-    gap: 8,
+    gap: 10,
   },
-  warningText: {
+  infoMessageText: {
+    fontSize: 14,
+    color: colors.text,
+    flex: 1,
+  },
+  successMessage: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8F5E9',
+    padding: 12,
+    borderRadius: 8,
+    marginHorizontal: 16,
+    marginTop: 12,
+    gap: 10,
+  },
+  successMessageText: {
     fontSize: 14,
     color: colors.text,
     fontWeight: '600',
+    flex: 1,
   },
   checkoutContainer: {
     position: 'absolute',
