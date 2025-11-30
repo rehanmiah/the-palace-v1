@@ -65,6 +65,7 @@ export type Database = {
           is_vegetarian: boolean | null
           name: string
           price: number
+          spice_level: number | null
           spicy: boolean | null
           updated_at: string | null
         }
@@ -78,6 +79,7 @@ export type Database = {
           is_vegetarian?: boolean | null
           name: string
           price: number
+          spice_level?: number | null
           spicy?: boolean | null
           updated_at?: string | null
         }
@@ -91,10 +93,49 @@ export type Database = {
           is_vegetarian?: boolean | null
           name?: string
           price?: number
+          spice_level?: number | null
           spicy?: boolean | null
           updated_at?: string | null
         }
         Relationships: []
+      }
+      menu_item_spice_levels: {
+        Row: {
+          created_at: string | null
+          id: string
+          menu_item_id: string
+          session_id: string | null
+          spice_level: number
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          menu_item_id: string
+          session_id?: string | null
+          spice_level?: number
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          menu_item_id?: string
+          session_id?: string | null
+          spice_level?: number
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_item_spice_levels_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       order_items: {
         Row: {
@@ -105,6 +146,7 @@ export type Database = {
           menu_item_price: number
           order_id: string
           quantity: number
+          spice_level: number | null
           subtotal: number
         }
         Insert: {
@@ -115,6 +157,7 @@ export type Database = {
           menu_item_price: number
           order_id: string
           quantity: number
+          spice_level?: number | null
           subtotal: number
         }
         Update: {
@@ -125,6 +168,7 @@ export type Database = {
           menu_item_price?: number
           order_id?: string
           quantity?: number
+          spice_level?: number | null
           subtotal?: number
         }
         Relationships: [

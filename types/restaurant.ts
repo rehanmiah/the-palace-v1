@@ -29,6 +29,7 @@ export interface CartItem {
   dish: Dish;
   quantity: number;
   restaurantId: string;
+  spiceLevel?: number;
 }
 
 export interface Order {

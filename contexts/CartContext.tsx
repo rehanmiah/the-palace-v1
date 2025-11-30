@@ -4,9 +4,10 @@ import { CartItem, Dish } from '@/types/restaurant';
 
 interface CartContextType {
   cart: CartItem[];
-  addToCart: (dish: Dish, restaurantId: string) => void;
+  addToCart: (dish: Dish, restaurantId: string, spiceLevel?: number) => void;
   removeFromCart: (dishId: string) => void;
   updateQuantity: (dishId: string, quantity: number) => void;
+  updateSpiceLevel: (dishId: string, spiceLevel: number) => void;
   clearCart: () => void;
   getCartTotal: () => number;
   getCartItemCount: () => number;
@@ -19,8 +20,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [currentRestaurantId, setCurrentRestaurantId] = useState<string | null>(null);
 
-  const addToCart = useCallback((dish: Dish, restaurantId: string) => {
-    console.log('Adding to cart:', dish.name, 'from restaurant:', restaurantId);
+  const addToCart = useCallback((dish: Dish, restaurantId: string, spiceLevel?: number) => {
+    console.log('Adding to cart:', dish.name, 'from restaurant:', restaurantId, 'spice level:', spiceLevel);
     
     // If cart has items from different restaurant, clear it
     if (currentRestaurantId && currentRestaurantId !== restaurantId) {
@@ -31,17 +32,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setCurrentRestaurantId(restaurantId);
     
     setCart((prevCart) => {
-      const existingItem = prevCart.find((item) => item.dish.id === dish.id);
+      const existingItem = prevCart.find((item) => 
+        item.dish.id === dish.id && item.spiceLevel === spiceLevel
+      );
       
       if (existingItem) {
         return prevCart.map((item) =>
-          item.dish.id === dish.id
+          item.dish.id === dish.id && item.spiceLevel === spiceLevel
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
       }
       
-      return [...prevCart, { dish, quantity: 1, restaurantId }];
+      return [...prevCart, { dish, quantity: 1, restaurantId, spiceLevel }];
     });
   }, [currentRestaurantId]);
 
@@ -70,6 +73,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     );
   }, [removeFromCart]);
 
+  const updateSpiceLevel = useCallback((dishId: string, spiceLevel: number) => {
+    console.log('Updating spice level:', dishId, spiceLevel);
+    setCart((prevCart) =>
+      prevCart.map((item) =>
+        item.dish.id === dishId ? { ...item, spiceLevel } : item
+      )
+    );
+  }, []);
+
   const clearCart = useCallback(() => {
     console.log('Clearing cart');
     setCart([]);
@@ -91,6 +103,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         addToCart,
         removeFromCart,
         updateQuantity,
+        updateSpiceLevel,
         clearCart,
         getCartTotal,
         getCartItemCount,

@@ -137,6 +137,12 @@ export default function CartScreen() {
     return parts[parts.length - 1] || '';
   };
 
+  const renderChillies = (count: number) => {
+    return Array.from({ length: count }, (_, i) => (
+      <Text key={i} style={styles.chilliEmoji}>🌶️</Text>
+    ));
+  };
+
   if (cart.length === 0) {
     return (
       <View style={styles.container}>
@@ -342,7 +348,14 @@ export default function CartScreen() {
               <View style={styles.receiptItem}>
                 <View style={styles.receiptItemLeft}>
                   <Text style={styles.receiptItemQty}>{item.quantity}x</Text>
-                  <Text style={styles.receiptItemName}>{item.dish.name}</Text>
+                  <View style={styles.receiptItemDetails}>
+                    <Text style={styles.receiptItemName}>{item.dish.name}</Text>
+                    {item.spiceLevel && item.spiceLevel > 0 && (
+                      <View style={styles.spiceLevelIndicator}>
+                        {renderChillies(item.spiceLevel)}
+                      </View>
+                    )}
+                  </View>
                 </View>
                 <Text style={styles.receiptItemPrice}>
                   £{(item.dish.price * item.quantity).toFixed(2)}
@@ -753,10 +766,20 @@ const styles = StyleSheet.create({
     color: colors.text,
     minWidth: 30,
   },
+  receiptItemDetails: {
+    flex: 1,
+  },
   receiptItemName: {
     fontSize: 14,
     color: colors.text,
-    flex: 1,
+  },
+  spiceLevelIndicator: {
+    flexDirection: 'row',
+    marginTop: 2,
+    gap: 2,
+  },
+  chilliEmoji: {
+    fontSize: 12,
   },
   receiptItemPrice: {
     fontSize: 14,
