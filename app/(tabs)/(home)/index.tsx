@@ -33,6 +33,7 @@ export default function HomeScreen() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isDelivery, setIsDelivery] = useState(true);
   const [showAddressModal, setShowAddressModal] = useState(false);
+  const [collectionName, setCollectionName] = useState('');
   const [selectedAddress, setSelectedAddress] = useState<Address>({
     id: '1',
     label: 'Home',
@@ -209,34 +210,40 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Address Dropdown (only show for delivery) */}
-        {isDelivery && (
-          <TouchableOpacity
-            style={styles.addressDropdown}
-            onPress={() => setShowAddressModal(true)}
-          >
-            <View style={styles.addressContent}>
-              <IconSymbol
-                ios_icon_name="location.fill"
-                android_material_icon_name="location-on"
-                size={20}
-                color={colors.text}
-              />
-              <View style={styles.addressTextContainer}>
-                <Text style={styles.addressLabel}>{selectedAddress.label}</Text>
-                <Text style={styles.addressText} numberOfLines={1}>
-                  {selectedAddress.address}
-                </Text>
-              </View>
-            </View>
+        {/* Address/Collection Dropdown */}
+        <TouchableOpacity
+          style={styles.addressDropdown}
+          onPress={() => setShowAddressModal(true)}
+        >
+          <View style={styles.addressContent}>
             <IconSymbol
-              ios_icon_name="chevron.down"
-              android_material_icon_name="keyboard-arrow-down"
+              ios_icon_name={isDelivery ? "location.fill" : "person.fill"}
+              android_material_icon_name={isDelivery ? "location-on" : "person"}
               size={20}
-              color={colors.textSecondary}
+              color={colors.text}
             />
-          </TouchableOpacity>
-        )}
+            <View style={styles.addressTextContainer}>
+              {isDelivery ? (
+                <React.Fragment>
+                  <Text style={styles.addressLabel}>{selectedAddress.label}</Text>
+                  <Text style={styles.addressText} numberOfLines={1}>
+                    {selectedAddress.address}
+                  </Text>
+                </React.Fragment>
+              ) : (
+                <Text style={styles.addressLabel}>
+                  {collectionName || 'Name of person collecting'}
+                </Text>
+              )}
+            </View>
+          </View>
+          <IconSymbol
+            ios_icon_name="chevron.down"
+            android_material_icon_name="keyboard-arrow-down"
+            size={20}
+            color={colors.textSecondary}
+          />
+        </TouchableOpacity>
 
         {/* Popular Dishes - Moved above search */}
         {!searchQuery && !selectedCategory && (
@@ -496,6 +503,9 @@ export default function HomeScreen() {
         selectedAddress={selectedAddress}
         onSelectAddress={setSelectedAddress}
         onAddAddress={handleAddAddress}
+        isDelivery={isDelivery}
+        collectionName={collectionName}
+        onCollectionNameChange={setCollectionName}
       />
     </View>
   );

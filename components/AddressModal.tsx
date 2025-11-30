@@ -28,6 +28,9 @@ interface AddressModalProps {
   selectedAddress: Address | null;
   onSelectAddress: (address: Address) => void;
   onAddAddress: (address: Address) => void;
+  isDelivery: boolean;
+  collectionName?: string;
+  onCollectionNameChange?: (name: string) => void;
 }
 
 export default function AddressModal({
@@ -37,6 +40,9 @@ export default function AddressModal({
   selectedAddress,
   onSelectAddress,
   onAddAddress,
+  isDelivery,
+  collectionName = '',
+  onCollectionNameChange,
 }: AddressModalProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [showFillOptions, setShowFillOptions] = useState(false);
@@ -67,7 +73,6 @@ export default function AddressModal({
       });
 
       if (data.length > 0) {
-        // Find the first contact with an address
         const contactWithAddress = data.find(
           (contact) => contact.addresses && contact.addresses.length > 0
         );
@@ -163,138 +168,92 @@ export default function AddressModal({
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
+      animationType="fade"
       onRequestClose={handleCloseAll}
     >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>
-              {showAddForm ? 'Add New Address' : 'Select Delivery Address'}
-            </Text>
-            <TouchableOpacity onPress={handleCloseAll}>
-              <IconSymbol
-                ios_icon_name="xmark"
-                android_material_icon_name="close"
-                size={24}
-                color={colors.text}
-              />
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView style={styles.modalScroll}>
+      <TouchableOpacity 
+        style={styles.modalOverlay} 
+        activeOpacity={1} 
+        onPress={handleCloseAll}
+      >
+        <TouchableOpacity 
+          activeOpacity={1} 
+          onPress={(e) => e.stopPropagation()}
+          style={styles.modalContentWrapper}
+        >
+          <View style={styles.modalContent}>
             {!showAddForm && !showFillOptions && (
-              <React.Fragment>
-                {addresses.map((address, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={[
-                      styles.addressOption,
-                      selectedAddress?.id === address.id && styles.addressOptionSelected,
-                    ]}
-                    onPress={() => {
-                      onSelectAddress(address);
-                      onClose();
-                    }}
-                  >
-                    <View style={styles.addressOptionContent}>
-                      <IconSymbol
-                        ios_icon_name="location.fill"
-                        android_material_icon_name="location-on"
-                        size={24}
-                        color={colors.text}
-                      />
-                      <View style={styles.addressOptionText}>
-                        <Text style={styles.addressOptionLabel}>{address.label}</Text>
-                        <Text style={styles.addressOptionAddress}>{address.address}</Text>
-                      </View>
-                    </View>
-                    {selectedAddress?.id === address.id && (
-                      <IconSymbol
-                        ios_icon_name="checkmark.circle.fill"
-                        android_material_icon_name="check-circle"
-                        size={24}
-                        color={colors.highlight}
-                      />
-                    )}
-                  </TouchableOpacity>
-                ))}
-                <TouchableOpacity
-                  style={styles.addAddressButton}
-                  onPress={handleAddNewAddress}
-                >
-                  <IconSymbol
-                    ios_icon_name="plus.circle"
-                    android_material_icon_name="add-circle-outline"
-                    size={24}
-                    color={colors.text}
-                  />
-                  <Text style={styles.addAddressText}>Add New Address</Text>
-                </TouchableOpacity>
-              </React.Fragment>
+              <ScrollView 
+                style={styles.modalScroll}
+                showsVerticalScrollIndicator={false}
+              >
+                {isDelivery ? (
+                  <React.Fragment>
+                    {addresses.map((address, index) => (
+                      <TouchableOpacity
+                        key={index}
+                        style={styles.addressOption}
+                        onPress={() => {
+                          onSelectAddress(address);
+                          onClose();
+                        }}
+                      >
+                        <Text style={styles.addressOptionLabel}>
+                          <Text style={styles.addressOptionLabelBold}>{address.label}</Text>
+                          {' '}
+                          {address.address}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                    <TouchableOpacity
+                      style={styles.addressOption}
+                      onPress={handleAddNewAddress}
+                    >
+                      <Text style={styles.addressOptionLabel}>
+                        <Text style={styles.addressOptionLabelBold}>Add New Address</Text>
+                      </Text>
+                    </TouchableOpacity>
+                  </React.Fragment>
+                ) : (
+                  <View style={styles.collectionContainer}>
+                    <Text style={styles.collectionLabel}>Name of person collecting</Text>
+                    <TextInput
+                      style={styles.collectionInput}
+                      placeholder="Enter name"
+                      placeholderTextColor={colors.textSecondary}
+                      value={collectionName}
+                      onChangeText={onCollectionNameChange}
+                      autoFocus
+                    />
+                    <TouchableOpacity
+                      style={styles.collectionButton}
+                      onPress={onClose}
+                    >
+                      <Text style={styles.collectionButtonText}>Done</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </ScrollView>
             )}
 
             {showFillOptions && (
               <View style={styles.fillOptionsContainer}>
                 <Text style={styles.fillOptionsTitle}>Fill Home Address</Text>
-                <Text style={styles.fillOptionsSubtitle}>
-                  Choose how you&apos;d like to add your address
-                </Text>
 
                 <TouchableOpacity
                   style={styles.fillOptionButton}
                   onPress={handleFillFromDevice}
                 >
-                  <View style={styles.fillOptionContent}>
-                    <IconSymbol
-                      ios_icon_name="person.crop.circle.fill"
-                      android_material_icon_name="account-circle"
-                      size={32}
-                      color={colors.primary}
-                    />
-                    <View style={styles.fillOptionText}>
-                      <Text style={styles.fillOptionTitle}>
-                        {Platform.OS === 'ios' ? 'Fill from My Card' : 'Fill from My Profile'}
-                      </Text>
-                      <Text style={styles.fillOptionDescription}>
-                        {Platform.OS === 'ios'
-                          ? 'Use address from your iOS contact card'
-                          : 'Use address from your Android profile'}
-                      </Text>
-                    </View>
-                  </View>
-                  <IconSymbol
-                    ios_icon_name="chevron.right"
-                    android_material_icon_name="chevron-right"
-                    size={20}
-                    color={colors.textSecondary}
-                  />
+                  <Text style={styles.fillOptionTitle}>
+                    {Platform.OS === 'ios' ? 'Fill from My Card' : 'Fill from My Profile'}
+                  </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={styles.fillOptionButton}
                   onPress={handleManualEntry}
                 >
-                  <View style={styles.fillOptionContent}>
-                    <IconSymbol
-                      ios_icon_name="pencil.circle.fill"
-                      android_material_icon_name="edit"
-                      size={32}
-                      color={colors.secondary}
-                    />
-                    <View style={styles.fillOptionText}>
-                      <Text style={styles.fillOptionTitle}>Enter Manually</Text>
-                      <Text style={styles.fillOptionDescription}>
-                        Type in your address details
-                      </Text>
-                    </View>
-                  </View>
-                  <IconSymbol
-                    ios_icon_name="chevron.right"
-                    android_material_icon_name="chevron-right"
-                    size={20}
-                    color={colors.textSecondary}
-                  />
+                  <Text style={styles.fillOptionTitle}>Enter Manually</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -308,6 +267,8 @@ export default function AddressModal({
 
             {showAddForm && (
               <View style={styles.formContainer}>
+                <Text style={styles.formTitle}>Add New Address</Text>
+                
                 <View style={styles.inputGroup}>
                   <Text style={styles.inputLabel}>Label</Text>
                   <TextInput
@@ -374,14 +335,14 @@ export default function AddressModal({
                     style={styles.formButtonPrimary}
                     onPress={handleSaveAddress}
                   >
-                    <Text style={styles.formButtonPrimaryText}>Save Address</Text>
+                    <Text style={styles.formButtonPrimaryText}>Save</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             )}
-          </ScrollView>
-        </View>
-      </View>
+          </View>
+        </TouchableOpacity>
+      </TouchableOpacity>
     </Modal>
   );
 }
@@ -389,123 +350,90 @@ export default function AddressModal({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContentWrapper: {
+    width: '100%',
+    maxWidth: 400,
   },
   modalContent: {
-    backgroundColor: colors.card,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '85%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    maxHeight: 500,
+    boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.15)',
+    elevation: 8,
+    overflow: 'hidden',
   },
   modalScroll: {
-    padding: 16,
+    maxHeight: 500,
   },
   addressOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: '#000000',
-  },
-  addressOptionSelected: {
-    borderColor: '#000000',
-    backgroundColor: colors.highlight,
-  },
-  addressOptionContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    gap: 12,
-  },
-  addressOptionText: {
-    flex: 1,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
   addressOptionLabel: {
+    fontSize: 15,
+    color: '#000000',
+    lineHeight: 22,
+  },
+  addressOptionLabelBold: {
+    fontWeight: '700',
+    color: '#000000',
+  },
+  collectionContainer: {
+    padding: 20,
+  },
+  collectionLabel: {
     fontSize: 16,
     fontWeight: '700',
-    color: colors.text,
-    marginBottom: 4,
+    color: '#000000',
+    marginBottom: 12,
   },
-  addressOptionAddress: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  addAddressButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#E0E0E0',
+  collectionInput: {
+    backgroundColor: '#F5F5F5',
     borderRadius: 12,
-    gap: 12,
+    padding: 14,
+    fontSize: 16,
+    color: '#000000',
+    marginBottom: 16,
   },
-  addAddressText: {
+  collectionButton: {
+    backgroundColor: '#000000',
+    borderRadius: 12,
+    padding: 14,
+    alignItems: 'center',
+  },
+  collectionButtonText: {
     fontSize: 16,
     fontWeight: '700',
-    color: colors.text,
+    color: '#FFFFFF',
   },
   fillOptionsContainer: {
-    paddingVertical: 8,
+    padding: 20,
   },
   fillOptionsTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
-    color: colors.text,
-    marginBottom: 8,
-  },
-  fillOptionsSubtitle: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginBottom: 24,
+    color: '#000000',
+    marginBottom: 16,
+    textAlign: 'center',
   },
   fillOptionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    backgroundColor: colors.card,
+    backgroundColor: '#F5F5F5',
     borderRadius: 12,
+    padding: 16,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
-    elevation: 2,
-  },
-  fillOptionContent: {
-    flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
-    gap: 12,
-  },
-  fillOptionText: {
-    flex: 1,
   },
   fillOptionTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    color: colors.text,
-    marginBottom: 4,
-  },
-  fillOptionDescription: {
-    fontSize: 13,
-    color: colors.textSecondary,
+    color: '#000000',
   },
   cancelButton: {
     padding: 16,
@@ -513,59 +441,62 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   cancelButtonText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    color: colors.textSecondary,
+    color: '#666666',
   },
   formContainer: {
-    paddingVertical: 8,
+    padding: 20,
+  },
+  formTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#000000',
+    marginBottom: 20,
+    textAlign: 'center',
   },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.text,
+    color: '#000000',
     marginBottom: 8,
   },
   input: {
-    backgroundColor: colors.background,
-    borderRadius: 8,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
     padding: 12,
-    fontSize: 16,
-    color: colors.text,
-    borderWidth: 1,
-    borderColor: colors.border,
+    fontSize: 15,
+    color: '#000000',
   },
   formButtons: {
     flexDirection: 'row',
     gap: 12,
-    marginTop: 24,
+    marginTop: 20,
   },
   formButtonSecondary: {
     flex: 1,
     padding: 14,
-    borderRadius: 8,
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderRadius: 12,
+    backgroundColor: '#F5F5F5',
     alignItems: 'center',
   },
   formButtonSecondaryText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    color: colors.text,
+    color: '#000000',
   },
   formButtonPrimary: {
     flex: 1,
     padding: 14,
-    borderRadius: 8,
+    borderRadius: 12,
     backgroundColor: '#000000',
     alignItems: 'center',
   },
   formButtonPrimaryText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: '#FFFFFF',
   },
