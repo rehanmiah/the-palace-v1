@@ -75,11 +75,6 @@ export default function HomeScreen() {
     return cartItem ? cartItem.quantity : 0;
   };
 
-  const getDishSpiceLevel = (dishId: string) => {
-    const cartItem = cart.find((item) => item.dish.id === dishId);
-    return cartItem?.spiceLevel || 0;
-  };
-
   const handleAddToCart = (menuItem: any, spiceLevel?: number) => {
     console.log('Adding to cart from home:', menuItem.name, 'spice level:', spiceLevel);
     // Convert menu item to Dish format for cart
@@ -291,66 +286,14 @@ export default function HomeScreen() {
             >
               {popularDishes.map((dish, index) => {
                 const quantity = getDishQuantity(dish.id);
-                const spiceLevel = getDishSpiceLevel(dish.id);
                 return (
-                  <View key={index} style={styles.dishCard}>
-                    <View style={styles.dishImageContainer}>
-                      <Image source={{ uri: dish.image_id || '' }} style={styles.dishImage} />
-                      {dish.spicy && (
-                        <SpiceButtonInline menuItemId={dish.id} />
-                      )}
-                    </View>
-                    <View style={styles.dishInfo}>
-                      <Text style={styles.dishName} numberOfLines={1}>
-                        {dish.name}
-                      </Text>
-                      <View style={styles.priceRow}>
-                        <Text style={styles.dishPrice}>£{dish.price.toFixed(2)}</Text>
-                        {spiceLevel > 0 && renderChilies(spiceLevel)}
-                      </View>
-                      <View style={styles.dishTags}>
-                        {dish.is_vegetarian && (
-                          <View style={styles.vegTag}>
-                            <Text style={styles.vegTagText}>VEG</Text>
-                          </View>
-                        )}
-                      </View>
-                      {quantity === 0 ? (
-                        <TouchableOpacity
-                          style={styles.addButton}
-                          onPress={() => handleAddToCart(dish)}
-                        >
-                          <Text style={styles.addButtonText}>Add</Text>
-                        </TouchableOpacity>
-                      ) : (
-                        <View style={styles.quantityControl}>
-                          <TouchableOpacity
-                            style={styles.quantityButton}
-                            onPress={() => updateQuantity(dish.id, quantity - 1)}
-                          >
-                            <IconSymbol
-                              ios_icon_name={quantity === 1 ? "trash.fill" : "minus"}
-                              android_material_icon_name={quantity === 1 ? "delete" : "remove"}
-                              size={14}
-                              color="#FFFFFF"
-                            />
-                          </TouchableOpacity>
-                          <Text style={styles.quantityText}>{quantity}</Text>
-                          <TouchableOpacity
-                            style={styles.quantityButton}
-                            onPress={() => handleAddToCart(dish)}
-                          >
-                            <IconSymbol
-                              ios_icon_name="plus"
-                              android_material_icon_name="add"
-                              size={14}
-                              color="#FFFFFF"
-                            />
-                          </TouchableOpacity>
-                        </View>
-                      )}
-                    </View>
-                  </View>
+                  <PopularDishCard
+                    key={index}
+                    dish={dish}
+                    quantity={quantity}
+                    onAdd={handleAddToCart}
+                    onUpdateQuantity={updateQuantity}
+                  />
                 );
               })}
             </ScrollView>
@@ -464,71 +407,14 @@ export default function HomeScreen() {
             </View>
             {filteredItems.map((item, index) => {
               const quantity = getDishQuantity(item.id);
-              const spiceLevel = getDishSpiceLevel(item.id);
               return (
-                <View key={index} style={styles.menuItem}>
-                  <View style={styles.menuInfo}>
-                    <View style={styles.menuHeader}>
-                      <Text style={styles.menuName}>{item.name}</Text>
-                    </View>
-                    <Text style={styles.menuDescription} numberOfLines={2}>
-                      {item.description}
-                    </Text>
-                    <View style={styles.menuFooter}>
-                      <Text style={styles.menuPrice}>
-                        £{item.price.toFixed(2)}
-                      </Text>
-                      {spiceLevel > 0 && renderChilies(spiceLevel)}
-                      <View style={styles.menuTags}>
-                        {item.is_vegetarian && (
-                          <View style={styles.vegTag}>
-                            <Text style={styles.vegTagText}>VEG</Text>
-                          </View>
-                        )}
-                      </View>
-                    </View>
-                  </View>
-                  <View style={styles.menuImageContainer}>
-                    <Image source={{ uri: item.image_id || '' }} style={styles.menuImage} />
-                    {item.spicy && (
-                      <SpiceButtonInline menuItemId={item.id} />
-                    )}
-                    {quantity === 0 ? (
-                      <TouchableOpacity
-                        style={styles.addButtonUber}
-                        onPress={() => handleAddToCart(item)}
-                      >
-                        <Text style={styles.addButtonTextUber}>Add</Text>
-                      </TouchableOpacity>
-                    ) : (
-                      <View style={styles.quantityControlUber}>
-                        <TouchableOpacity
-                          style={styles.quantityButtonUber}
-                          onPress={() => updateQuantity(item.id, quantity - 1)}
-                        >
-                          <IconSymbol
-                            ios_icon_name={quantity === 1 ? "trash.fill" : "minus"}
-                            android_material_icon_name={quantity === 1 ? "delete" : "remove"}
-                            size={16}
-                            color="#FFFFFF"
-                          />
-                        </TouchableOpacity>
-                        <Text style={styles.quantityTextUber}>{quantity}</Text>
-                        <TouchableOpacity
-                          style={styles.quantityButtonUber}
-                          onPress={() => handleAddToCart(item)}
-                        >
-                          <IconSymbol
-                            ios_icon_name="plus"
-                            android_material_icon_name="add"
-                            size={16}
-                            color="#FFFFFF"
-                          />
-                        </TouchableOpacity>
-                      </View>
-                    )}
-                  </View>
-                </View>
+                <MenuItemRow
+                  key={index}
+                  item={item}
+                  quantity={quantity}
+                  onAdd={handleAddToCart}
+                  onUpdateQuantity={updateQuantity}
+                />
               );
             })}
           </View>
@@ -547,6 +433,169 @@ export default function HomeScreen() {
         collectionName={collectionName}
         onCollectionNameChange={setCollectionName}
       />
+    </View>
+  );
+}
+
+// Popular Dish Card Component
+function PopularDishCard({ dish, quantity, onAdd, onUpdateQuantity }: any) {
+  const { spiceLevel } = useSpiceLevel(dish.id);
+
+  const handleAddToCart = () => {
+    onAdd(dish, dish.spicy ? spiceLevel : undefined);
+  };
+
+  const renderChilies = (count: number) => {
+    if (count === 0) return null;
+    return (
+      <Text style={styles.spiceLevelEmojis}>
+        {'🌶️'.repeat(count)}
+      </Text>
+    );
+  };
+
+  return (
+    <View style={styles.dishCard}>
+      <View style={styles.dishImageContainer}>
+        <Image source={{ uri: dish.image_id || '' }} style={styles.dishImage} />
+        {dish.spicy && (
+          <SpiceButtonInline menuItemId={dish.id} />
+        )}
+      </View>
+      <View style={styles.dishInfo}>
+        <Text style={styles.dishName} numberOfLines={1}>
+          {dish.name}
+        </Text>
+        <View style={styles.priceRow}>
+          <Text style={styles.dishPrice}>£{dish.price.toFixed(2)}</Text>
+          {spiceLevel > 0 && renderChilies(spiceLevel)}
+        </View>
+        <View style={styles.dishTags}>
+          {dish.is_vegetarian && (
+            <View style={styles.vegTag}>
+              <Text style={styles.vegTagText}>VEG</Text>
+            </View>
+          )}
+        </View>
+        {quantity === 0 ? (
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={handleAddToCart}
+          >
+            <Text style={styles.addButtonText}>Add</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.quantityControl}>
+            <TouchableOpacity
+              style={styles.quantityButton}
+              onPress={() => onUpdateQuantity(dish.id, quantity - 1)}
+            >
+              <IconSymbol
+                ios_icon_name={quantity === 1 ? "trash.fill" : "minus"}
+                android_material_icon_name={quantity === 1 ? "delete" : "remove"}
+                size={14}
+                color="#FFFFFF"
+              />
+            </TouchableOpacity>
+            <Text style={styles.quantityText}>{quantity}</Text>
+            <TouchableOpacity
+              style={styles.quantityButton}
+              onPress={handleAddToCart}
+            >
+              <IconSymbol
+                ios_icon_name="plus"
+                android_material_icon_name="add"
+                size={14}
+                color="#FFFFFF"
+              />
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    </View>
+  );
+}
+
+// Menu Item Row Component
+function MenuItemRow({ item, quantity, onAdd, onUpdateQuantity }: any) {
+  const { spiceLevel } = useSpiceLevel(item.id);
+
+  const handleAddToCart = () => {
+    onAdd(item, item.spicy ? spiceLevel : undefined);
+  };
+
+  const renderChilies = (count: number) => {
+    if (count === 0) return null;
+    return (
+      <Text style={styles.spiceLevelEmojis}>
+        {'🌶️'.repeat(count)}
+      </Text>
+    );
+  };
+
+  return (
+    <View style={styles.menuItem}>
+      <View style={styles.menuInfo}>
+        <View style={styles.menuHeader}>
+          <Text style={styles.menuName}>{item.name}</Text>
+        </View>
+        <Text style={styles.menuDescription} numberOfLines={2}>
+          {item.description}
+        </Text>
+        <View style={styles.menuFooter}>
+          <Text style={styles.menuPrice}>
+            £{item.price.toFixed(2)}
+          </Text>
+          {spiceLevel > 0 && renderChilies(spiceLevel)}
+          <View style={styles.menuTags}>
+            {item.is_vegetarian && (
+              <View style={styles.vegTag}>
+                <Text style={styles.vegTagText}>VEG</Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </View>
+      <View style={styles.menuImageContainer}>
+        <Image source={{ uri: item.image_id || '' }} style={styles.menuImage} />
+        {item.spicy && (
+          <SpiceButtonInline menuItemId={item.id} />
+        )}
+        {quantity === 0 ? (
+          <TouchableOpacity
+            style={styles.addButtonUber}
+            onPress={handleAddToCart}
+          >
+            <Text style={styles.addButtonTextUber}>Add</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.quantityControlUber}>
+            <TouchableOpacity
+              style={styles.quantityButtonUber}
+              onPress={() => onUpdateQuantity(item.id, quantity - 1)}
+            >
+              <IconSymbol
+                ios_icon_name={quantity === 1 ? "trash.fill" : "minus"}
+                android_material_icon_name={quantity === 1 ? "delete" : "remove"}
+                size={16}
+                color="#FFFFFF"
+              />
+            </TouchableOpacity>
+            <Text style={styles.quantityTextUber}>{quantity}</Text>
+            <TouchableOpacity
+              style={styles.quantityButtonUber}
+              onPress={handleAddToCart}
+            >
+              <IconSymbol
+                ios_icon_name="plus"
+                android_material_icon_name="add"
+                size={16}
+                color="#FFFFFF"
+              />
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
     </View>
   );
 }
@@ -579,10 +628,6 @@ function SpiceButtonInline({ menuItemId }: { menuItemId: string }) {
   const handleDelete = (e: any) => {
     e.stopPropagation();
     updateSpiceLevel(0);
-    setShowControls(false);
-  };
-
-  const handleOutsidePress = () => {
     setShowControls(false);
   };
 

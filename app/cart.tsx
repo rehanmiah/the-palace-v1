@@ -337,33 +337,63 @@ export default function CartScreen() {
           )}
         </View>
 
-        {/* Order Summary - Receipt View */}
-        <View style={styles.receiptCard}>
-          <Text style={styles.receiptTitle}>Order Summary</Text>
-          <View style={styles.receiptDivider} />
-          
-          {/* List all items */}
+        {/* Cart Items with Images */}
+        <View style={styles.cartItemsCard}>
+          <Text style={styles.cartItemsTitle}>Your Order</Text>
           {cart.map((item, index) => (
-            <React.Fragment key={index}>
-              <View style={styles.receiptItem}>
-                <View style={styles.receiptItemLeft}>
-                  <Text style={styles.receiptItemQty}>{item.quantity}x</Text>
-                  <View style={styles.receiptItemDetails}>
-                    <Text style={styles.receiptItemName}>{item.dish.name}</Text>
-                    {item.spiceLevel && item.spiceLevel > 0 && (
-                      <View style={styles.spiceLevelIndicator}>
-                        {renderChillies(item.spiceLevel)}
-                      </View>
-                    )}
+            <View key={index} style={styles.cartItem}>
+              <Image 
+                source={{ uri: item.dish.image || '' }} 
+                style={styles.cartItemImage}
+              />
+              <View style={styles.cartItemInfo}>
+                <Text style={styles.cartItemName}>{item.dish.name}</Text>
+                {item.spiceLevel && item.spiceLevel > 0 && (
+                  <View style={styles.spiceLevelIndicator}>
+                    {renderChillies(item.spiceLevel)}
                   </View>
+                )}
+                <Text style={styles.cartItemPrice}>
+                  £{item.dish.price.toFixed(2)}
+                </Text>
+              </View>
+              <View style={styles.cartItemControls}>
+                <View style={styles.quantityControlCart}>
+                  <TouchableOpacity
+                    style={styles.quantityButtonCart}
+                    onPress={() => updateQuantity(item.dish.id, item.quantity - 1)}
+                  >
+                    <IconSymbol
+                      ios_icon_name={item.quantity === 1 ? "trash.fill" : "minus"}
+                      android_material_icon_name={item.quantity === 1 ? "delete" : "remove"}
+                      size={16}
+                      color="#FFFFFF"
+                    />
+                  </TouchableOpacity>
+                  <Text style={styles.quantityTextCart}>{item.quantity}</Text>
+                  <TouchableOpacity
+                    style={styles.quantityButtonCart}
+                    onPress={() => updateQuantity(item.dish.id, item.quantity + 1)}
+                  >
+                    <IconSymbol
+                      ios_icon_name="plus"
+                      android_material_icon_name="add"
+                      size={16}
+                      color="#FFFFFF"
+                    />
+                  </TouchableOpacity>
                 </View>
-                <Text style={styles.receiptItemPrice}>
+                <Text style={styles.cartItemTotal}>
                   £{(item.dish.price * item.quantity).toFixed(2)}
                 </Text>
               </View>
-            </React.Fragment>
+            </View>
           ))}
+        </View>
 
+        {/* Order Summary - Receipt View */}
+        <View style={styles.receiptCard}>
+          <Text style={styles.receiptTitle}>Order Summary</Text>
           <View style={styles.receiptDivider} />
 
           {/* Subtotal */}
@@ -723,6 +753,92 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontWeight: '500',
   },
+  cartItemsCard: {
+    backgroundColor: colors.card,
+    padding: 16,
+    marginHorizontal: 16,
+    marginTop: 12,
+    borderRadius: 12,
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
+    elevation: 2,
+  },
+  cartItemsTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 16,
+  },
+  cartItem: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  cartItemImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    backgroundColor: colors.border,
+  },
+  cartItemInfo: {
+    flex: 1,
+    marginLeft: 12,
+    justifyContent: 'center',
+  },
+  cartItemName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  spiceLevelIndicator: {
+    flexDirection: 'row',
+    marginVertical: 4,
+    gap: 2,
+  },
+  chilliEmoji: {
+    fontSize: 14,
+  },
+  cartItemPrice: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginTop: 4,
+  },
+  cartItemControls: {
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+  },
+  quantityControlCart: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+  },
+  quantityButtonCart: {
+    width: 28,
+    height: 28,
+    backgroundColor: '#000000',
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  quantityTextCart: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.text,
+    paddingHorizontal: 10,
+  },
+  cartItemTotal: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+    marginTop: 8,
+  },
   receiptCard: {
     backgroundColor: colors.card,
     padding: 20,
@@ -748,43 +864,6 @@ const styles = StyleSheet.create({
     height: 2,
     backgroundColor: colors.text,
     marginVertical: 12,
-  },
-  receiptItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 10,
-  },
-  receiptItemLeft: {
-    flexDirection: 'row',
-    flex: 1,
-    gap: 8,
-  },
-  receiptItemQty: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-    minWidth: 30,
-  },
-  receiptItemDetails: {
-    flex: 1,
-  },
-  receiptItemName: {
-    fontSize: 14,
-    color: colors.text,
-  },
-  spiceLevelIndicator: {
-    flexDirection: 'row',
-    marginTop: 2,
-    gap: 2,
-  },
-  chilliEmoji: {
-    fontSize: 12,
-  },
-  receiptItemPrice: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
   },
   receiptRow: {
     flexDirection: 'row',
