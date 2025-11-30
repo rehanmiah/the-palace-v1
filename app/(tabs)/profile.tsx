@@ -6,51 +6,100 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function ProfileScreen() {
+  const router = useRouter();
+  const { user, isAuthenticated, logout } = useAuth();
+
+  const handleLogout = async () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await logout();
+              Alert.alert('Success', 'Logged out successfully');
+            } catch (error) {
+              Alert.alert('Error', 'Failed to logout');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const menuItems = [
     {
       icon: 'person',
+      iosIcon: 'person.fill',
       title: 'Account Settings',
       subtitle: 'Manage your account details',
+      onPress: () => {
+        if (!isAuthenticated) {
+          router.push('/login');
+        } else {
+          router.push('/account-settings');
+        }
+      },
     },
     {
       icon: 'location-on',
+      iosIcon: 'location.fill',
       title: 'Delivery Addresses',
       subtitle: 'Manage your saved addresses',
+      onPress: () => {
+        if (!isAuthenticated) {
+          router.push('/login');
+        } else {
+          Alert.alert('Coming Soon', 'Address management will be available soon');
+        }
+      },
     },
     {
       icon: 'payment',
+      iosIcon: 'creditcard.fill',
       title: 'Payment Methods',
       subtitle: 'Manage your payment options',
+      onPress: () => {
+        if (!isAuthenticated) {
+          router.push('/login');
+        } else {
+          router.push('/payment-methods');
+        }
+      },
     },
     {
       icon: 'history',
+      iosIcon: 'clock.fill',
       title: 'Order History',
       subtitle: 'View your past orders',
-    },
-    {
-      icon: 'favorite',
-      title: 'Favorites',
-      subtitle: 'Your favorite restaurants and dishes',
-    },
-    {
-      icon: 'notifications',
-      title: 'Notifications',
-      subtitle: 'Manage notification preferences',
-    },
-    {
-      icon: 'help',
-      title: 'Help & Support',
-      subtitle: 'Get help with your orders',
+      onPress: () => {
+        if (!isAuthenticated) {
+          router.push('/login');
+        } else {
+          router.push('/order-history');
+        }
+      },
     },
     {
       icon: 'info',
+      iosIcon: 'info.circle.fill',
       title: 'About',
       subtitle: 'App version and information',
+      onPress: () => {
+        Alert.alert('About', 'The Palace - Indian Takeaway\nVersion 1.0.0');
+      },
     },
   ];
 
@@ -71,18 +120,45 @@ export default function ProfileScreen() {
               color={colors.primary}
             />
           </View>
-          <Text style={styles.userName}>Guest User</Text>
-          <Text style={styles.userEmail}>guest@example.com</Text>
+          {isAuthenticated && user ? (
+            <>
+              <Text style={styles.userName}>{user.name}</Text>
+              <Text style={styles.userEmail}>{user.email}</Text>
+              {(!user.emailVerified || !user.phoneVerified) && (
+                <View style={styles.verificationWarning}>
+                  <IconSymbol
+                    ios_icon_name="exclamationmark.triangle.fill"
+                    android_material_icon_name="warning"
+                    size={16}
+                    color={colors.error}
+                  />
+                  <Text style={styles.verificationText}>
+                    Please verify your {!user.emailVerified ? 'email' : ''}{!user.emailVerified && !user.phoneVerified ? ' and ' : ''}{!user.phoneVerified ? 'phone' : ''}
+                  </Text>
+                </View>
+              )}
+            </>
+          ) : (
+            <>
+              <Text style={styles.userName}>Guest User</Text>
+              <TouchableOpacity
+                style={styles.loginButton}
+                onPress={() => router.push('/login')}
+              >
+                <Text style={styles.loginButtonText}>Sign In</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
 
         {/* Menu Items */}
         <View style={styles.menuSection}>
           {menuItems.map((item, index) => (
             <React.Fragment key={index}>
-              <TouchableOpacity style={styles.menuItem}>
+              <TouchableOpacity style={styles.menuItem} onPress={item.onPress}>
                 <View style={styles.menuIconContainer}>
                   <IconSymbol
-                    ios_icon_name={item.icon}
+                    ios_icon_name={item.iosIcon}
                     android_material_icon_name={item.icon}
                     size={24}
                     color={colors.primary}
@@ -104,15 +180,17 @@ export default function ProfileScreen() {
         </View>
 
         {/* Logout Button */}
-        <TouchableOpacity style={styles.logoutButton}>
-          <IconSymbol
-            ios_icon_name="arrow.right.square"
-            android_material_icon_name="logout"
-            size={20}
-            color={colors.error}
-          />
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
+        {isAuthenticated && (
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <IconSymbol
+              ios_icon_name="arrow.right.square"
+              android_material_icon_name="logout"
+              size={20}
+              color={colors.error}
+            />
+            <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </View>
   );
@@ -147,6 +225,35 @@ const styles = StyleSheet.create({
   userEmail: {
     fontSize: 16,
     color: colors.textSecondary,
+  },
+  verificationWarning: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: colors.error + '20',
+    borderRadius: 8,
+  },
+  verificationText: {
+    fontSize: 14,
+    color: colors.error,
+    fontWeight: '600',
+  },
+  loginButton: {
+    marginTop: 16,
+    backgroundColor: colors.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    boxShadow: '0px 4px 8px rgba(255, 127, 80, 0.3)',
+    elevation: 4,
+  },
+  loginButtonText: {
+    color: colors.card,
+    fontSize: 16,
+    fontWeight: '600',
   },
   menuSection: {
     paddingHorizontal: 16,
