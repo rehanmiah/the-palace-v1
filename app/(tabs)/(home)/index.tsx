@@ -297,10 +297,7 @@ export default function HomeScreen() {
                     <View style={styles.dishImageContainer}>
                       <Image source={{ uri: dish.image_id || '' }} style={styles.dishImage} />
                       {dish.spicy && (
-                        <SpiceButtonInline
-                          menuItemId={dish.id}
-                          onAddWithSpice={(level) => handleAddToCart(dish, level)}
-                        />
+                        <SpiceButtonInline menuItemId={dish.id} />
                       )}
                     </View>
                     <View style={styles.dishInfo}>
@@ -494,10 +491,7 @@ export default function HomeScreen() {
                   <View style={styles.menuImageContainer}>
                     <Image source={{ uri: item.image_id || '' }} style={styles.menuImage} />
                     {item.spicy && (
-                      <SpiceButtonInline
-                        menuItemId={item.id}
-                        onAddWithSpice={(level) => handleAddToCart(item, level)}
-                      />
+                      <SpiceButtonInline menuItemId={item.id} />
                     )}
                     {quantity === 0 ? (
                       <TouchableOpacity
@@ -557,26 +551,97 @@ export default function HomeScreen() {
   );
 }
 
-// Inline Spice Button Component
-function SpiceButtonInline({ 
-  menuItemId, 
-  onAddWithSpice 
-}: { 
-  menuItemId: string; 
-  onAddWithSpice: (level: number) => void;
-}) {
-  const { spiceLevel, incrementSpiceLevel } = useSpiceLevel(menuItemId);
+// Inline Spice Button Component - Now only controls spice level, doesn't add to cart
+function SpiceButtonInline({ menuItemId }: { menuItemId: string }) {
+  const { spiceLevel, incrementSpiceLevel, decrementSpiceLevel, updateSpiceLevel } = useSpiceLevel(menuItemId);
+  const [showControls, setShowControls] = useState(false);
 
-  const handleClick = () => {
-    const newLevel = Math.min(3, spiceLevel + 1);
-    incrementSpiceLevel();
-    onAddWithSpice(newLevel);
+  const handlePress = () => {
+    if (spiceLevel === 0) {
+      // First click sets to level 1
+      incrementSpiceLevel();
+    } else {
+      // Subsequent clicks show controls
+      setShowControls(true);
+    }
   };
 
+  const handleIncrement = (e: any) => {
+    e.stopPropagation();
+    incrementSpiceLevel();
+  };
+
+  const handleDecrement = (e: any) => {
+    e.stopPropagation();
+    decrementSpiceLevel();
+  };
+
+  const handleDelete = (e: any) => {
+    e.stopPropagation();
+    updateSpiceLevel(0);
+    setShowControls(false);
+  };
+
+  const handleOutsidePress = () => {
+    setShowControls(false);
+  };
+
+  // Show controls if spice level > 0 and controls are visible
+  if (spiceLevel > 0 && showControls) {
+    return (
+      <View style={styles.spiceControlsContainer}>
+        <TouchableOpacity
+          style={styles.spiceControlButton}
+          onPress={handleDelete}
+          activeOpacity={0.8}
+        >
+          <IconSymbol
+            ios_icon_name="trash.fill"
+            android_material_icon_name="delete"
+            size={16}
+            color="#FFFFFF"
+          />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.spiceControlButton}
+          onPress={handleDecrement}
+          activeOpacity={0.8}
+        >
+          <IconSymbol
+            ios_icon_name="minus"
+            android_material_icon_name="remove"
+            size={16}
+            color="#FFFFFF"
+          />
+        </TouchableOpacity>
+        <View style={styles.spiceLevelDisplay}>
+          <Text style={styles.spiceLevelText}>{spiceLevel}</Text>
+        </View>
+        <TouchableOpacity
+          style={[
+            styles.spiceControlButton,
+            spiceLevel >= 3 && styles.spiceControlButtonDisabled,
+          ]}
+          onPress={handleIncrement}
+          disabled={spiceLevel >= 3}
+          activeOpacity={0.8}
+        >
+          <IconSymbol
+            ios_icon_name="plus"
+            android_material_icon_name="add"
+            size={16}
+            color={spiceLevel >= 3 ? colors.textSecondary : "#FFFFFF"}
+          />
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // Default button view
   return (
     <TouchableOpacity
       style={styles.spiceButtonInline}
-      onPress={handleClick}
+      onPress={handlePress}
       activeOpacity={0.8}
     >
       <Text style={styles.chilliEmoji}>🌶️</Text>
@@ -1086,5 +1151,40 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '700',
+  },
+  spiceControlsContainer: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+    borderRadius: 24,
+    padding: 4,
+    gap: 4,
+    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.25)',
+    elevation: 6,
+    zIndex: 10,
+  },
+  spiceControlButton: {
+    width: 32,
+    height: 32,
+    backgroundColor: '#000000',
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  spiceControlButtonDisabled: {
+    backgroundColor: colors.border,
+  },
+  spiceLevelDisplay: {
+    paddingHorizontal: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  spiceLevelText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
   },
 });
