@@ -46,6 +46,7 @@ export default function AddressModal({
 }: AddressModalProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [showFillOptions, setShowFillOptions] = useState(false);
+  const [editingAddress, setEditingAddress] = useState<Address | null>(null);
   const [newAddress, setNewAddress] = useState({
     label: '',
     street: '',
@@ -143,15 +144,40 @@ export default function AddressModal({
 
     const fullAddress = `${newAddress.street}, ${newAddress.city}, ${newAddress.postcode}`;
     const address: Address = {
-      id: Date.now().toString(),
+      id: editingAddress ? editingAddress.id : Date.now().toString(),
       label: newAddress.label,
       address: fullAddress,
     };
 
-    onAddAddress(address);
+    if (editingAddress) {
+      // Update existing address
+      console.log('Updating address:', address);
+      // Note: You'll need to implement the update logic in the parent component
+    } else {
+      onAddAddress(address);
+    }
+    
     setShowAddForm(false);
+    setEditingAddress(null);
     setNewAddress({ label: '', street: '', city: '', postcode: '' });
     onClose();
+  };
+
+  const handleEditAddress = (address: Address) => {
+    console.log('Editing address:', address);
+    const parts = address.address.split(',').map(part => part.trim());
+    const postcode = parts[parts.length - 1] || '';
+    const city = parts[parts.length - 2] || '';
+    const street = parts.slice(0, -2).join(', ') || '';
+
+    setEditingAddress(address);
+    setNewAddress({
+      label: address.label,
+      street: street,
+      city: city,
+      postcode: postcode,
+    });
+    setShowAddForm(true);
   };
 
   const handleAddNewAddress = () => {
@@ -161,6 +187,7 @@ export default function AddressModal({
   const handleCloseAll = () => {
     setShowAddForm(false);
     setShowFillOptions(false);
+    setEditingAddress(null);
     onClose();
   };
 
@@ -196,23 +223,34 @@ export default function AddressModal({
                 {isDelivery ? (
                   <React.Fragment>
                     {addresses.map((address, index) => (
-                      <TouchableOpacity
-                        key={index}
-                        style={styles.addressOption}
-                        onPress={() => {
-                          onSelectAddress(address);
-                          onClose();
-                        }}
-                      >
-                        <Text style={styles.addressOptionLabel}>
-                          <Text style={styles.addressOptionLabelBold}>{address.label}</Text>
-                          {' - '}
-                          {getPostcode(address.address)}
-                        </Text>
-                      </TouchableOpacity>
+                      <View key={index} style={styles.addressOptionContainer}>
+                        <TouchableOpacity
+                          style={styles.addressOption}
+                          onPress={() => {
+                            onSelectAddress(address);
+                            onClose();
+                          }}
+                        >
+                          <Text style={styles.addressOptionLabel}>
+                            <Text style={styles.addressOptionLabelBold}>{address.label}</Text>
+                            <Text style={styles.addressOptionPostcode}> - {getPostcode(address.address)}</Text>
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.editButton}
+                          onPress={() => handleEditAddress(address)}
+                        >
+                          <IconSymbol
+                            ios_icon_name="pencil"
+                            android_material_icon_name="edit"
+                            size={18}
+                            color={colors.textSecondary}
+                          />
+                        </TouchableOpacity>
+                      </View>
                     ))}
                     <TouchableOpacity
-                      style={styles.addressOption}
+                      style={styles.addressOptionSingle}
                       onPress={handleAddNewAddress}
                     >
                       <Text style={styles.addressOptionLabel}>
@@ -273,7 +311,9 @@ export default function AddressModal({
 
             {showAddForm && (
               <View style={styles.formContainer}>
-                <Text style={styles.formTitle}>Add New Address</Text>
+                <Text style={styles.formTitle}>
+                  {editingAddress ? 'Edit Address' : 'Add New Address'}
+                </Text>
                 
                 <View style={styles.inputGroup}>
                   <Text style={styles.inputLabel}>Label</Text>
@@ -332,6 +372,7 @@ export default function AddressModal({
                     style={styles.formButtonSecondary}
                     onPress={() => {
                       setShowAddForm(false);
+                      setEditingAddress(null);
                       setNewAddress({ label: '', street: '', city: '', postcode: '' });
                     }}
                   >
@@ -368,15 +409,26 @@ const styles = StyleSheet.create({
   modalContent: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    maxHeight: 300,
+    maxHeight: 200,
     boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.15)',
     elevation: 8,
     overflow: 'hidden',
   },
   modalScroll: {
-    maxHeight: 300,
+    maxHeight: 200,
+  },
+  addressOptionContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
   addressOption: {
+    flex: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  addressOptionSingle: {
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
@@ -390,6 +442,15 @@ const styles = StyleSheet.create({
   addressOptionLabelBold: {
     fontWeight: '700',
     color: '#000000',
+  },
+  addressOptionPostcode: {
+    fontWeight: '400',
+    color: '#000000',
+  },
+  editButton: {
+    padding: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   collectionContainer: {
     padding: 16,
