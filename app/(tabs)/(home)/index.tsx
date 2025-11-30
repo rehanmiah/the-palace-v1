@@ -109,6 +109,12 @@ export default function HomeScreen() {
 
   const cartItemCount = getCartItemCount();
 
+  // Extract postcode from address
+  const getPostcode = (address: string) => {
+    const parts = address.split(',').map(part => part.trim());
+    return parts[parts.length - 1] || '';
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -224,15 +230,12 @@ export default function HomeScreen() {
             />
             <View style={styles.addressTextContainer}>
               {isDelivery ? (
-                <React.Fragment>
-                  <Text style={styles.addressLabel}>{selectedAddress.label}</Text>
-                  <Text style={styles.addressText} numberOfLines={1}>
-                    {selectedAddress.address}
-                  </Text>
-                </React.Fragment>
+                <Text style={styles.addressLabel}>
+                  {selectedAddress.label} - {getPostcode(selectedAddress.address)}
+                </Text>
               ) : (
                 <Text style={styles.addressLabel}>
-                  {collectionName || 'Name of person collecting'}
+                  {collectionName || 'Person collecting'}
                 </Text>
               )}
             </View>
@@ -673,11 +676,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: colors.text,
-    marginBottom: 2,
-  },
-  addressText: {
-    fontSize: 13,
-    color: colors.textSecondary,
   },
   searchContainer: {
     flexDirection: 'row',

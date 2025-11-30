@@ -164,6 +164,12 @@ export default function AddressModal({
     onClose();
   };
 
+  // Extract postcode from address
+  const getPostcode = (address: string) => {
+    const parts = address.split(',').map(part => part.trim());
+    return parts[parts.length - 1] || '';
+  };
+
   return (
     <Modal
       visible={visible}
@@ -200,8 +206,8 @@ export default function AddressModal({
                       >
                         <Text style={styles.addressOptionLabel}>
                           <Text style={styles.addressOptionLabelBold}>{address.label}</Text>
-                          {' '}
-                          {address.address}
+                          {' - '}
+                          {getPostcode(address.address)}
                         </Text>
                       </TouchableOpacity>
                     ))}
@@ -216,7 +222,7 @@ export default function AddressModal({
                   </React.Fragment>
                 ) : (
                   <View style={styles.collectionContainer}>
-                    <Text style={styles.collectionLabel}>Name of person collecting</Text>
+                    <Text style={styles.collectionLabel}>Person collecting</Text>
                     <TextInput
                       style={styles.collectionInput}
                       placeholder="Enter name"
@@ -356,60 +362,60 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalContentWrapper: {
-    width: '100%',
-    maxWidth: 400,
+    width: '90%',
+    maxWidth: 350,
   },
   modalContent: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    maxHeight: 500,
+    borderRadius: 16,
+    maxHeight: 300,
     boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.15)',
     elevation: 8,
     overflow: 'hidden',
   },
   modalScroll: {
-    maxHeight: 500,
+    maxHeight: 300,
   },
   addressOption: {
-    paddingVertical: 16,
-    paddingHorizontal: 20,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
   },
   addressOptionLabel: {
     fontSize: 15,
     color: '#000000',
-    lineHeight: 22,
+    lineHeight: 20,
   },
   addressOptionLabelBold: {
     fontWeight: '700',
     color: '#000000',
   },
   collectionContainer: {
-    padding: 20,
+    padding: 16,
   },
   collectionLabel: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
     color: '#000000',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   collectionInput: {
     backgroundColor: '#F5F5F5',
-    borderRadius: 12,
-    padding: 14,
-    fontSize: 16,
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 15,
     color: '#000000',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   collectionButton: {
     backgroundColor: '#000000',
-    borderRadius: 12,
-    padding: 14,
+    borderRadius: 10,
+    padding: 12,
     alignItems: 'center',
   },
   collectionButtonText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
     color: '#FFFFFF',
   },

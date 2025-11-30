@@ -29,6 +29,7 @@ export default function MenuScreen() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isDelivery, setIsDelivery] = useState(true);
   const [showAddressModal, setShowAddressModal] = useState(false);
+  const [collectionName, setCollectionName] = useState('');
   const [selectedAddress, setSelectedAddress] = useState<Address>({
     id: '1',
     label: 'Home',
@@ -77,6 +78,12 @@ export default function MenuScreen() {
   const handleAddAddress = (address: Address) => {
     setAddresses([...addresses, address]);
     setSelectedAddress(address);
+  };
+
+  // Extract postcode from address
+  const getPostcode = (address: string) => {
+    const parts = address.split(',').map(part => part.trim());
+    return parts[parts.length - 1] || '';
   };
 
   return (
@@ -156,34 +163,37 @@ export default function MenuScreen() {
           </View>
         </View>
 
-        {/* Address Dropdown (only show for delivery) */}
-        {isDelivery && (
-          <TouchableOpacity
-            style={styles.addressDropdown}
-            onPress={() => setShowAddressModal(true)}
-          >
-            <View style={styles.addressContent}>
-              <IconSymbol
-                ios_icon_name="location.fill"
-                android_material_icon_name="location-on"
-                size={20}
-                color={colors.text}
-              />
-              <View style={styles.addressTextContainer}>
-                <Text style={styles.addressLabel}>{selectedAddress.label}</Text>
-                <Text style={styles.addressText} numberOfLines={1}>
-                  {selectedAddress.address}
-                </Text>
-              </View>
-            </View>
+        {/* Address/Collection Dropdown */}
+        <TouchableOpacity
+          style={styles.addressDropdown}
+          onPress={() => setShowAddressModal(true)}
+        >
+          <View style={styles.addressContent}>
             <IconSymbol
-              ios_icon_name="chevron.down"
-              android_material_icon_name="keyboard-arrow-down"
+              ios_icon_name={isDelivery ? "location.fill" : "person.fill"}
+              android_material_icon_name={isDelivery ? "location-on" : "person"}
               size={20}
-              color={colors.textSecondary}
+              color={colors.text}
             />
-          </TouchableOpacity>
-        )}
+            <View style={styles.addressTextContainer}>
+              {isDelivery ? (
+                <Text style={styles.addressLabel}>
+                  {selectedAddress.label} - {getPostcode(selectedAddress.address)}
+                </Text>
+              ) : (
+                <Text style={styles.addressLabel}>
+                  {collectionName || 'Person collecting'}
+                </Text>
+              )}
+            </View>
+          </View>
+          <IconSymbol
+            ios_icon_name="chevron.down"
+            android_material_icon_name="keyboard-arrow-down"
+            size={20}
+            color={colors.textSecondary}
+          />
+        </TouchableOpacity>
 
         {/* Restaurant Info */}
         <View style={styles.restaurantSection}>
@@ -372,6 +382,9 @@ export default function MenuScreen() {
         selectedAddress={selectedAddress}
         onSelectAddress={setSelectedAddress}
         onAddAddress={handleAddAddress}
+        isDelivery={isDelivery}
+        collectionName={collectionName}
+        onCollectionNameChange={setCollectionName}
       />
     </View>
   );
@@ -495,11 +508,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: colors.text,
-    marginBottom: 2,
-  },
-  addressText: {
-    fontSize: 13,
-    color: colors.textSecondary,
   },
   restaurantSection: {
     backgroundColor: colors.card,
