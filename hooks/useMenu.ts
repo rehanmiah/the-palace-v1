@@ -4,34 +4,49 @@ import { supabase } from '@/app/integrations/supabase/client';
 import type { Tables } from '@/app/integrations/supabase/types';
 
 export type MenuItem = Tables<'menu'>;
+export type MenuCategory = Tables<'menu_categories'>;
 
 export function useMenu() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    fetchMenu();
+    fetchMenuData();
   }, []);
 
-  const fetchMenu = async () => {
+  const fetchMenuData = async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-      const { data, error: fetchError } = await supabase
+      // Fetch menu items
+      const { data: menuData, error: menuError } = await supabase
         .from('menu')
         .select('*')
         .order('category', { ascending: true })
         .order('name', { ascending: true });
 
-      if (fetchError) {
-        throw fetchError;
+      if (menuError) {
+        throw menuError;
       }
 
-      setMenuItems(data || []);
+      // Fetch categories
+      const { data: categoriesData, error: categoriesError } = await supabase
+        .from('menu_categories')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+
+      if (categoriesError) {
+        throw categoriesError;
+      }
+
+      setMenuItems(menuData || []);
+      setCategories(categoriesData || []);
     } catch (err) {
-      console.error('Error fetching menu:', err);
+      console.error('Error fetching menu data:', err);
       setError(err as Error);
     } finally {
       setIsLoading(false);
@@ -46,18 +61,18 @@ export function useMenu() {
     return menuItems.filter(item => item.category === category);
   };
 
-  const getCategories = () => {
-    const categories = new Set(menuItems.map(item => item.category).filter(Boolean));
-    return Array.from(categories) as string[];
+  const getCategoryNames = () => {
+    return categories.map(cat => cat.name);
   };
 
   return {
     menuItems,
+    categories,
     isLoading,
     error,
-    refetch: fetchMenu,
+    refetch: fetchMenuData,
     getPopularItems,
     getItemsByCategory,
-    getCategories,
+    getCategoryNames,
   };
 }

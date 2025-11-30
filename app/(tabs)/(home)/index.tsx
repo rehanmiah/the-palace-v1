@@ -30,7 +30,7 @@ interface Address {
 export default function HomeScreen() {
   const router = useRouter();
   const { addToCart, updateQuantity, cart, getCartItemCount } = useCart();
-  const { menuItems, isLoading, getPopularItems, getCategories } = useMenu();
+  const { menuItems, categories, isLoading, getPopularItems } = useMenu();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isDelivery, setIsDelivery] = useState(true);
@@ -53,9 +53,6 @@ export default function HomeScreen() {
 
   // Get popular dishes from database
   const popularDishes = getPopularItems();
-
-  // Get categories from database
-  const categories = getCategories();
 
   // Filter items based on search and category
   const filteredItems = menuItems.filter((item) => {
@@ -355,7 +352,7 @@ export default function HomeScreen() {
           />
         </View>
 
-        {/* Category Filter - Menu Subheadings */}
+        {/* Category Filter - Menu Subheadings from Database */}
         <View style={styles.categorySection}>
           <ScrollView
             horizontal
@@ -391,18 +388,18 @@ export default function HomeScreen() {
                 key={index}
                 style={[
                   styles.categoryChip,
-                  selectedCategory === category && styles.categoryChipActive,
+                  selectedCategory === category.name && styles.categoryChipActive,
                 ]}
-                onPress={() => handleCategorySelect(category)}
+                onPress={() => handleCategorySelect(category.name)}
               >
                 <Text
                   style={[
                     styles.categoryChipText,
-                    selectedCategory === category &&
+                    selectedCategory === category.name &&
                       styles.categoryChipTextActive,
                   ]}
                 >
-                  {category}
+                  {category.name}
                 </Text>
               </TouchableOpacity>
             ))}

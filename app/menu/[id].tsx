@@ -8,14 +8,16 @@ import {
   TouchableOpacity,
   Image,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { colors, buttonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { SpiceButton } from '@/components/SpiceButton';
-import { restaurants, dishes } from '@/data/restaurants';
+import { restaurants } from '@/data/restaurants';
 import { useCart } from '@/contexts/CartContext';
 import { useSpiceLevel } from '@/hooks/useSpiceLevel';
+import { useMenu } from '@/hooks/useMenu';
 import AddressModal from '@/components/AddressModal';
 
 interface Address {
@@ -28,6 +30,7 @@ export default function MenuScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { addToCart, updateQuantity, getCartItemCount, cart } = useCart();
+  const { menuItems, categories, isLoading } = useMenu();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isDelivery, setIsDelivery] = useState(true);
   const [showAddressModal, setShowAddressModal] = useState(false);
@@ -45,7 +48,6 @@ export default function MenuScreen() {
   ]);
 
   const restaurant = restaurants.find((r) => r.id === id);
-  const menuItems = dishes[id] || [];
 
   if (!restaurant) {
     return (
@@ -55,17 +57,29 @@ export default function MenuScreen() {
     );
   }
 
-  const categories = Array.from(new Set(menuItems.map((item) => item.category)));
-
   const filteredItems = selectedCategory
     ? menuItems.filter((item) => item.category === selectedCategory)
     : menuItems;
 
-  const handleAddToCart = (dish: any, spiceLevel?: number) => {
+  const handleAddToCart = (menuItem: any, spiceLevel?: number) => {
     if (!restaurant.isOpen) {
       Alert.alert('Restaurant Closed', 'This restaurant is currently closed.');
       return;
     }
+    
+    // Convert menu item to Dish format for cart
+    const dish = {
+      id: menuItem.id,
+      name: menuItem.name,
+      description: menuItem.description || '',
+      price: menuItem.price,
+      category: menuItem.category || '',
+      image: menuItem.image_id || '',
+      isVegetarian: menuItem.is_vegetarian || false,
+      isSpicy: menuItem.spicy || false,
+      isPopular: menuItem.is_popular || false,
+    };
+    
     addToCart(dish, id, spiceLevel);
     console.log('Added to cart:', dish.name, 'with spice level:', spiceLevel);
   };
@@ -86,6 +100,15 @@ export default function MenuScreen() {
     const parts = address.split(',').map(part => part.trim());
     return parts[parts.length - 1] || '';
   };
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={styles.loadingText}>Loading menu...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -245,7 +268,7 @@ export default function MenuScreen() {
           </View>
         </View>
 
-        {/* Category Filter */}
+        {/* Category Filter - From Database */}
         <View style={styles.categorySection}>
           <ScrollView
             horizontal
@@ -265,7 +288,7 @@ export default function MenuScreen() {
                   !selectedCategory && styles.categoryChipTextActive,
                 ]}
               >
-                Picked for you
+                All Items
               </Text>
             </TouchableOpacity>
             {categories.map((category, index) => (
@@ -273,25 +296,22 @@ export default function MenuScreen() {
                 key={index}
                 style={[
                   styles.categoryChip,
-                  selectedCategory === category && styles.categoryChipActive,
+                  selectedCategory === category.name && styles.categoryChipActive,
                 ]}
-                onPress={() => setSelectedCategory(category)}
+                onPress={() => setSelectedCategory(category.name)}
               >
                 <Text
                   style={[
                     styles.categoryChipText,
-                    selectedCategory === category &&
+                    selectedCategory === category.name &&
                       styles.categoryChipTextActive,
                   ]}
                 >
-                  {category}
+                  {category.name}
                 </Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
-          <TouchableOpacity style={styles.seeAllButton}>
-            <Text style={styles.seeAllText}>See all</Text>
-          </TouchableOpacity>
         </View>
 
         {/* Menu Items - Uber Eats Style */}
@@ -331,7 +351,7 @@ function MenuItemRow({ item, quantity, onAdd, onUpdateQuantity }: any) {
   const { spiceLevel } = useSpiceLevel(item.id);
 
   const handleAddToCart = () => {
-    onAdd(item, item.isSpicy ? spiceLevel : undefined);
+    onAdd(item, item.spicy ? spiceLevel : undefined);
   };
 
   return (
@@ -348,12 +368,12 @@ function MenuItemRow({ item, quantity, onAdd, onUpdateQuantity }: any) {
             £{item.price.toFixed(2)}
           </Text>
           <View style={styles.menuTags}>
-            {item.isVegetarian && (
+            {item.is_vegetarian && (
               <View style={styles.vegTag}>
                 <Text style={styles.vegTagText}>VEG</Text>
               </View>
             )}
-            {item.isSpicy && <Text style={styles.spicyIcon}>🌶️</Text>}
+            {item.spicy && <Text style={styles.spicyIcon}>🌶️</Text>}
           </View>
           <View style={styles.ratingContainer}>
             <IconSymbol
@@ -369,10 +389,10 @@ function MenuItemRow({ item, quantity, onAdd, onUpdateQuantity }: any) {
         </View>
       </View>
       <View style={styles.menuImageContainer}>
-        <Image source={{ uri: item.image }} style={styles.menuImage} />
+        <Image source={{ uri: item.image_id || '' }} style={styles.menuImage} />
         
         {/* Spice Button - Only show if item is spicy */}
-        {item.isSpicy && (
+        {item.spicy && (
           <SpiceButton menuItemId={item.id} />
         )}
 
@@ -419,6 +439,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: colors.textSecondary,
   },
   header: {
     flexDirection: 'row',
@@ -617,16 +646,6 @@ const styles = StyleSheet.create({
   },
   categoryChipTextActive: {
     color: '#FFFFFF',
-  },
-  seeAllButton: {
-    alignSelf: 'flex-end',
-    paddingHorizontal: 16,
-    paddingVertical: 4,
-  },
-  seeAllText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#808080',
   },
   menuSection: {
     paddingHorizontal: 16,
