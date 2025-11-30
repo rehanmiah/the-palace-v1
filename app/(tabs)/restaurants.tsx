@@ -8,35 +8,31 @@ import {
   TextInput,
   TouchableOpacity,
   Image,
-  Dimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
-import { restaurants, dishes } from '@/data/restaurants';
-import { Dish } from '@/types/restaurant';
+import { restaurants } from '@/data/restaurants';
 
-const { width } = Dimensions.get('window');
-
-export default function HomeScreen() {
+export default function RestaurantsScreen() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCuisine, setSelectedCuisine] = useState<string | null>(null);
 
-  // Get popular dishes from all restaurants
-  const popularDishes: (Dish & { restaurantId: string })[] = [];
-  Object.entries(dishes).forEach(([restaurantId, restaurantDishes]) => {
-    restaurantDishes
-      .filter((dish) => dish.isPopular)
-      .forEach((dish) => {
-        popularDishes.push({ ...dish, restaurantId });
-      });
-  });
-
-  const filteredRestaurants = restaurants.filter(
-    (restaurant) =>
-      restaurant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      restaurant.cuisine.some((c) => c.toLowerCase().includes(searchQuery.toLowerCase()))
+  // Get unique cuisines
+  const allCuisines = Array.from(
+    new Set(restaurants.flatMap((r) => r.cuisine))
   );
+
+  // Filter restaurants
+  const filteredRestaurants = restaurants.filter((restaurant) => {
+    const matchesSearch =
+      restaurant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      restaurant.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCuisine =
+      !selectedCuisine || restaurant.cuisine.includes(selectedCuisine);
+    return matchesSearch && matchesCuisine;
+  });
 
   return (
     <View style={styles.container}>
@@ -47,21 +43,10 @@ export default function HomeScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>Welcome to</Text>
-            <Text style={styles.appName}>Indian Takeaway</Text>
-          </View>
-          <TouchableOpacity
-            style={styles.cartButton}
-            onPress={() => router.push('/cart')}
-          >
-            <IconSymbol
-              ios_icon_name="cart.fill"
-              android_material_icon_name="shopping-cart"
-              size={28}
-              color={colors.primary}
-            />
-          </TouchableOpacity>
+          <Text style={styles.title}>Restaurants</Text>
+          <Text style={styles.subtitle}>
+            {filteredRestaurants.length} restaurants available
+          </Text>
         </View>
 
         {/* Search Bar */}
@@ -74,69 +59,60 @@ export default function HomeScreen() {
           />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search restaurants or cuisines..."
+            placeholder="Search restaurants..."
             placeholderTextColor={colors.textSecondary}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
         </View>
 
-        {/* Popular Dishes */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Popular Dishes</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAll}>See All</Text>
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalScroll}
+        {/* Cuisine Filter */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterScroll}
+        >
+          <TouchableOpacity
+            style={[
+              styles.filterChip,
+              !selectedCuisine && styles.filterChipActive,
+            ]}
+            onPress={() => setSelectedCuisine(null)}
           >
-            {popularDishes.map((dish, index) => (
-              <React.Fragment key={index}>
-                <TouchableOpacity
-                  style={styles.dishCard}
-                  onPress={() =>
-                    router.push({
-                      pathname: '/menu/[id]',
-                      params: { id: dish.restaurantId },
-                    })
-                  }
+            <Text
+              style={[
+                styles.filterChipText,
+                !selectedCuisine && styles.filterChipTextActive,
+              ]}
+            >
+              All
+            </Text>
+          </TouchableOpacity>
+          {allCuisines.map((cuisine, index) => (
+            <React.Fragment key={index}>
+              <TouchableOpacity
+                style={[
+                  styles.filterChip,
+                  selectedCuisine === cuisine && styles.filterChipActive,
+                ]}
+                onPress={() => setSelectedCuisine(cuisine)}
+              >
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    selectedCuisine === cuisine && styles.filterChipTextActive,
+                  ]}
                 >
-                  <Image source={{ uri: dish.image }} style={styles.dishImage} />
-                  <View style={styles.dishInfo}>
-                    <Text style={styles.dishName} numberOfLines={1}>
-                      {dish.name}
-                    </Text>
-                    <Text style={styles.dishPrice}>${dish.price.toFixed(2)}</Text>
-                    <View style={styles.dishTags}>
-                      {dish.isVegetarian && (
-                        <View style={styles.vegTag}>
-                          <Text style={styles.vegTagText}>VEG</Text>
-                        </View>
-                      )}
-                      {dish.isSpicy && (
-                        <Text style={styles.spicyIcon}>🌶️</Text>
-                      )}
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              </React.Fragment>
-            ))}
-          </ScrollView>
-        </View>
+                  {cuisine}
+                </Text>
+              </TouchableOpacity>
+            </React.Fragment>
+          ))}
+        </ScrollView>
 
-        {/* Featured Restaurants */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Featured Restaurants</Text>
-            <TouchableOpacity onPress={() => router.push('/(tabs)/restaurants')}>
-              <Text style={styles.seeAll}>See All</Text>
-            </TouchableOpacity>
-          </View>
-          {filteredRestaurants.slice(0, 3).map((restaurant, index) => (
+        {/* Restaurant List */}
+        <View style={styles.restaurantList}>
+          {filteredRestaurants.map((restaurant, index) => (
             <React.Fragment key={index}>
               <TouchableOpacity
                 style={styles.restaurantCard}
@@ -163,6 +139,15 @@ export default function HomeScreen() {
                   <Text style={styles.restaurantDescription} numberOfLines={2}>
                     {restaurant.description}
                   </Text>
+                  <View style={styles.cuisineContainer}>
+                    {restaurant.cuisine.slice(0, 3).map((cuisine, idx) => (
+                      <React.Fragment key={idx}>
+                        <View style={styles.cuisineBadge}>
+                          <Text style={styles.cuisineBadgeText}>{cuisine}</Text>
+                        </View>
+                      </React.Fragment>
+                    ))}
+                  </View>
                   <View style={styles.restaurantMeta}>
                     <View style={styles.metaItem}>
                       <IconSymbol
@@ -180,7 +165,9 @@ export default function HomeScreen() {
                         size={16}
                         color={colors.textSecondary}
                       />
-                      <Text style={styles.metaText}>{restaurant.deliveryTime}</Text>
+                      <Text style={styles.metaText}>
+                        {restaurant.deliveryTime}
+                      </Text>
                     </View>
                     <View style={styles.metaItem}>
                       <IconSymbol
@@ -191,6 +178,11 @@ export default function HomeScreen() {
                       />
                       <Text style={styles.metaText}>
                         ${restaurant.deliveryFee.toFixed(2)}
+                      </Text>
+                    </View>
+                    <View style={styles.metaItem}>
+                      <Text style={styles.metaText}>
+                        Min ${restaurant.minimumOrder}
                       </Text>
                     </View>
                   </View>
@@ -217,31 +209,19 @@ const styles = StyleSheet.create({
     paddingBottom: 120,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: 16,
     marginBottom: 20,
   },
-  greeting: {
+  title: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  subtitle: {
     fontSize: 16,
     color: colors.textSecondary,
     fontWeight: '500',
-  },
-  appName: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: colors.text,
-  },
-  cartButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.card,
-    justifyContent: 'center',
-    alignItems: 'center',
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
-    elevation: 3,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -251,7 +231,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 12,
-    marginBottom: 24,
+    marginBottom: 16,
     boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
     elevation: 2,
   },
@@ -261,89 +241,45 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.text,
   },
-  section: {
-    marginBottom: 24,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  filterScroll: {
     paddingHorizontal: 16,
-    marginBottom: 12,
+    gap: 8,
+    marginBottom: 20,
   },
-  sectionTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  seeAll: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.primary,
-  },
-  horizontalScroll: {
+  filterChip: {
     paddingHorizontal: 16,
-    gap: 12,
-  },
-  dishCard: {
-    width: width * 0.4,
+    paddingVertical: 8,
+    borderRadius: 20,
     backgroundColor: colors.card,
-    borderRadius: 16,
-    overflow: 'hidden',
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  dishImage: {
-    width: '100%',
-    height: 120,
-    backgroundColor: colors.border,
+  filterChipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
-  dishInfo: {
-    padding: 12,
-  },
-  dishName: {
-    fontSize: 16,
+  filterChipText: {
+    fontSize: 14,
     fontWeight: '600',
     color: colors.text,
-    marginBottom: 4,
   },
-  dishPrice: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.primary,
-    marginBottom: 8,
+  filterChipTextActive: {
+    color: colors.card,
   },
-  dishTags: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  vegTag: {
-    backgroundColor: colors.highlight,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  vegTagText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  spicyIcon: {
-    fontSize: 14,
+  restaurantList: {
+    paddingHorizontal: 16,
   },
   restaurantCard: {
     backgroundColor: colors.card,
     borderRadius: 16,
-    marginHorizontal: 16,
-    marginBottom: 12,
+    marginBottom: 16,
     overflow: 'hidden',
     boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
     elevation: 3,
   },
   restaurantImage: {
     width: '100%',
-    height: 160,
+    height: 180,
     backgroundColor: colors.border,
   },
   restaurantInfo: {
@@ -378,8 +314,26 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     lineHeight: 20,
   },
+  cuisineContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 12,
+  },
+  cuisineBadge: {
+    backgroundColor: colors.highlight,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  cuisineBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.text,
+  },
   restaurantMeta: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 16,
   },
   metaItem: {
