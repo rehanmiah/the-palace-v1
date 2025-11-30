@@ -1,5 +1,8 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { supabase } from '@/app/integrations/supabase/client';
+import { Alert } from 'react-native';
+import type { Tables } from '@/app/integrations/supabase/types';
 
 export interface User {
   id: string;
@@ -13,7 +16,7 @@ export interface User {
 
 export interface PaymentMethod {
   id: string;
-  type: 'card' | 'paypal' | 'apple_pay' | 'google_pay';
+  type: 'card' | 'paypal' | 'apple_pay' | 'google_pay' | 'cash';
   last4?: string;
   brand?: string;
   expiryMonth?: string;
@@ -31,9 +34,10 @@ export interface Order {
     price: number;
   }>;
   total: number;
-  status: 'pending' | 'confirmed' | 'preparing' | 'out_for_delivery' | 'delivered' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'preparing' | 'out_for_delivery' | 'ready_for_collection' | 'delivered' | 'completed' | 'cancelled';
   orderDate: string;
   deliveryAddress: string;
+  orderType: 'delivery' | 'collection';
 }
 
 interface AuthContextType {
@@ -58,46 +62,99 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
 
-  // Mock data for demonstration
+  // Check authentication status on mount
   useEffect(() => {
-    // Check if user is logged in (in real app, check AsyncStorage or Supabase session)
-    const checkAuth = async () => {
-      // Mock: Simulate checking stored session
-      console.log('Checking authentication status...');
-    };
     checkAuth();
+    
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event);
+      
+      if (event === 'SIGNED_IN' && session?.user) {
+        await loadUserProfile(session.user.id);
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setPaymentMethods([]);
+        setOrders([]);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
+
+  const checkAuth = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        await loadUserProfile(session.user.id);
+      }
+    } catch (error) {
+      console.error('Check auth error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadUserProfile = async (userId: string) => {
+    try {
+      const { data: profile, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Load profile error:', error);
+        return;
+      }
+
+      if (profile) {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        
+        setUser({
+          id: profile.id,
+          name: profile.name,
+          email: authUser?.email || '',
+          phone: profile.phone || '',
+          emailVerified: profile.email_verified || false,
+          phoneVerified: profile.phone_verified || false,
+          createdAt: profile.created_at || new Date().toISOString(),
+        });
+
+        // Load related data
+        await fetchPaymentMethods();
+        await fetchOrders();
+      }
+    } catch (error) {
+      console.error('Load user profile error:', error);
+    }
+  };
 
   const login = useCallback(async (email: string, password: string) => {
     setIsLoading(true);
     try {
       console.log('Logging in with:', email);
       
-      // TODO: Replace with actual Supabase auth
-      // const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ 
+        email, 
+        password 
+      });
       
-      // Mock login
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const mockUser: User = {
-        id: '1',
-        name: 'John Doe',
-        email: email,
-        phone: '+1234567890',
-        emailVerified: true,
-        phoneVerified: true,
-        createdAt: new Date().toISOString(),
-      };
-      
-      setUser(mockUser);
-      
-      // Load user's payment methods and orders
-      await fetchPaymentMethods();
-      await fetchOrders();
+      if (error) {
+        Alert.alert('Login Error', error.message);
+        throw error;
+      }
+
+      if (data.user) {
+        await loadUserProfile(data.user.id);
+      }
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -111,40 +168,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('Registering user:', { name, email, phone });
       
-      // TODO: Replace with actual Supabase auth
-      // const { data, error } = await supabase.auth.signUp({
-      //   email,
-      //   password,
-      //   options: {
-      //     data: { name, phone }
-      //   }
-      // });
-      
-      // Also register phone number
-      // await supabase.auth.signUp({
-      //   phone,
-      //   password,
-      //   options: { channel: 'sms' }
-      // });
-      
-      // Mock registration
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const mockUser: User = {
-        id: '1',
-        name,
+      // Sign up with Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
         email,
-        phone,
-        emailVerified: false,
-        phoneVerified: false,
-        createdAt: new Date().toISOString(),
-      };
+        password,
+        options: {
+          emailRedirectTo: 'https://natively.dev/email-confirmed',
+          data: {
+            name,
+            phone
+          }
+        }
+      });
       
-      setUser(mockUser);
-      
-      // In real app, verification emails/SMS would be sent automatically
-      console.log('Verification email sent to:', email);
-      console.log('Verification SMS sent to:', phone);
+      if (error) {
+        Alert.alert('Registration Error', error.message);
+        throw error;
+      }
+
+      if (data.user) {
+        // Create user profile in users table
+        const { error: profileError } = await supabase
+          .from('users')
+          .insert({
+            id: data.user.id,
+            name,
+            phone,
+            email_verified: false,
+            phone_verified: false,
+          });
+
+        if (profileError) {
+          console.error('Profile creation error:', profileError);
+        }
+
+        // Show verification reminder
+        Alert.alert(
+          'Registration Successful',
+          'Please check your email to verify your account. A verification link has been sent to ' + email,
+          [{ text: 'OK' }]
+        );
+
+        await loadUserProfile(data.user.id);
+      }
     } catch (error) {
       console.error('Registration error:', error);
       throw error;
@@ -158,10 +224,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('Logging out...');
       
-      // TODO: Replace with actual Supabase auth
-      // await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut();
       
-      await new Promise(resolve => setTimeout(resolve, 500));
+      if (error) {
+        Alert.alert('Logout Error', error.message);
+        throw error;
+      }
+      
       setUser(null);
       setPaymentMethods([]);
       setOrders([]);
@@ -174,44 +243,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const updateProfile = useCallback(async (updates: Partial<User>) => {
+    if (!user) return;
+    
     setIsLoading(true);
     try {
       console.log('Updating profile:', updates);
       
-      // TODO: Replace with actual Supabase auth
-      // if (updates.email) {
-      //   await supabase.auth.updateUser({ email: updates.email });
-      // }
-      // if (updates.phone) {
-      //   await supabase.auth.updateUser({ phone: updates.phone });
-      // }
-      
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setUser(prev => {
-        if (!prev) return null;
+      // Update auth user if email changed
+      if (updates.email && updates.email !== user.email) {
+        const { error: emailError } = await supabase.auth.updateUser({ 
+          email: updates.email 
+        });
         
-        const updated = { ...prev, ...updates };
-        
-        // If email or phone changed, mark as unverified
-        if (updates.email && updates.email !== prev.email) {
-          updated.emailVerified = false;
-          console.log('Verification email sent to:', updates.email);
-        }
-        if (updates.phone && updates.phone !== prev.phone) {
-          updated.phoneVerified = false;
-          console.log('Verification SMS sent to:', updates.phone);
+        if (emailError) {
+          Alert.alert('Update Error', emailError.message);
+          throw emailError;
         }
         
-        return updated;
-      });
+        Alert.alert(
+          'Email Update',
+          'A verification email has been sent to ' + updates.email
+        );
+      }
+      
+      // Update user profile in database
+      const { error } = await supabase
+        .from('users')
+        .update({
+          name: updates.name || user.name,
+          phone: updates.phone || user.phone,
+          email_verified: updates.email ? false : user.emailVerified,
+          phone_verified: updates.phone && updates.phone !== user.phone ? false : user.phoneVerified,
+        })
+        .eq('id', user.id);
+      
+      if (error) {
+        Alert.alert('Update Error', error.message);
+        throw error;
+      }
+      
+      // Reload profile
+      await loadUserProfile(user.id);
+      
+      Alert.alert('Success', 'Profile updated successfully');
     } catch (error) {
       console.error('Update profile error:', error);
       throw error;
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [user]);
 
   const resendEmailVerification = useCallback(async () => {
     if (!user?.email) return;
@@ -220,14 +301,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('Resending email verification to:', user.email);
       
-      // TODO: Replace with actual Supabase auth
-      // await supabase.auth.resend({
-      //   type: 'signup',
-      //   email: user.email
-      // });
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: user.email,
+        options: {
+          emailRedirectTo: 'https://natively.dev/email-confirmed'
+        }
+      });
       
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      console.log('Verification email sent!');
+      if (error) {
+        Alert.alert('Error', error.message);
+        throw error;
+      }
+      
+      Alert.alert('Success', 'Verification email sent!');
     } catch (error) {
       console.error('Resend email verification error:', error);
       throw error;
@@ -243,14 +330,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('Resending phone verification to:', user.phone);
       
-      // TODO: Replace with actual Supabase auth
-      // await supabase.auth.resend({
-      //   type: 'sms',
-      //   phone: user.phone
-      // });
+      // Note: Phone verification requires additional setup in Supabase
+      Alert.alert('Info', 'Phone verification is not yet configured. Please contact support.');
       
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      console.log('Verification SMS sent!');
     } catch (error) {
       console.error('Resend phone verification error:', error);
       throw error;
@@ -260,136 +342,187 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   const fetchPaymentMethods = useCallback(async () => {
+    if (!user) return;
+    
     try {
       console.log('Fetching payment methods...');
       
-      // TODO: Replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const { data, error } = await supabase
+        .from('payment_methods')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
       
-      // Mock payment methods
-      const mockMethods: PaymentMethod[] = [
-        {
-          id: '1',
-          type: 'card',
-          last4: '4242',
-          brand: 'Visa',
-          expiryMonth: '12',
-          expiryYear: '25',
-          isDefault: true,
-          holderName: 'John Doe',
-        },
-      ];
+      if (error) {
+        console.error('Fetch payment methods error:', error);
+        return;
+      }
       
-      setPaymentMethods(mockMethods);
+      const methods: PaymentMethod[] = (data || []).map(pm => ({
+        id: pm.id,
+        type: pm.type as PaymentMethod['type'],
+        last4: pm.last4 || undefined,
+        brand: pm.brand || undefined,
+        expiryMonth: pm.expiry_month || undefined,
+        expiryYear: pm.expiry_year || undefined,
+        isDefault: pm.is_default || false,
+        holderName: pm.holder_name || undefined,
+      }));
+      
+      setPaymentMethods(methods);
     } catch (error) {
       console.error('Fetch payment methods error:', error);
     }
-  }, []);
+  }, [user]);
 
   const addPaymentMethod = useCallback(async (method: Omit<PaymentMethod, 'id'>) => {
+    if (!user) return;
+    
     setIsLoading(true);
     try {
       console.log('Adding payment method:', method);
       
-      // TODO: Replace with actual API call (Stripe, etc.)
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const { data, error } = await supabase
+        .from('payment_methods')
+        .insert({
+          user_id: user.id,
+          type: method.type,
+          last4: method.last4,
+          brand: method.brand,
+          expiry_month: method.expiryMonth,
+          expiry_year: method.expiryYear,
+          holder_name: method.holderName,
+          is_default: method.isDefault,
+        })
+        .select()
+        .single();
       
-      const newMethod: PaymentMethod = {
-        ...method,
-        id: Date.now().toString(),
-      };
+      if (error) {
+        Alert.alert('Error', error.message);
+        throw error;
+      }
       
-      setPaymentMethods(prev => {
-        // If this is set as default, unset others
-        if (newMethod.isDefault) {
-          return [...prev.map(m => ({ ...m, isDefault: false })), newMethod];
-        }
-        return [...prev, newMethod];
-      });
+      // If this is set as default, unset others
+      if (method.isDefault) {
+        await supabase
+          .from('payment_methods')
+          .update({ is_default: false })
+          .eq('user_id', user.id)
+          .neq('id', data.id);
+      }
+      
+      await fetchPaymentMethods();
+      Alert.alert('Success', 'Payment method added successfully');
     } catch (error) {
       console.error('Add payment method error:', error);
       throw error;
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [user, fetchPaymentMethods]);
 
   const removePaymentMethod = useCallback(async (id: string) => {
+    if (!user) return;
+    
     setIsLoading(true);
     try {
       console.log('Removing payment method:', id);
       
-      // TODO: Replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const { error } = await supabase
+        .from('payment_methods')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
       
-      setPaymentMethods(prev => prev.filter(m => m.id !== id));
+      if (error) {
+        Alert.alert('Error', error.message);
+        throw error;
+      }
+      
+      await fetchPaymentMethods();
+      Alert.alert('Success', 'Payment method removed successfully');
     } catch (error) {
       console.error('Remove payment method error:', error);
       throw error;
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [user, fetchPaymentMethods]);
 
   const setDefaultPaymentMethod = useCallback(async (id: string) => {
+    if (!user) return;
+    
     setIsLoading(true);
     try {
       console.log('Setting default payment method:', id);
       
-      // TODO: Replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Unset all defaults
+      await supabase
+        .from('payment_methods')
+        .update({ is_default: false })
+        .eq('user_id', user.id);
       
-      setPaymentMethods(prev =>
-        prev.map(m => ({ ...m, isDefault: m.id === id }))
-      );
+      // Set new default
+      const { error } = await supabase
+        .from('payment_methods')
+        .update({ is_default: true })
+        .eq('id', id)
+        .eq('user_id', user.id);
+      
+      if (error) {
+        Alert.alert('Error', error.message);
+        throw error;
+      }
+      
+      await fetchPaymentMethods();
     } catch (error) {
       console.error('Set default payment method error:', error);
       throw error;
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [user, fetchPaymentMethods]);
 
   const fetchOrders = useCallback(async () => {
+    if (!user) return;
+    
     try {
       console.log('Fetching orders...');
       
-      // TODO: Replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const { data: ordersData, error: ordersError } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          order_items (*)
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
       
-      // Mock orders
-      const mockOrders: Order[] = [
-        {
-          id: '1',
-          restaurantName: 'The Palace',
-          items: [
-            { name: 'Chicken Tikka Masala', quantity: 2, price: 12.99 },
-            { name: 'Garlic Naan', quantity: 3, price: 2.99 },
-          ],
-          total: 34.95,
-          status: 'delivered',
-          orderDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          deliveryAddress: '123 Main St, Apt 4B',
-        },
-        {
-          id: '2',
-          restaurantName: 'The Palace',
-          items: [
-            { name: 'Lamb Biryani', quantity: 1, price: 14.99 },
-            { name: 'Samosa', quantity: 4, price: 3.99 },
-          ],
-          total: 30.95,
-          status: 'delivered',
-          orderDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-          deliveryAddress: '123 Main St, Apt 4B',
-        },
-      ];
+      if (ordersError) {
+        console.error('Fetch orders error:', ordersError);
+        return;
+      }
       
-      setOrders(mockOrders);
+      const formattedOrders: Order[] = (ordersData || []).map(order => ({
+        id: order.id,
+        restaurantName: 'The Palace',
+        items: (order.order_items || []).map((item: any) => ({
+          name: item.menu_item_name,
+          quantity: item.quantity,
+          price: item.menu_item_price,
+        })),
+        total: order.total,
+        status: order.status as Order['status'],
+        orderDate: order.created_at || new Date().toISOString(),
+        deliveryAddress: order.delivery_address_text || 'Collection',
+        orderType: order.order_type as 'delivery' | 'collection',
+      }));
+      
+      setOrders(formattedOrders);
     } catch (error) {
       console.error('Fetch orders error:', error);
     }
-  }, []);
+  }, [user]);
 
   return (
     <AuthContext.Provider

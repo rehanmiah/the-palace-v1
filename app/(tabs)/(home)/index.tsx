@@ -9,13 +9,14 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
-import { restaurants, dishes } from '@/data/restaurants';
-import { Dish } from '@/types/restaurant';
+import { restaurants } from '@/data/restaurants';
 import { useCart } from '@/contexts/CartContext';
+import { useMenu } from '@/hooks/useMenu';
 import AddressModal from '@/components/AddressModal';
 
 const { width } = Dimensions.get('window');
@@ -29,6 +30,7 @@ interface Address {
 export default function HomeScreen() {
   const router = useRouter();
   const { addToCart, updateQuantity, cart, getCartItemCount } = useCart();
+  const { menuItems, isLoading, getPopularItems, getCategories } = useMenu();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isDelivery, setIsDelivery] = useState(true);
@@ -49,27 +51,18 @@ export default function HomeScreen() {
   // Get The Palace restaurant (only one)
   const restaurant = restaurants[0];
 
-  // Get popular dishes from The Palace
-  const popularDishes: (Dish & { restaurantId: string })[] = [];
-  Object.entries(dishes).forEach(([restaurantId, restaurantDishes]) => {
-    restaurantDishes
-      .filter((dish) => dish.isPopular)
-      .forEach((dish) => {
-        popularDishes.push({ ...dish, restaurantId });
-      });
-  });
+  // Get popular dishes from database
+  const popularDishes = getPopularItems();
 
-  const menuItems = dishes[restaurant.id] || [];
-  
-  // Get categories from menu items
-  const categories = Array.from(new Set(menuItems.map((item) => item.category)));
+  // Get categories from database
+  const categories = getCategories();
 
   // Filter items based on search and category
   const filteredItems = menuItems.filter((item) => {
     const matchesSearch = searchQuery
       ? item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.category.toLowerCase().includes(searchQuery.toLowerCase())
+        (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (item.category && item.category.toLowerCase().includes(searchQuery.toLowerCase()))
       : true;
     
     const matchesCategory = selectedCategory
@@ -84,8 +77,20 @@ export default function HomeScreen() {
     return cartItem ? cartItem.quantity : 0;
   };
 
-  const handleAddToCart = (dish: Dish) => {
-    console.log('Adding to cart from home:', dish.name);
+  const handleAddToCart = (menuItem: any) => {
+    console.log('Adding to cart from home:', menuItem.name);
+    // Convert menu item to Dish format for cart
+    const dish = {
+      id: menuItem.id,
+      name: menuItem.name,
+      description: menuItem.description || '',
+      price: menuItem.price,
+      category: menuItem.category || '',
+      image: menuItem.image_id || '',
+      isVegetarian: menuItem.is_vegetarian || false,
+      isSpicy: menuItem.spicy || false,
+      isPopular: menuItem.is_popular || false,
+    };
     addToCart(dish, restaurant.id);
   };
 
@@ -114,6 +119,15 @@ export default function HomeScreen() {
     const parts = address.split(',').map(part => part.trim());
     return parts[parts.length - 1] || '';
   };
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={styles.loadingText}>Loading menu...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -249,7 +263,7 @@ export default function HomeScreen() {
         </TouchableOpacity>
 
         {/* Popular Dishes - Moved above search */}
-        {!searchQuery && !selectedCategory && (
+        {!searchQuery && !selectedCategory && popularDishes.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Popular Dishes</Text>
@@ -266,19 +280,19 @@ export default function HomeScreen() {
                 const quantity = getDishQuantity(dish.id);
                 return (
                   <View key={index} style={styles.dishCard}>
-                    <Image source={{ uri: dish.image }} style={styles.dishImage} />
+                    <Image source={{ uri: dish.image_id || '' }} style={styles.dishImage} />
                     <View style={styles.dishInfo}>
                       <Text style={styles.dishName} numberOfLines={1}>
                         {dish.name}
                       </Text>
                       <Text style={styles.dishPrice}>£{dish.price.toFixed(2)}</Text>
                       <View style={styles.dishTags}>
-                        {dish.isVegetarian && (
+                        {dish.is_vegetarian && (
                           <View style={styles.vegTag}>
                             <Text style={styles.vegTagText}>VEG</Text>
                           </View>
                         )}
-                        {dish.isSpicy && (
+                        {dish.spicy && (
                           <Text style={styles.spicyIcon}>🌶️</Text>
                         )}
                       </View>
@@ -445,17 +459,17 @@ export default function HomeScreen() {
                         £{item.price.toFixed(2)}
                       </Text>
                       <View style={styles.menuTags}>
-                        {item.isVegetarian && (
+                        {item.is_vegetarian && (
                           <View style={styles.vegTag}>
                             <Text style={styles.vegTagText}>VEG</Text>
                           </View>
                         )}
-                        {item.isSpicy && <Text style={styles.spicyIcon}>🌶️</Text>}
+                        {item.spicy && <Text style={styles.spicyIcon}>🌶️</Text>}
                       </View>
                     </View>
                   </View>
                   <View style={styles.menuImageContainer}>
-                    <Image source={{ uri: item.image }} style={styles.menuImage} />
+                    <Image source={{ uri: item.image_id || '' }} style={styles.menuImage} />
                     {quantity === 0 ? (
                       <TouchableOpacity
                         style={styles.addButtonUber}
@@ -518,6 +532,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: colors.textSecondary,
   },
   scrollView: {
     flex: 1,
