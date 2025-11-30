@@ -199,7 +199,10 @@ export default function MenuScreen() {
             </Text>
             <Text style={styles.restaurantAddress}>{restaurant.address}</Text>
             <View style={styles.restaurantMeta}>
-              <View style={styles.metaItem}>
+              <TouchableOpacity 
+                style={styles.metaItem}
+                onPress={() => router.push('/reviews')}
+              >
                 <IconSymbol
                   ios_icon_name="star.fill"
                   android_material_icon_name="star"
@@ -207,7 +210,7 @@ export default function MenuScreen() {
                   color={colors.accent}
                 />
                 <Text style={styles.metaText}>{restaurant.rating}</Text>
-              </View>
+              </TouchableOpacity>
               <View style={styles.metaItem}>
                 <IconSymbol
                   ios_icon_name="clock.fill"
@@ -394,7 +397,7 @@ export default function MenuScreen() {
                       ios_icon_name="location.fill"
                       android_material_icon_name="location-on"
                       size={24}
-                      color={selectedAddress.id === address.id ? colors.primary : colors.textSecondary}
+                      color={colors.text}
                     />
                     <View style={styles.addressOptionText}>
                       <Text style={styles.addressOptionLabel}>{address.label}</Text>
@@ -406,7 +409,7 @@ export default function MenuScreen() {
                       ios_icon_name="checkmark.circle.fill"
                       android_material_icon_name="check-circle"
                       size={24}
-                      color={colors.primary}
+                      color={colors.highlight}
                     />
                   )}
                 </TouchableOpacity>
@@ -419,10 +422,10 @@ export default function MenuScreen() {
                 }}
               >
                 <IconSymbol
-                  ios_icon_name="plus.circle.fill"
-                  android_material_icon_name="add-circle"
+                  ios_icon_name="plus.circle"
+                  android_material_icon_name="add-circle-outline"
                   size={24}
-                  color={colors.primary}
+                  color={colors.text}
                 />
                 <Text style={styles.addAddressText}>Add New Address</Text>
               </TouchableOpacity>
@@ -819,15 +822,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    backgroundColor: colors.background,
+    backgroundColor: colors.card,
     borderRadius: 12,
     marginBottom: 12,
     borderWidth: 2,
-    borderColor: 'transparent',
+    borderColor: '#000000',
   },
   addressOptionSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.card,
+    borderColor: '#000000',
+    backgroundColor: colors.highlight,
   },
   addressOptionContent: {
     flexDirection: 'row',
@@ -852,16 +855,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: colors.background,
+    backgroundColor: '#E0E0E0',
     borderRadius: 12,
     gap: 12,
-    borderWidth: 2,
-    borderColor: colors.primary,
-    borderStyle: 'dashed',
   },
   addAddressText: {
     fontSize: 16,
     fontWeight: '700',
-    color: colors.primary,
+    color: colors.text,
   },
 });

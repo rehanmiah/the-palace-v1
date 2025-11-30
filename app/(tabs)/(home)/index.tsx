@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
+  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors, commonStyles } from '@/styles/commonStyles';
@@ -18,9 +19,29 @@ import { Dish } from '@/types/restaurant';
 
 const { width } = Dimensions.get('window');
 
+interface Address {
+  id: string;
+  label: string;
+  address: string;
+}
+
 export default function HomeScreen() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [isDelivery, setIsDelivery] = useState(true);
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [selectedAddress, setSelectedAddress] = useState<Address>({
+    id: '1',
+    label: 'Home',
+    address: '123 Main Street, London, SW1A 1AA',
+  });
+
+  const [addresses] = useState<Address[]>([
+    { id: '1', label: 'Home', address: '123 Main Street, London, SW1A 1AA' },
+    { id: '2', label: 'Work', address: '456 Office Road, London, EC1A 1BB' },
+    { id: '3', label: 'Other', address: '789 Park Avenue, London, W1A 1CC' },
+  ]);
 
   // Get The Palace restaurant (only one)
   const restaurant = restaurants[0];
@@ -36,14 +57,24 @@ export default function HomeScreen() {
   });
 
   const menuItems = dishes[restaurant.id] || [];
-  const filteredItems = searchQuery
-    ? menuItems.filter(
-        (item) =>
-          item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          item.category.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : menuItems;
+  
+  // Get categories from menu items
+  const categories = Array.from(new Set(menuItems.map((item) => item.category)));
+
+  // Filter items based on search and category
+  const filteredItems = menuItems.filter((item) => {
+    const matchesSearch = searchQuery
+      ? item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.category.toLowerCase().includes(searchQuery.toLowerCase())
+      : true;
+    
+    const matchesCategory = selectedCategory
+      ? item.category === selectedCategory
+      : true;
+
+    return matchesSearch && matchesCategory;
+  });
 
   return (
     <View style={styles.container}>
@@ -76,7 +107,10 @@ export default function HomeScreen() {
         <View style={styles.infoCard}>
           <Text style={styles.description}>{restaurant.description}</Text>
           <View style={styles.metaContainer}>
-            <View style={styles.metaItem}>
+            <TouchableOpacity 
+              style={styles.metaItem}
+              onPress={() => router.push('/reviews')}
+            >
               <IconSymbol
                 ios_icon_name="star.fill"
                 android_material_icon_name="star"
@@ -84,7 +118,7 @@ export default function HomeScreen() {
                 color={colors.accent}
               />
               <Text style={styles.metaText}>{restaurant.rating}</Text>
-            </View>
+            </TouchableOpacity>
             <View style={styles.metaItem}>
               <IconSymbol
                 ios_icon_name="clock.fill"
@@ -99,6 +133,73 @@ export default function HomeScreen() {
             </View>
           </View>
         </View>
+
+        {/* Delivery/Collection Toggle */}
+        <View style={styles.toggleSection}>
+          <View style={styles.toggleContainer}>
+            <TouchableOpacity
+              style={[
+                styles.toggleButton,
+                isDelivery && styles.toggleButtonActive,
+              ]}
+              onPress={() => setIsDelivery(true)}
+            >
+              <Text
+                style={[
+                  styles.toggleButtonText,
+                  isDelivery && styles.toggleButtonTextActive,
+                ]}
+              >
+                Delivery
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.toggleButton,
+                !isDelivery && styles.toggleButtonActive,
+              ]}
+              onPress={() => setIsDelivery(false)}
+            >
+              <Text
+                style={[
+                  styles.toggleButtonText,
+                  !isDelivery && styles.toggleButtonTextActive,
+                ]}
+              >
+                Collection
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Address Dropdown (only show for delivery) */}
+        {isDelivery && (
+          <TouchableOpacity
+            style={styles.addressDropdown}
+            onPress={() => setShowAddressModal(true)}
+          >
+            <View style={styles.addressContent}>
+              <IconSymbol
+                ios_icon_name="location.fill"
+                android_material_icon_name="location-on"
+                size={20}
+                color={colors.text}
+              />
+              <View style={styles.addressTextContainer}>
+                <Text style={styles.addressLabel}>{selectedAddress.label}</Text>
+                <Text style={styles.addressText} numberOfLines={1}>
+                  {selectedAddress.address}
+                </Text>
+              </View>
+            </View>
+            <IconSymbol
+              ios_icon_name="chevron.down"
+              android_material_icon_name="keyboard-arrow-down"
+              size={20}
+              color={colors.textSecondary}
+            />
+          </TouchableOpacity>
+        )}
 
         {/* Search Bar */}
         <View style={styles.searchContainer}>
@@ -117,78 +218,130 @@ export default function HomeScreen() {
           />
         </View>
 
-        {/* Popular Dishes */}
-        {!searchQuery && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Popular Dishes</Text>
-            </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalScroll}
-            >
-              {popularDishes.map((dish, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.dishCard}
-                  onPress={() =>
-                    router.push({
-                      pathname: '/menu/[id]',
-                      params: { id: dish.restaurantId },
-                    })
-                  }
-                >
-                  <Image source={{ uri: dish.image }} style={styles.dishImage} />
-                  <View style={styles.dishInfo}>
-                    <Text style={styles.dishName} numberOfLines={1}>
-                      {dish.name}
-                    </Text>
-                    <Text style={styles.dishPrice}>£{dish.price.toFixed(2)}</Text>
-                    <View style={styles.dishTags}>
-                      {dish.isVegetarian && (
-                        <View style={styles.vegTag}>
-                          <Text style={styles.vegTagText}>VEG</Text>
-                        </View>
-                      )}
-                      {dish.isSpicy && (
-                        <Text style={styles.spicyIcon}>🌶️</Text>
-                      )}
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        )}
-
-        {/* Full Menu Button */}
-        <View style={styles.menuButtonContainer}>
-          <TouchableOpacity
-            style={styles.menuButton}
-            onPress={() =>
-              router.push({
-                pathname: '/menu/[id]',
-                params: { id: restaurant.id },
-              })
-            }
+        {/* Category Filter - Menu Subheadings */}
+        <View style={styles.categorySection}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoryScroll}
           >
-            <Text style={styles.menuButtonText}>View Full Menu</Text>
-            <IconSymbol
-              ios_icon_name="arrow.right"
-              android_material_icon_name="arrow-forward"
-              size={20}
-              color="#FFFFFF"
-            />
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.categoryChip,
+                !selectedCategory && styles.categoryChipActive,
+              ]}
+              onPress={() => setSelectedCategory(null)}
+            >
+              <Text
+                style={[
+                  styles.categoryChipText,
+                  !selectedCategory && styles.categoryChipTextActive,
+                ]}
+              >
+                All Items
+              </Text>
+            </TouchableOpacity>
+            {categories.map((category, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.categoryChip,
+                  selectedCategory === category && styles.categoryChipActive,
+                ]}
+                onPress={() => setSelectedCategory(category)}
+              >
+                <Text
+                  style={[
+                    styles.categoryChipText,
+                    selectedCategory === category &&
+                      styles.categoryChipTextActive,
+                  ]}
+                >
+                  {category}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         </View>
 
-        {/* Search Results */}
-        {searchQuery && (
+        {/* Menu Items Display */}
+        {!searchQuery && !selectedCategory && (
+          <React.Fragment>
+            {/* Popular Dishes */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Popular Dishes</Text>
+                <TouchableOpacity onPress={() => router.push({ pathname: '/menu/[id]', params: { id: restaurant.id } })}>
+                  <Text style={styles.seeAllText}>See All</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalScroll}
+              >
+                {popularDishes.map((dish, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.dishCard}
+                    onPress={() =>
+                      router.push({
+                        pathname: '/menu/[id]',
+                        params: { id: dish.restaurantId },
+                      })
+                    }
+                  >
+                    <Image source={{ uri: dish.image }} style={styles.dishImage} />
+                    <View style={styles.dishInfo}>
+                      <Text style={styles.dishName} numberOfLines={1}>
+                        {dish.name}
+                      </Text>
+                      <Text style={styles.dishPrice}>£{dish.price.toFixed(2)}</Text>
+                      <View style={styles.dishTags}>
+                        {dish.isVegetarian && (
+                          <View style={styles.vegTag}>
+                            <Text style={styles.vegTagText}>VEG</Text>
+                          </View>
+                        )}
+                        {dish.isSpicy && (
+                          <Text style={styles.spicyIcon}>🌶️</Text>
+                        )}
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+
+            {/* Full Menu Button */}
+            <View style={styles.menuButtonContainer}>
+              <TouchableOpacity
+                style={styles.menuButton}
+                onPress={() =>
+                  router.push({
+                    pathname: '/menu/[id]',
+                    params: { id: restaurant.id },
+                  })
+                }
+              >
+                <Text style={styles.menuButtonText}>View Full Menu</Text>
+                <IconSymbol
+                  ios_icon_name="arrow.right"
+                  android_material_icon_name="arrow-forward"
+                  size={20}
+                  color="#FFFFFF"
+                />
+              </TouchableOpacity>
+            </View>
+          </React.Fragment>
+        )}
+
+        {/* Filtered Results */}
+        {(searchQuery || selectedCategory) && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>
-                {filteredItems.length} Results
+                {filteredItems.length} {filteredItems.length === 1 ? 'Result' : 'Results'}
               </Text>
             </View>
             {filteredItems.map((item, index) => (
@@ -225,6 +378,81 @@ export default function HomeScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Address Selection Modal */}
+      <Modal
+        visible={showAddressModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowAddressModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Delivery Address</Text>
+              <TouchableOpacity onPress={() => setShowAddressModal(false)}>
+                <IconSymbol
+                  ios_icon_name="xmark"
+                  android_material_icon_name="close"
+                  size={24}
+                  color={colors.text}
+                />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalScroll}>
+              {addresses.map((address, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.addressOption,
+                    selectedAddress.id === address.id && styles.addressOptionSelected,
+                  ]}
+                  onPress={() => {
+                    setSelectedAddress(address);
+                    setShowAddressModal(false);
+                  }}
+                >
+                  <View style={styles.addressOptionContent}>
+                    <IconSymbol
+                      ios_icon_name="location.fill"
+                      android_material_icon_name="location-on"
+                      size={24}
+                      color={colors.text}
+                    />
+                    <View style={styles.addressOptionText}>
+                      <Text style={styles.addressOptionLabel}>{address.label}</Text>
+                      <Text style={styles.addressOptionAddress}>{address.address}</Text>
+                    </View>
+                  </View>
+                  {selectedAddress.id === address.id && (
+                    <IconSymbol
+                      ios_icon_name="checkmark.circle.fill"
+                      android_material_icon_name="check-circle"
+                      size={24}
+                      color={colors.highlight}
+                    />
+                  )}
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity
+                style={styles.addAddressButton}
+                onPress={() => {
+                  setShowAddressModal(false);
+                  console.log('Add new address clicked');
+                }}
+              >
+                <IconSymbol
+                  ios_icon_name="plus.circle"
+                  android_material_icon_name="add-circle-outline"
+                  size={24}
+                  color={colors.text}
+                />
+                <Text style={styles.addAddressText}>Add New Address</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -318,16 +546,78 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontWeight: '600',
   },
+  toggleSection: {
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 12,
+    backgroundColor: colors.background,
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    backgroundColor: colors.card,
+    borderRadius: 8,
+    padding: 4,
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
+    elevation: 2,
+  },
+  toggleButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 6,
+  },
+  toggleButtonActive: {
+    backgroundColor: '#000000',
+  },
+  toggleButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  toggleButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  addressDropdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.card,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    padding: 12,
+    borderRadius: 8,
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
+    elevation: 2,
+  },
+  addressContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 8,
+  },
+  addressTextContainer: {
+    flex: 1,
+  },
+  addressLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 2,
+  },
+  addressText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.card,
     marginHorizontal: 16,
-    marginTop: 20,
+    marginTop: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 12,
-    marginBottom: 24,
+    marginBottom: 16,
     boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
     elevation: 2,
   },
@@ -336,6 +626,34 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     fontSize: 16,
     color: colors.text,
+  },
+  categorySection: {
+    paddingVertical: 12,
+    backgroundColor: colors.background,
+  },
+  categoryScroll: {
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  categoryChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 24,
+    backgroundColor: colors.card,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+  },
+  categoryChipActive: {
+    backgroundColor: '#000000',
+    borderColor: '#000000',
+  },
+  categoryChipText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000000',
+  },
+  categoryChipTextActive: {
+    color: '#FFFFFF',
   },
   section: {
     marginBottom: 24,
@@ -351,6 +669,11 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '700',
     color: colors.text,
+  },
+  seeAllText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#808080',
   },
   horizontalScroll: {
     paddingHorizontal: 16,
@@ -469,5 +792,79 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: colors.card,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  modalScroll: {
+    padding: 16,
+  },
+  addressOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: '#000000',
+  },
+  addressOptionSelected: {
+    borderColor: '#000000',
+    backgroundColor: colors.highlight,
+  },
+  addressOptionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 12,
+  },
+  addressOptionText: {
+    flex: 1,
+  },
+  addressOptionLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  addressOptionAddress: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  addAddressButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 12,
+    gap: 12,
+  },
+  addAddressText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
   },
 });
