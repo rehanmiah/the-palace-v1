@@ -43,7 +43,7 @@ export default function CartScreen() {
     if (restaurant && subtotal < restaurant.minimumOrder) {
       Alert.alert(
         'Minimum Order',
-        `Minimum order amount is $${restaurant.minimumOrder.toFixed(2)}`
+        `Minimum order amount is £${restaurant.minimumOrder.toFixed(2)}`
       );
       return;
     }
@@ -157,7 +157,7 @@ export default function CartScreen() {
                 <View style={styles.itemInfo}>
                   <Text style={styles.itemName}>{item.dish.name}</Text>
                   <Text style={styles.itemPrice}>
-                    ${item.dish.price.toFixed(2)}
+                    £{item.dish.price.toFixed(2)}
                   </Text>
                   <View style={styles.quantityContainer}>
                     <TouchableOpacity
@@ -210,16 +210,16 @@ export default function CartScreen() {
           <Text style={styles.summaryTitle}>Order Summary</Text>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Subtotal</Text>
-            <Text style={styles.summaryValue}>${subtotal.toFixed(2)}</Text>
+            <Text style={styles.summaryValue}>£{subtotal.toFixed(2)}</Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Delivery Fee</Text>
-            <Text style={styles.summaryValue}>${deliveryFee.toFixed(2)}</Text>
+            <Text style={styles.summaryValue}>£{deliveryFee.toFixed(2)}</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.summaryRow}>
             <Text style={styles.totalLabel}>Total</Text>
-            <Text style={styles.totalValue}>${total.toFixed(2)}</Text>
+            <Text style={styles.totalValue}>£{total.toFixed(2)}</Text>
           </View>
           {restaurant && subtotal < restaurant.minimumOrder && (
             <View style={styles.warningBox}>
@@ -230,7 +230,7 @@ export default function CartScreen() {
                 color={colors.accent}
               />
               <Text style={styles.warningText}>
-                Minimum order: ${restaurant.minimumOrder.toFixed(2)}
+                Minimum order: £{restaurant.minimumOrder.toFixed(2)}
               </Text>
             </View>
           )}
@@ -243,7 +243,7 @@ export default function CartScreen() {
           style={[buttonStyles.primary, styles.checkoutButton]}
           onPress={handleCheckout}
         >
-          <Text style={buttonStyles.text}>Place Order • ${total.toFixed(2)}</Text>
+          <Text style={buttonStyles.text}>Place Order • £{total.toFixed(2)}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
   itemPrice: {
     fontSize: 16,
     fontWeight: '700',
-    color: colors.primary,
+    color: '#000000',
   },
   quantityContainer: {
     flexDirection: 'row',
