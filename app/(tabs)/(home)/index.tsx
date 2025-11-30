@@ -18,6 +18,7 @@ import { restaurants } from '@/data/restaurants';
 import { useCart } from '@/contexts/CartContext';
 import { useMenu } from '@/hooks/useMenu';
 import { useSpiceLevel } from '@/hooks/useSpiceLevel';
+import { SpiceButton } from '@/components/SpiceButton';
 import AddressModal from '@/components/AddressModal';
 
 const { width } = Dimensions.get('window');
@@ -459,7 +460,7 @@ function PopularDishCard({ dish, quantity, onAdd, onUpdateQuantity }: any) {
       <View style={styles.dishImageContainer}>
         <Image source={{ uri: dish.image_id || '' }} style={styles.dishImage} />
         {dish.spicy && (
-          <SpiceButtonInline menuItemId={dish.id} />
+          <SpiceButton menuItemId={dish.id} />
         )}
       </View>
       <View style={styles.dishInfo}>
@@ -559,7 +560,7 @@ function MenuItemRow({ item, quantity, onAdd, onUpdateQuantity }: any) {
       <View style={styles.menuImageContainer}>
         <Image source={{ uri: item.image_id || '' }} style={styles.menuImage} />
         {item.spicy && (
-          <SpiceButtonInline menuItemId={item.id} />
+          <SpiceButton menuItemId={item.id} />
         )}
         {quantity === 0 ? (
           <TouchableOpacity
@@ -597,87 +598,6 @@ function MenuItemRow({ item, quantity, onAdd, onUpdateQuantity }: any) {
         )}
       </View>
     </View>
-  );
-}
-
-// Inline Spice Button Component - Now only controls spice level, doesn't add to cart
-function SpiceButtonInline({ menuItemId }: { menuItemId: string }) {
-  const { spiceLevel, incrementSpiceLevel, decrementSpiceLevel } = useSpiceLevel(menuItemId);
-  const [showControls, setShowControls] = useState(false);
-
-  const handlePress = () => {
-    if (spiceLevel === 0) {
-      // First click sets to level 1
-      incrementSpiceLevel();
-    } else {
-      // Subsequent clicks show controls
-      setShowControls(true);
-    }
-  };
-
-  const handleIncrement = (e: any) => {
-    e.stopPropagation();
-    incrementSpiceLevel();
-  };
-
-  const handleDecrement = (e: any) => {
-    e.stopPropagation();
-    decrementSpiceLevel();
-  };
-
-  // Show controls if spice level > 0 and controls are visible
-  if (spiceLevel > 0 && showControls) {
-    return (
-      <View style={styles.spiceControlsContainer}>
-        <TouchableOpacity
-          style={styles.spiceControlButton}
-          onPress={handleDecrement}
-          activeOpacity={0.8}
-        >
-          <IconSymbol
-            ios_icon_name="minus"
-            android_material_icon_name="remove"
-            size={16}
-            color="#FFFFFF"
-          />
-        </TouchableOpacity>
-        <View style={styles.spiceLevelDisplay}>
-          <Text style={styles.spiceLevelText}>{spiceLevel}</Text>
-        </View>
-        <TouchableOpacity
-          style={[
-            styles.spiceControlButton,
-            spiceLevel >= 3 && styles.spiceControlButtonDisabled,
-          ]}
-          onPress={handleIncrement}
-          disabled={spiceLevel >= 3}
-          activeOpacity={0.8}
-        >
-          <IconSymbol
-            ios_icon_name="plus"
-            android_material_icon_name="add"
-            size={16}
-            color={spiceLevel >= 3 ? colors.textSecondary : "#FFFFFF"}
-          />
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  // Default button view
-  return (
-    <TouchableOpacity
-      style={styles.spiceButtonInline}
-      onPress={handlePress}
-      activeOpacity={0.8}
-    >
-      <Text style={styles.chilliEmoji}>🌶️</Text>
-      {spiceLevel > 0 && (
-        <View style={styles.spiceBadge}>
-          <Text style={styles.spiceBadgeText}>{spiceLevel}</Text>
-        </View>
-      )}
-    </TouchableOpacity>
   );
 }
 
@@ -1147,71 +1067,5 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.text,
     paddingHorizontal: 12,
-  },
-  spiceButtonInline: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 20,
-    padding: 6,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.2)',
-    elevation: 4,
-    zIndex: 10,
-  },
-  chilliEmoji: {
-    fontSize: 20,
-  },
-  spiceBadge: {
-    position: 'absolute',
-    top: -6,
-    right: -6,
-    backgroundColor: colors.primary,
-    borderRadius: 10,
-    minWidth: 18,
-    height: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 4,
-  },
-  spiceBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  spiceControlsContainer: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.98)',
-    borderRadius: 24,
-    padding: 4,
-    gap: 4,
-    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.25)',
-    elevation: 6,
-    zIndex: 10,
-  },
-  spiceControlButton: {
-    width: 32,
-    height: 32,
-    backgroundColor: '#000000',
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  spiceControlButtonDisabled: {
-    backgroundColor: colors.border,
-  },
-  spiceLevelDisplay: {
-    paddingHorizontal: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  spiceLevelText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text,
   },
 });

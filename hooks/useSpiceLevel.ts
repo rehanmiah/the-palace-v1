@@ -129,6 +129,13 @@ export function useSpiceLevel(menuItemId: string) {
     }
   }, [menuItemId, user, sessionId]);
 
+  const cycleSpiceLevel = useCallback(() => {
+    // Cycle through 0 -> 1 -> 2 -> 3 -> 0
+    const nextLevel = spiceLevel >= 3 ? 0 : spiceLevel + 1;
+    console.log('Cycling spice level from', spiceLevel, 'to', nextLevel);
+    updateSpiceLevel(nextLevel);
+  }, [spiceLevel, updateSpiceLevel]);
+
   const incrementSpiceLevel = useCallback(() => {
     const newLevel = Math.min(3, spiceLevel + 1);
     updateSpiceLevel(newLevel);
@@ -143,6 +150,7 @@ export function useSpiceLevel(menuItemId: string) {
     spiceLevel,
     isLoading,
     updateSpiceLevel,
+    cycleSpiceLevel,
     incrementSpiceLevel,
     decrementSpiceLevel,
   };
