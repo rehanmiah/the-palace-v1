@@ -243,7 +243,7 @@ export default function AddressModal({
                           <IconSymbol
                             ios_icon_name="pencil"
                             android_material_icon_name="edit"
-                            size={18}
+                            size={16}
                             color={colors.textSecondary}
                           />
                         </TouchableOpacity>
@@ -403,19 +403,19 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalContentWrapper: {
-    width: '90%',
-    maxWidth: 350,
+    width: '75%',
+    maxWidth: 280,
   },
   modalContent: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    maxHeight: 200,
+    borderRadius: 12,
+    maxHeight: 180,
     boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.15)',
     elevation: 8,
     overflow: 'hidden',
   },
   modalScroll: {
-    maxHeight: 200,
+    maxHeight: 180,
   },
   addressOptionContainer: {
     flexDirection: 'row',
@@ -425,19 +425,19 @@ const styles = StyleSheet.create({
   },
   addressOption: {
     flex: 1,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
   },
   addressOptionSingle: {
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
   },
   addressOptionLabel: {
-    fontSize: 15,
+    fontSize: 14,
     color: '#000000',
-    lineHeight: 20,
+    lineHeight: 18,
   },
   addressOptionLabelBold: {
     fontWeight: '700',
@@ -448,7 +448,7 @@ const styles = StyleSheet.create({
     color: '#000000',
   },
   editButton: {
-    padding: 14,
+    padding: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
