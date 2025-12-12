@@ -59,7 +59,7 @@ export type Database = {
           category: string | null
           created_at: string | null
           description: string | null
-          id: string
+          id: number
           image_id: string | null
           is_popular: boolean | null
           is_vegetarian: boolean | null
@@ -73,7 +73,7 @@ export type Database = {
           category?: string | null
           created_at?: string | null
           description?: string | null
-          id?: string
+          id?: number
           image_id?: string | null
           is_popular?: boolean | null
           is_vegetarian?: boolean | null
@@ -87,7 +87,7 @@ export type Database = {
           category?: string | null
           created_at?: string | null
           description?: string | null
-          id?: string
+          id?: number
           image_id?: string | null
           is_popular?: boolean | null
           is_vegetarian?: boolean | null
@@ -103,7 +103,7 @@ export type Database = {
         Row: {
           created_at: string | null
           display_order: number
-          id: string
+          id: number
           is_active: boolean | null
           name: string
           updated_at: string | null
@@ -111,7 +111,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           display_order: number
-          id?: string
+          id?: number
           is_active?: boolean | null
           name: string
           updated_at?: string | null
@@ -119,7 +119,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           display_order?: number
-          id?: string
+          id?: number
           is_active?: boolean | null
           name?: string
           updated_at?: string | null
@@ -129,8 +129,8 @@ export type Database = {
       menu_item_spice_levels: {
         Row: {
           created_at: string | null
-          id: string
-          menu_item_id: string
+          id: number
+          menu_item_id: number
           session_id: string | null
           spice_level: number
           updated_at: string | null
@@ -138,8 +138,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
-          id?: string
-          menu_item_id: string
+          id?: number
+          menu_item_id: number
           session_id?: string | null
           spice_level?: number
           updated_at?: string | null
@@ -147,8 +147,8 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
-          id?: string
-          menu_item_id?: string
+          id?: number
+          menu_item_id?: number
           session_id?: string | null
           spice_level?: number
           updated_at?: string | null
@@ -156,7 +156,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "menu_item_spice_levels_menu_item_id_fkey"
+            foreignKeyName: "menu_item_spice_levels_new_menu_item_id_fkey"
             columns: ["menu_item_id"]
             isOneToOne: false
             referencedRelation: "menu"
@@ -199,13 +199,6 @@ export type Database = {
           subtotal?: number
         }
         Relationships: [
-          {
-            foreignKeyName: "order_items_menu_item_id_fkey"
-            columns: ["menu_item_id"]
-            isOneToOne: false
-            referencedRelation: "menu"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "order_items_order_id_fkey"
             columns: ["order_id"]
@@ -319,7 +312,6 @@ export type Database = {
           created_at?: string | null
           expiry_month?: string | null
           expiry_year?: string | null
-          holder_name?: string | null
           id?: string
           is_default?: boolean | null
           last4?: string | null

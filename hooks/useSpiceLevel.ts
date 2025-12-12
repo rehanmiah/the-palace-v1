@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SESSION_ID_KEY = 'guest_session_id';
 
-export function useSpiceLevel(menuItemId: string) {
+export function useSpiceLevel(menuItemId: number) {
   const { user } = useAuth();
   const [spiceLevel, setSpiceLevel] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);

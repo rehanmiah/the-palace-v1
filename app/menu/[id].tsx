@@ -86,7 +86,7 @@ export default function MenuScreen() {
 
   const cartItemCount = getCartItemCount();
 
-  const getDishQuantity = (dishId: string) => {
+  const getDishQuantity = (dishId: number) => {
     const cartItem = cart.find((item) => item.dish.id === dishId);
     return cartItem ? cartItem.quantity : 0;
   };

@@ -10,7 +10,7 @@ import { colors } from '@/styles/commonStyles';
 import { useSpiceLevel } from '@/hooks/useSpiceLevel';
 
 interface SpiceButtonProps {
-  menuItemId: string;
+  menuItemId: number;
   onSpiceLevelChange?: (level: number) => void;
 }
 

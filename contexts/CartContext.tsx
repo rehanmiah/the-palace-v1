@@ -5,9 +5,9 @@ import { CartItem, Dish } from '@/types/restaurant';
 interface CartContextType {
   cart: CartItem[];
   addToCart: (dish: Dish, restaurantId: string, spiceLevel?: number) => void;
-  removeFromCart: (dishId: string) => void;
-  updateQuantity: (dishId: string, quantity: number) => void;
-  updateSpiceLevel: (dishId: string, spiceLevel: number) => void;
+  removeFromCart: (dishId: number) => void;
+  updateQuantity: (dishId: number, quantity: number) => void;
+  updateSpiceLevel: (dishId: number, spiceLevel: number) => void;
   clearCart: () => void;
   getCartTotal: () => number;
   getCartItemCount: () => number;
@@ -48,7 +48,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     });
   }, [currentRestaurantId]);
 
-  const removeFromCart = useCallback((dishId: string) => {
+  const removeFromCart = useCallback((dishId: number) => {
     console.log('Removing from cart:', dishId);
     setCart((prevCart) => {
       const newCart = prevCart.filter((item) => item.dish.id !== dishId);
@@ -59,7 +59,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const updateQuantity = useCallback((dishId: string, quantity: number) => {
+  const updateQuantity = useCallback((dishId: number, quantity: number) => {
     console.log('Updating quantity:', dishId, quantity);
     if (quantity <= 0) {
       removeFromCart(dishId);
@@ -73,7 +73,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     );
   }, [removeFromCart]);
 
-  const updateSpiceLevel = useCallback((dishId: string, spiceLevel: number) => {
+  const updateSpiceLevel = useCallback((dishId: number, spiceLevel: number) => {
     console.log('Updating spice level:', dishId, spiceLevel);
     setCart((prevCart) =>
       prevCart.map((item) =>
