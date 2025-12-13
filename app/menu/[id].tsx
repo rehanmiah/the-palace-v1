@@ -413,62 +413,61 @@ function MenuItemRow({ item, onAdd, onUpdateQuantity, getItemQuantityInCart }: a
           </View>
         </View>
       </View>
-      <View style={styles.menuImageContainer}>
-        <Image source={{ uri: item.image_id || '' }} style={styles.menuImage} />
-        
-        {/* Spice Button - Show for all items so users can add spiciness */}
-        <TouchableOpacity
-          style={styles.spiceButton}
-          onPress={handleSpiceClick}
-          activeOpacity={0.8}
-        >
-          <View style={styles.spiceButtonContent}>
-            <Text style={styles.spiceEmoji}>🌶️</Text>
-            {spiceLevel > 0 && (
-              <View style={styles.spiceBadge}>
-                <Text style={styles.spiceBadgeText}>{spiceLevel}</Text>
-              </View>
-            )}
-          </View>
-        </TouchableOpacity>
+      
+      <Image source={{ uri: item.image_id || '' }} style={styles.menuImage} />
+      
+      {/* Spice Button - Show for all items so users can add spiciness */}
+      <TouchableOpacity
+        style={styles.spiceButton}
+        onPress={handleSpiceClick}
+        activeOpacity={0.8}
+      >
+        <View style={styles.spiceButtonContent}>
+          <Text style={styles.spiceEmoji}>🌶️</Text>
+          {spiceLevel > 0 && (
+            <View style={styles.spiceBadge}>
+              <Text style={styles.spiceBadgeText}>{spiceLevel}</Text>
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
 
-        {/* Show Add button if no items with this spice level in cart */}
-        {/* Show quantity controls if items with this spice level exist in cart */}
-        {quantity === 0 ? (
+      {/* Show Add button if no items with this spice level in cart */}
+      {/* Show quantity controls if items with this spice level exist in cart */}
+      {quantity === 0 ? (
+        <TouchableOpacity
+          style={styles.addButtonUber}
+          onPress={handleAddToCart}
+        >
+          <Text style={styles.addButtonTextUber}>Add</Text>
+        </TouchableOpacity>
+      ) : (
+        <View style={styles.quantityControlUber}>
           <TouchableOpacity
-            style={styles.addButtonUber}
+            style={styles.quantityButtonUber}
+            onPress={() => handleUpdateQuantity(quantity - 1)}
+          >
+            <IconSymbol
+              ios_icon_name={quantity === 1 ? "trash.fill" : "minus"}
+              android_material_icon_name={quantity === 1 ? "delete" : "remove"}
+              size={16}
+              color="#FFFFFF"
+            />
+          </TouchableOpacity>
+          <Text style={styles.quantityTextUber}>{quantity}</Text>
+          <TouchableOpacity
+            style={styles.quantityButtonUber}
             onPress={handleAddToCart}
           >
-            <Text style={styles.addButtonTextUber}>Add</Text>
+            <IconSymbol
+              ios_icon_name="plus"
+              android_material_icon_name="add"
+              size={16}
+              color="#FFFFFF"
+            />
           </TouchableOpacity>
-        ) : (
-          <View style={styles.quantityControlUber}>
-            <TouchableOpacity
-              style={styles.quantityButtonUber}
-              onPress={() => handleUpdateQuantity(quantity - 1)}
-            >
-              <IconSymbol
-                ios_icon_name={quantity === 1 ? "trash.fill" : "minus"}
-                android_material_icon_name={quantity === 1 ? "delete" : "remove"}
-                size={16}
-                color="#FFFFFF"
-              />
-            </TouchableOpacity>
-            <Text style={styles.quantityTextUber}>{quantity}</Text>
-            <TouchableOpacity
-              style={styles.quantityButtonUber}
-              onPress={handleAddToCart}
-            >
-              <IconSymbol
-                ios_icon_name="plus"
-                android_material_icon_name="add"
-                size={16}
-                color="#FFFFFF"
-              />
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -697,6 +696,7 @@ const styles = StyleSheet.create({
     padding: 16,
     boxShadow: '0px 6px 16px rgba(0, 0, 0, 0.12)',
     elevation: 6,
+    position: 'relative',
   },
   menuInfo: {
     flex: 1,
@@ -767,22 +767,16 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontWeight: '500',
   },
-  menuImageContainer: {
-    position: 'relative',
+  menuImage: {
     width: 120,
     height: 120,
     borderRadius: 8,
-    overflow: 'hidden',
-  },
-  menuImage: {
-    width: '100%',
-    height: '100%',
     backgroundColor: colors.border,
   },
   spiceButton: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: 24,
+    right: 24,
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 20,
     padding: 6,
@@ -815,8 +809,8 @@ const styles = StyleSheet.create({
   },
   addButtonUber: {
     position: 'absolute',
-    bottom: 8,
-    right: 8,
+    bottom: 24,
+    right: 24,
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -833,8 +827,8 @@ const styles = StyleSheet.create({
   },
   quantityControlUber: {
     position: 'absolute',
-    bottom: 8,
-    right: 8,
+    bottom: 24,
+    right: 24,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
