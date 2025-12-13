@@ -31,7 +31,7 @@ interface Address {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { addToCart, updateQuantity, cart, getCartItemCount } = useCart();
+  const { addToCart, updateQuantity, cart, getCartItemCount, getItemQuantityInCart } = useCart();
   const { menuItems, categories, isLoading, getPopularItems } = useMenu();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -70,11 +70,6 @@ export default function HomeScreen() {
 
     return matchesSearch && matchesCategory;
   });
-
-  const getDishQuantity = (dishId: string) => {
-    const cartItem = cart.find((item) => item.dish.id === dishId);
-    return cartItem ? cartItem.quantity : 0;
-  };
 
   const handleAddToCart = (menuItem: any, spiceLevel?: number) => {
     console.log('Adding to cart from home:', menuItem.name, 'spice level:', spiceLevel);
@@ -117,16 +112,6 @@ export default function HomeScreen() {
   const getPostcode = (address: string) => {
     const parts = address.split(',').map(part => part.trim());
     return parts[parts.length - 1] || '';
-  };
-
-  // Render chili emojis based on spice level
-  const renderChilies = (count: number) => {
-    if (count === 0) return null;
-    return (
-      <Text style={styles.spiceLevelEmojis}>
-        {'🌶️'.repeat(count)}
-      </Text>
-    );
   };
 
   if (isLoading) {
@@ -285,18 +270,15 @@ export default function HomeScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.horizontalScroll}
             >
-              {popularDishes.map((dish, index) => {
-                const quantity = getDishQuantity(dish.id);
-                return (
-                  <PopularDishCard
-                    key={index}
-                    dish={dish}
-                    quantity={quantity}
-                    onAdd={handleAddToCart}
-                    onUpdateQuantity={updateQuantity}
-                  />
-                );
-              })}
+              {popularDishes.map((dish, index) => (
+                <PopularDishCard
+                  key={index}
+                  dish={dish}
+                  onAdd={handleAddToCart}
+                  onUpdateQuantity={updateQuantity}
+                  getItemQuantityInCart={getItemQuantityInCart}
+                />
+              ))}
             </ScrollView>
           </View>
         )}
@@ -406,18 +388,17 @@ export default function HomeScreen() {
                 {selectedCategory || `${filteredItems.length} ${filteredItems.length === 1 ? 'Result' : 'Results'}`}
               </Text>
             </View>
-            {filteredItems.map((item, index) => {
-              const quantity = getDishQuantity(item.id);
-              return (
+            <View style={styles.menuSection}>
+              {filteredItems.map((item, index) => (
                 <MenuItemRow
                   key={index}
                   item={item}
-                  quantity={quantity}
                   onAdd={handleAddToCart}
                   onUpdateQuantity={updateQuantity}
+                  getItemQuantityInCart={getItemQuantityInCart}
                 />
-              );
-            })}
+              ))}
+            </View>
           </View>
         )}
       </ScrollView>
@@ -439,8 +420,9 @@ export default function HomeScreen() {
 }
 
 // Popular Dish Card Component
-function PopularDishCard({ dish, quantity, onAdd, onUpdateQuantity }: any) {
+function PopularDishCard({ dish, onAdd, onUpdateQuantity, getItemQuantityInCart }: any) {
   const { spiceLevel } = useSpiceLevel(dish.id);
+  const quantity = getItemQuantityInCart(dish.id, spiceLevel);
 
   const handleAddToCart = () => {
     onAdd(dish, dish.spicy ? spiceLevel : undefined);
@@ -489,7 +471,7 @@ function PopularDishCard({ dish, quantity, onAdd, onUpdateQuantity }: any) {
           <View style={styles.quantityControl}>
             <TouchableOpacity
               style={styles.quantityButton}
-              onPress={() => onUpdateQuantity(dish.id, quantity - 1)}
+              onPress={() => onUpdateQuantity(dish.id, quantity - 1, spiceLevel)}
             >
               <IconSymbol
                 ios_icon_name={quantity === 1 ? "trash.fill" : "minus"}
@@ -517,28 +499,53 @@ function PopularDishCard({ dish, quantity, onAdd, onUpdateQuantity }: any) {
   );
 }
 
-// Menu Item Row Component
-function MenuItemRow({ item, quantity, onAdd, onUpdateQuantity }: any) {
-  const { spiceLevel } = useSpiceLevel(item.id);
+// Menu Item Row Component - Now with Card Style matching menu/[id].tsx
+function MenuItemRow({ item, onAdd, onUpdateQuantity, getItemQuantityInCart }: any) {
+  const { spiceLevel, cycleSpiceLevel } = useSpiceLevel(item.id);
+
+  // Get quantity for this specific item with this specific spice level
+  const quantity = getItemQuantityInCart(item.id, spiceLevel);
 
   const handleAddToCart = () => {
-    onAdd(item, item.spicy ? spiceLevel : undefined);
+    console.log('Adding to cart with spice level:', spiceLevel);
+    onAdd(item, spiceLevel);
+  };
+
+  const handleSpiceClick = () => {
+    console.log('Spice button clicked for:', item.name, 'Current level:', spiceLevel);
+    cycleSpiceLevel();
+  };
+
+  const handleUpdateQuantity = (newQuantity: number) => {
+    onUpdateQuantity(item.id, newQuantity, spiceLevel);
   };
 
   const renderChilies = (count: number) => {
     if (count === 0) return null;
+    
+    const chilies = [];
+    for (let i = 0; i < count; i++) {
+      chilies.push(
+        <Text key={i} style={styles.chilliEmoji}>🌶️</Text>
+      );
+    }
+    
     return (
-      <Text style={styles.spiceLevelEmojis}>
-        {'🌶️'.repeat(count)}
-      </Text>
+      <View style={styles.spiceLevelContainer}>
+        {chilies}
+      </View>
     );
   };
+
+  console.log('MenuItemRow render - Item:', item.name, 'Spice Level:', spiceLevel, 'Quantity:', quantity);
 
   return (
     <View style={styles.menuItem}>
       <View style={styles.menuInfo}>
         <View style={styles.menuHeader}>
           <Text style={styles.menuName}>{item.name}</Text>
+          {/* Display spice emojis under the item name */}
+          {spiceLevel > 0 && renderChilies(spiceLevel)}
         </View>
         <Text style={styles.menuDescription} numberOfLines={2}>
           {item.description}
@@ -547,7 +554,6 @@ function MenuItemRow({ item, quantity, onAdd, onUpdateQuantity }: any) {
           <Text style={styles.menuPrice}>
             £{item.price.toFixed(2)}
           </Text>
-          {spiceLevel > 0 && renderChilies(spiceLevel)}
           <View style={styles.menuTags}>
             {item.is_vegetarian && (
               <View style={styles.vegTag}>
@@ -555,13 +561,40 @@ function MenuItemRow({ item, quantity, onAdd, onUpdateQuantity }: any) {
               </View>
             )}
           </View>
+          <View style={styles.ratingContainer}>
+            <IconSymbol
+              ios_icon_name="hand.thumbsup.fill"
+              android_material_icon_name="thumb-up"
+              size={14}
+              color={colors.text}
+            />
+            <Text style={styles.ratingText}>
+              {Math.floor(Math.random() * 10) + 85}% ({Math.floor(Math.random() * 100) + 20})
+            </Text>
+          </View>
         </View>
       </View>
       <View style={styles.menuImageContainer}>
         <Image source={{ uri: item.image_id || '' }} style={styles.menuImage} />
-        {item.spicy && (
-          <SpiceButton menuItemId={item.id} />
-        )}
+        
+        {/* Spice Button - Show for all items so users can add spiciness */}
+        <TouchableOpacity
+          style={styles.spiceButton}
+          onPress={handleSpiceClick}
+          activeOpacity={0.8}
+        >
+          <View style={styles.spiceButtonContent}>
+            <Text style={styles.spiceEmoji}>🌶️</Text>
+            {spiceLevel > 0 && (
+              <View style={styles.spiceBadge}>
+                <Text style={styles.spiceBadgeText}>{spiceLevel}</Text>
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
+
+        {/* Show Add button if no items with this spice level in cart */}
+        {/* Show quantity controls if items with this spice level exist in cart */}
         {quantity === 0 ? (
           <TouchableOpacity
             style={styles.addButtonUber}
@@ -573,7 +606,7 @@ function MenuItemRow({ item, quantity, onAdd, onUpdateQuantity }: any) {
           <View style={styles.quantityControlUber}>
             <TouchableOpacity
               style={styles.quantityButtonUber}
-              onPress={() => onUpdateQuantity(item.id, quantity - 1)}
+              onPress={() => handleUpdateQuantity(quantity - 1)}
             >
               <IconSymbol
                 ios_icon_name={quantity === 1 ? "trash.fill" : "minus"}
@@ -967,15 +1000,18 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
   },
+  menuSection: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
   menuItem: {
     flexDirection: 'row',
     backgroundColor: colors.card,
-    borderRadius: 0,
-    marginBottom: 0,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderRadius: 12,
+    marginBottom: 24,
+    padding: 16,
+    boxShadow: '0px 6px 16px rgba(0, 0, 0, 0.12)',
+    elevation: 6,
   },
   menuInfo: {
     flex: 1,
@@ -989,7 +1025,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: colors.text,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   menuDescription: {
     fontSize: 14,
@@ -1007,21 +1043,76 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#000000',
   },
+  spiceLevelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    marginTop: 2,
+  },
+  chilliEmoji: {
+    fontSize: 16,
+  },
   menuTags: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginLeft: 'auto',
+  },
+  ratingText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    fontWeight: '500',
+  },
   menuImageContainer: {
     position: 'relative',
     width: 120,
     height: 120,
+    borderRadius: 8,
+    overflow: 'hidden',
   },
   menuImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 8,
+    width: '100%',
+    height: '100%',
     backgroundColor: colors.border,
+  },
+  spiceButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 20,
+    padding: 6,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.2)',
+    elevation: 4,
+    zIndex: 10,
+  },
+  spiceButtonContent: {
+    position: 'relative',
+  },
+  spiceEmoji: {
+    fontSize: 20,
+  },
+  spiceBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    backgroundColor: colors.error,
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  spiceBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
   },
   addButtonUber: {
     position: 'absolute',
