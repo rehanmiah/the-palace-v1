@@ -108,38 +108,6 @@ export default function MenuScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <IconSymbol
-            ios_icon_name="chevron.left"
-            android_material_icon_name="arrow-back"
-            size={24}
-            color={colors.text}
-          />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{restaurant.name}</Text>
-        <TouchableOpacity
-          style={styles.cartButton}
-          onPress={() => router.push('/cart')}
-        >
-          <IconSymbol
-            ios_icon_name="cart.fill"
-            android_material_icon_name="shopping-cart"
-            size={24}
-            color="#FFFFFF"
-          />
-          {cartItemCount > 0 && (
-            <View style={styles.cartBadge}>
-              <Text style={styles.cartBadgeText}>{cartItemCount}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-      </View>
-
       {/* Sticky Delivery/Collection Header */}
       <View style={styles.stickyHeader}>
         {/* Delivery/Collection Toggle */}
@@ -216,53 +184,41 @@ export default function MenuScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Restaurant Info */}
-        <View style={styles.restaurantSection}>
+        {/* Background Image with Cart Button */}
+        <View style={styles.restaurantImageContainer}>
           <Image
             source={restaurant.image}
             style={styles.restaurantImage}
           />
-          <View style={styles.restaurantInfo}>
-            <View style={styles.restaurantHeader}>
-              {!restaurant.isOpen && (
-                <View style={styles.closedBadge}>
-                  <Text style={styles.closedText}>Closed</Text>
-                </View>
-              )}
-            </View>
-            <Text style={styles.restaurantDescription}>
-              {restaurant.description}
-            </Text>
-            <Text style={styles.restaurantAddress}>{restaurant.address}</Text>
-            <View style={styles.restaurantMeta}>
-              <TouchableOpacity 
-                style={styles.metaItem}
-                onPress={() => router.push('/reviews')}
-              >
-                <IconSymbol
-                  ios_icon_name="star.fill"
-                  android_material_icon_name="star"
-                  size={16}
-                  color={colors.accent}
-                />
-                <Text style={styles.metaText}>{restaurant.rating}</Text>
-              </TouchableOpacity>
-              <View style={styles.metaItem}>
-                <IconSymbol
-                  ios_icon_name="clock.fill"
-                  android_material_icon_name="schedule"
-                  size={16}
-                  color={colors.textSecondary}
-                />
-                <Text style={styles.metaText}>{restaurant.deliveryTime}</Text>
+          {/* Back Button */}
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <IconSymbol
+              ios_icon_name="chevron.left"
+              android_material_icon_name="arrow-back"
+              size={24}
+              color={colors.text}
+            />
+          </TouchableOpacity>
+          {/* Cart Button in Background Image */}
+          <TouchableOpacity
+            style={styles.cartButton}
+            onPress={() => router.push('/cart')}
+          >
+            <IconSymbol
+              ios_icon_name="cart.fill"
+              android_material_icon_name="shopping-cart"
+              size={28}
+              color="#FFFFFF"
+            />
+            {cartItemCount > 0 && (
+              <View style={styles.cartBadge}>
+                <Text style={styles.cartBadgeText}>{cartItemCount}</Text>
               </View>
-              <View style={styles.metaItem}>
-                <Text style={styles.metaText}>
-                  Min £{restaurant.minimumOrder}
-                </Text>
-              </View>
-            </View>
-          </View>
+            )}
+          </TouchableOpacity>
         </View>
 
         {/* Category Filter - From Database */}
@@ -491,62 +447,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.textSecondary,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'android' ? 48 : 48,
-    paddingBottom: 12,
-    backgroundColor: colors.background,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.card,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    flex: 1,
-    textAlign: 'center',
-  },
-  cartButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#000000',
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-  },
-  cartBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    backgroundColor: colors.green,
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 4,
-  },
-  cartBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
-  },
   stickyHeader: {
     backgroundColor: colors.background,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: Platform.OS === 'android' ? 48 : 48,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
@@ -609,60 +514,59 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 100,
   },
-  restaurantSection: {
-    backgroundColor: colors.card,
+  restaurantImageContainer: {
+    width: '100%',
+    height: 180,
+    position: 'relative',
     marginBottom: 8,
   },
   restaurantImage: {
     width: '100%',
-    height: 180,
+    height: '100%',
     backgroundColor: colors.border,
   },
-  restaurantInfo: {
-    padding: 16,
-  },
-  restaurantHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  backButton: {
+    position: 'absolute',
+    top: Platform.OS === 'android' ? 16 : 8,
+    left: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.card,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.3)',
+    elevation: 5,
   },
-  closedBadge: {
-    backgroundColor: colors.error,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+  cartButton: {
+    position: 'absolute',
+    top: Platform.OS === 'android' ? 16 : 8,
+    right: 16,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#000000',
+    justifyContent: 'center',
+    alignItems: 'center',
+    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.3)',
+    elevation: 5,
   },
-  closedText: {
-    color: colors.card,
+  cartBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: colors.green,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  cartBadgeText: {
+    color: '#FFFFFF',
     fontSize: 12,
-    fontWeight: '600',
-  },
-  restaurantDescription: {
-    fontSize: 14,
-    color: colors.text,
-    marginBottom: 8,
-    lineHeight: 20,
-  },
-  restaurantAddress: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginBottom: 12,
-    lineHeight: 18,
-  },
-  restaurantMeta: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  metaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  metaText: {
-    fontSize: 14,
-    color: colors.text,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   categorySection: {
     paddingVertical: 12,
