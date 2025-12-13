@@ -28,11 +28,11 @@ export interface PaymentMethod {
 export interface Order {
   id: string;
   restaurantName: string;
-  items: {
+  items: Array<{
     name: string;
     quantity: number;
     price: number;
-  }[];
+  }>;
   total: number;
   status: 'pending' | 'confirmed' | 'preparing' | 'out_for_delivery' | 'ready_for_collection' | 'delivered' | 'completed' | 'cancelled';
   orderDate: string;
@@ -66,7 +66,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
 
-  const loadUserProfile = useCallback(async (userId: string) => {
+  // Check authentication status on mount
+  useEffect(() => {
+    checkAuth();
+    
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event);
+      
+      if (event === 'SIGNED_IN' && session?.user) {
+        await loadUserProfile(session.user.id);
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setPaymentMethods([]);
+        setOrders([]);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const checkAuth = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        await loadUserProfile(session.user.id);
+      }
+    } catch (error) {
+      console.error('Check auth error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadUserProfile = async (userId: string) => {
     try {
       const { data: profile, error } = await supabase
         .from('users')
@@ -99,43 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Load user profile error:', error);
     }
-  }, []);
-
-  const checkAuth = useCallback(async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session?.user) {
-        await loadUserProfile(session.user.id);
-      }
-    } catch (error) {
-      console.error('Check auth error:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [loadUserProfile]);
-
-  // Check authentication status on mount
-  useEffect(() => {
-    checkAuth();
-    
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event);
-      
-      if (event === 'SIGNED_IN' && session?.user) {
-        await loadUserProfile(session.user.id);
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null);
-        setPaymentMethods([]);
-        setOrders([]);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [checkAuth, loadUserProfile]);
+  };
 
   const login = useCallback(async (email: string, password: string) => {
     setIsLoading(true);
@@ -161,7 +161,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [loadUserProfile]);
+  }, []);
 
   const register = useCallback(async (name: string, email: string, phone: string, password: string) => {
     setIsLoading(true);
@@ -217,7 +217,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [loadUserProfile]);
+  }, []);
 
   const logout = useCallback(async () => {
     setIsLoading(true);
@@ -292,7 +292,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [user, loadUserProfile]);
+  }, [user]);
 
   const resendEmailVerification = useCallback(async () => {
     if (!user?.email) return;

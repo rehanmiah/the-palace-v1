@@ -19,7 +19,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useMenu } from '@/hooks/useMenu';
 import { useSpiceLevel } from '@/hooks/useSpiceLevel';
 import { SpiceButton } from '@/components/SpiceButton';
-import DeliveryHeader from '@/components/DeliveryHeader';
+import AddressModal from '@/components/AddressModal';
 
 const { width } = Dimensions.get('window');
 
@@ -31,12 +31,12 @@ interface Address {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { addToCart, updateQuantity, cart, getCartItemCount, getItemQuantityInCart } = useCart();
+  const { addToCart, updateQuantity, cart, getCartItemCount } = useCart();
   const { menuItems, categories, isLoading, getPopularItems } = useMenu();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [showAllItems, setShowAllItems] = useState(false);
   const [isDelivery, setIsDelivery] = useState(true);
+  const [showAddressModal, setShowAddressModal] = useState(false);
   const [collectionName, setCollectionName] = useState('');
   const [selectedAddress, setSelectedAddress] = useState<Address>({
     id: '1',
@@ -71,6 +71,11 @@ export default function HomeScreen() {
     return matchesSearch && matchesCategory;
   });
 
+  const getDishQuantity = (dishId: string) => {
+    const cartItem = cart.find((item) => item.dish.id === dishId);
+    return cartItem ? cartItem.quantity : 0;
+  };
+
   const handleAddToCart = (menuItem: any, spiceLevel?: number) => {
     console.log('Adding to cart from home:', menuItem.name, 'spice level:', spiceLevel);
     // Convert menu item to Dish format for cart
@@ -90,18 +95,29 @@ export default function HomeScreen() {
 
   const handleCategorySelect = (category: string | null) => {
     if (category === 'All Items') {
-      // Consistent behavior: show all items on home screen
-      setShowAllItems(true);
-      setSelectedCategory(null);
+      // Navigate to menu page for "All Items"
+      router.push({
+        pathname: '/menu/[id]',
+        params: { id: restaurant.id },
+      });
     } else {
       // Stay on home page and filter
-      setShowAllItems(false);
       setSelectedCategory(category);
     }
   };
 
+  const handleAddAddress = (address: Address) => {
+    setAddresses([...addresses, address]);
+    setSelectedAddress(address);
+  };
+
   const cartItemCount = getCartItemCount();
-  const cartTotal = cart.reduce((total, item) => total + item.dish.price * item.quantity, 0);
+
+  // Extract postcode from address
+  const getPostcode = (address: string) => {
+    const parts = address.split(',').map(part => part.trim());
+    return parts[parts.length - 1] || '';
+  };
 
   // Render chili emojis based on spice level
   const renderChilies = (count: number) => {
@@ -124,40 +140,6 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Delivery Header */}
-      <DeliveryHeader
-        isDelivery={isDelivery}
-        setIsDelivery={setIsDelivery}
-        selectedAddress={selectedAddress}
-        setSelectedAddress={setSelectedAddress}
-        addresses={addresses}
-        setAddresses={setAddresses}
-        collectionName={collectionName}
-        setCollectionName={setCollectionName}
-      />
-
-      {/* Floating Basket Icon - Top Right */}
-      {cartItemCount > 0 && (
-        <TouchableOpacity
-          style={styles.floatingBasketIcon}
-          onPress={() => router.push('/cart')}
-          activeOpacity={0.8}
-        >
-          <IconSymbol
-            ios_icon_name="cart.fill"
-            android_material_icon_name="shopping-cart"
-            size={24}
-            color="#FFFFFF"
-          />
-          <View style={styles.basketIconBadge}>
-            <Text style={styles.basketIconBadgeText}>{cartItemCount}</Text>
-          </View>
-          <View style={styles.basketIconPrice}>
-            <Text style={styles.basketIconPriceText}>£{cartTotal.toFixed(2)}</Text>
-          </View>
-        </TouchableOpacity>
-      )}
-
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -170,6 +152,22 @@ export default function HomeScreen() {
             <Text style={styles.restaurantName}>{restaurant.name}</Text>
             <Text style={styles.restaurantAddress}>{restaurant.address}</Text>
           </View>
+          <TouchableOpacity
+            style={styles.cartButton}
+            onPress={() => router.push('/cart')}
+          >
+            <IconSymbol
+              ios_icon_name="cart.fill"
+              android_material_icon_name="shopping-cart"
+              size={28}
+              color="#FFFFFF"
+            />
+            {cartItemCount > 0 && (
+              <View style={styles.cartBadge}>
+                <Text style={styles.cartBadgeText}>{cartItemCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
         </View>
 
         {/* Restaurant Info Card */}
@@ -203,8 +201,78 @@ export default function HomeScreen() {
           </View>
         </View>
 
+        {/* Delivery/Collection Toggle */}
+        <View style={styles.toggleSection}>
+          <View style={styles.toggleContainer}>
+            <TouchableOpacity
+              style={[
+                styles.toggleButton,
+                isDelivery && styles.toggleButtonActive,
+              ]}
+              onPress={() => setIsDelivery(true)}
+            >
+              <Text
+                style={[
+                  styles.toggleButtonText,
+                  isDelivery && styles.toggleButtonTextActive,
+                ]}
+              >
+                Delivery
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.toggleButton,
+                !isDelivery && styles.toggleButtonActive,
+              ]}
+              onPress={() => setIsDelivery(false)}
+            >
+              <Text
+                style={[
+                  styles.toggleButtonText,
+                  !isDelivery && styles.toggleButtonTextActive,
+                ]}
+              >
+                Collection
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Address/Collection Dropdown */}
+        <TouchableOpacity
+          style={styles.addressDropdown}
+          onPress={() => setShowAddressModal(true)}
+        >
+          <View style={styles.addressContent}>
+            <IconSymbol
+              ios_icon_name={isDelivery ? "location.fill" : "person.fill"}
+              android_material_icon_name={isDelivery ? "location-on" : "person"}
+              size={20}
+              color={colors.text}
+            />
+            <View style={styles.addressTextContainer}>
+              {isDelivery ? (
+                <Text style={styles.addressLabel}>
+                  {selectedAddress.label} - {getPostcode(selectedAddress.address)}
+                </Text>
+              ) : (
+                <Text style={styles.addressLabel}>
+                  {collectionName || 'Person collecting'}
+                </Text>
+              )}
+            </View>
+          </View>
+          <IconSymbol
+            ios_icon_name="chevron.down"
+            android_material_icon_name="keyboard-arrow-down"
+            size={20}
+            color={colors.textSecondary}
+          />
+        </TouchableOpacity>
+
         {/* Popular Dishes - Moved above search */}
-        {!searchQuery && !selectedCategory && !showAllItems && popularDishes.length > 0 && (
+        {!searchQuery && !selectedCategory && popularDishes.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Popular Dishes</Text>
@@ -217,15 +285,18 @@ export default function HomeScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.horizontalScroll}
             >
-              {popularDishes.map((dish, index) => (
-                <PopularDishCard
-                  key={`popular-dish-${dish.id}-${index}`}
-                  dish={dish}
-                  onAdd={handleAddToCart}
-                  onUpdateQuantity={updateQuantity}
-                  getItemQuantityInCart={getItemQuantityInCart}
-                />
-              ))}
+              {popularDishes.map((dish, index) => {
+                const quantity = getDishQuantity(dish.id);
+                return (
+                  <PopularDishCard
+                    key={index}
+                    dish={dish}
+                    quantity={quantity}
+                    onAdd={handleAddToCart}
+                    onUpdateQuantity={updateQuantity}
+                  />
+                );
+              })}
             </ScrollView>
           </View>
         )}
@@ -255,45 +326,32 @@ export default function HomeScreen() {
             contentContainerStyle={styles.categoryScroll}
           >
             <TouchableOpacity
-              key="picked-for-you"
               style={[
                 styles.categoryChip,
-                !selectedCategory && !showAllItems && styles.categoryChipActive,
+                !selectedCategory && styles.categoryChipActive,
               ]}
-              onPress={() => {
-                setSelectedCategory(null);
-                setShowAllItems(false);
-              }}
+              onPress={() => setSelectedCategory(null)}
             >
               <Text
                 style={[
                   styles.categoryChipText,
-                  !selectedCategory && !showAllItems && styles.categoryChipTextActive,
+                  !selectedCategory && styles.categoryChipTextActive,
                 ]}
               >
                 Picked for you
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              key="all-items"
-              style={[
-                styles.categoryChip,
-                showAllItems && !selectedCategory && styles.categoryChipActive,
-              ]}
+              style={styles.categoryChip}
               onPress={() => handleCategorySelect('All Items')}
             >
-              <Text
-                style={[
-                  styles.categoryChipText,
-                  showAllItems && !selectedCategory && styles.categoryChipTextActive,
-                ]}
-              >
+              <Text style={styles.categoryChipText}>
                 All Items
               </Text>
             </TouchableOpacity>
             {categories.map((category, index) => (
               <TouchableOpacity
-                key={`category-${category.name}-${index}`}
+                key={index}
                 style={[
                   styles.categoryChip,
                   selectedCategory === category.name && styles.categoryChipActive,
@@ -315,7 +373,7 @@ export default function HomeScreen() {
         </View>
 
         {/* Menu Items Display */}
-        {!searchQuery && !selectedCategory && !showAllItems && (
+        {!searchQuery && !selectedCategory && (
           <React.Fragment>
             {/* Full Menu Button */}
             <View style={styles.menuButtonContainer}>
@@ -340,58 +398,52 @@ export default function HomeScreen() {
           </React.Fragment>
         )}
 
-        {/* Filtered Results - When search, category, or "All Items" is selected */}
-        {(searchQuery || selectedCategory || showAllItems) && (
+        {/* Filtered Results - When search or category is selected */}
+        {(searchQuery || selectedCategory) && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>
-                {showAllItems && !selectedCategory 
-                  ? 'All Items' 
-                  : selectedCategory 
-                  ? selectedCategory 
-                  : `${filteredItems.length} ${filteredItems.length === 1 ? 'Result' : 'Results'}`}
+                {selectedCategory || `${filteredItems.length} ${filteredItems.length === 1 ? 'Result' : 'Results'}`}
               </Text>
             </View>
-            {filteredItems.length > 0 ? (
-              <View style={styles.menuSection}>
-                {filteredItems.map((item, index) => (
-                  <MenuItemRow
-                    key={`menu-item-${item.id}-${index}`}
-                    item={item}
-                    onAdd={handleAddToCart}
-                    onUpdateQuantity={updateQuantity}
-                    getItemQuantityInCart={getItemQuantityInCart}
-                  />
-                ))}
-              </View>
-            ) : (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyStateText}>No items found</Text>
-              </View>
-            )}
+            {filteredItems.map((item, index) => {
+              const quantity = getDishQuantity(item.id);
+              return (
+                <MenuItemRow
+                  key={index}
+                  item={item}
+                  quantity={quantity}
+                  onAdd={handleAddToCart}
+                  onUpdateQuantity={updateQuantity}
+                />
+              );
+            })}
           </View>
         )}
       </ScrollView>
+
+      {/* Address Selection Modal */}
+      <AddressModal
+        visible={showAddressModal}
+        onClose={() => setShowAddressModal(false)}
+        addresses={addresses}
+        selectedAddress={selectedAddress}
+        onSelectAddress={setSelectedAddress}
+        onAddAddress={handleAddAddress}
+        isDelivery={isDelivery}
+        collectionName={collectionName}
+        onCollectionNameChange={setCollectionName}
+      />
     </View>
   );
 }
 
 // Popular Dish Card Component
-function PopularDishCard({ dish, onAdd, onUpdateQuantity, getItemQuantityInCart }: any) {
-  const { spiceLevel, cycleSpiceLevel } = useSpiceLevel(dish.id);
-  const quantity = getItemQuantityInCart(dish.id, spiceLevel);
+function PopularDishCard({ dish, quantity, onAdd, onUpdateQuantity }: any) {
+  const { spiceLevel } = useSpiceLevel(dish.id);
 
   const handleAddToCart = () => {
-    onAdd(dish, spiceLevel);
-  };
-
-  const handleSpiceClick = () => {
-    console.log('Spice button clicked for:', dish.name, 'Current level:', spiceLevel);
-    cycleSpiceLevel();
-  };
-
-  const handleUpdateQuantity = (newQuantity: number) => {
-    onUpdateQuantity(dish.id, newQuantity, spiceLevel);
+    onAdd(dish, dish.spicy ? spiceLevel : undefined);
   };
 
   const renderChilies = (count: number) => {
@@ -407,20 +459,9 @@ function PopularDishCard({ dish, onAdd, onUpdateQuantity, getItemQuantityInCart 
     <View style={styles.dishCard}>
       <View style={styles.dishImageContainer}>
         <Image source={{ uri: dish.image_id || '' }} style={styles.dishImage} />
-        <TouchableOpacity
-          style={styles.spiceButtonCard}
-          onPress={handleSpiceClick}
-          activeOpacity={0.8}
-        >
-          <View style={styles.spiceButtonContent}>
-            <Text style={styles.spiceEmoji}>🌶️</Text>
-            {spiceLevel > 0 && (
-              <View style={styles.spiceBadge}>
-                <Text style={styles.spiceBadgeText}>{spiceLevel}</Text>
-              </View>
-            )}
-          </View>
-        </TouchableOpacity>
+        {dish.spicy && (
+          <SpiceButton menuItemId={dish.id} />
+        )}
       </View>
       <View style={styles.dishInfo}>
         <Text style={styles.dishName} numberOfLines={1}>
@@ -448,7 +489,7 @@ function PopularDishCard({ dish, onAdd, onUpdateQuantity, getItemQuantityInCart 
           <View style={styles.quantityControl}>
             <TouchableOpacity
               style={styles.quantityButton}
-              onPress={() => handleUpdateQuantity(quantity - 1)}
+              onPress={() => onUpdateQuantity(dish.id, quantity - 1)}
             >
               <IconSymbol
                 ios_icon_name={quantity === 1 ? "trash.fill" : "minus"}
@@ -476,38 +517,20 @@ function PopularDishCard({ dish, onAdd, onUpdateQuantity, getItemQuantityInCart 
   );
 }
 
-// Menu Item Row Component - Updated to match menu/[id].tsx styling
-function MenuItemRow({ item, onAdd, onUpdateQuantity, getItemQuantityInCart }: any) {
-  const { spiceLevel, cycleSpiceLevel } = useSpiceLevel(item.id);
-  const quantity = getItemQuantityInCart(item.id, spiceLevel);
+// Menu Item Row Component
+function MenuItemRow({ item, quantity, onAdd, onUpdateQuantity }: any) {
+  const { spiceLevel } = useSpiceLevel(item.id);
 
   const handleAddToCart = () => {
-    onAdd(item, spiceLevel);
-  };
-
-  const handleSpiceClick = () => {
-    console.log('Spice button clicked for:', item.name, 'Current level:', spiceLevel);
-    cycleSpiceLevel();
-  };
-
-  const handleUpdateQuantity = (newQuantity: number) => {
-    onUpdateQuantity(item.id, newQuantity, spiceLevel);
+    onAdd(item, item.spicy ? spiceLevel : undefined);
   };
 
   const renderChilies = (count: number) => {
     if (count === 0) return null;
-    
-    const chilies = [];
-    for (let i = 0; i < count; i++) {
-      chilies.push(
-        <Text key={`chili-${item.id}-${i}`} style={styles.chilliEmoji}>🌶️</Text>
-      );
-    }
-    
     return (
-      <View style={styles.spiceLevelContainer}>
-        {chilies}
-      </View>
+      <Text style={styles.spiceLevelEmojis}>
+        {'🌶️'.repeat(count)}
+      </Text>
     );
   };
 
@@ -516,7 +539,6 @@ function MenuItemRow({ item, onAdd, onUpdateQuantity, getItemQuantityInCart }: a
       <View style={styles.menuInfo}>
         <View style={styles.menuHeader}>
           <Text style={styles.menuName}>{item.name}</Text>
-          {spiceLevel > 0 && renderChilies(spiceLevel)}
         </View>
         <Text style={styles.menuDescription} numberOfLines={2}>
           {item.description}
@@ -525,6 +547,7 @@ function MenuItemRow({ item, onAdd, onUpdateQuantity, getItemQuantityInCart }: a
           <Text style={styles.menuPrice}>
             £{item.price.toFixed(2)}
           </Text>
+          {spiceLevel > 0 && renderChilies(spiceLevel)}
           <View style={styles.menuTags}>
             {item.is_vegetarian && (
               <View style={styles.vegTag}>
@@ -532,37 +555,13 @@ function MenuItemRow({ item, onAdd, onUpdateQuantity, getItemQuantityInCart }: a
               </View>
             )}
           </View>
-          <View style={styles.ratingContainer}>
-            <IconSymbol
-              ios_icon_name="hand.thumbsup.fill"
-              android_material_icon_name="thumb-up"
-              size={14}
-              color={colors.text}
-            />
-            <Text style={styles.ratingText}>
-              {Math.floor(Math.random() * 10) + 85}% ({Math.floor(Math.random() * 100) + 20})
-            </Text>
-          </View>
         </View>
       </View>
       <View style={styles.menuImageContainer}>
         <Image source={{ uri: item.image_id || '' }} style={styles.menuImage} />
-        
-        <TouchableOpacity
-          style={styles.spiceButton}
-          onPress={handleSpiceClick}
-          activeOpacity={0.8}
-        >
-          <View style={styles.spiceButtonContent}>
-            <Text style={styles.spiceEmoji}>🌶️</Text>
-            {spiceLevel > 0 && (
-              <View style={styles.spiceBadge}>
-                <Text style={styles.spiceBadgeText}>{spiceLevel}</Text>
-              </View>
-            )}
-          </View>
-        </TouchableOpacity>
-
+        {item.spicy && (
+          <SpiceButton menuItemId={item.id} />
+        )}
         {quantity === 0 ? (
           <TouchableOpacity
             style={styles.addButtonUber}
@@ -574,7 +573,7 @@ function MenuItemRow({ item, onAdd, onUpdateQuantity, getItemQuantityInCart }: a
           <View style={styles.quantityControlUber}>
             <TouchableOpacity
               style={styles.quantityButtonUber}
-              onPress={() => handleUpdateQuantity(quantity - 1)}
+              onPress={() => onUpdateQuantity(item.id, quantity - 1)}
             >
               <IconSymbol
                 ios_icon_name={quantity === 1 ? "trash.fill" : "minus"}
@@ -620,7 +619,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: 120,
   },
   headerImageContainer: {
     width: '100%',
@@ -658,6 +657,36 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
+  cartButton: {
+    position: 'absolute',
+    top: 48,
+    right: 16,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#000000',
+    justifyContent: 'center',
+    alignItems: 'center',
+    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.3)',
+    elevation: 5,
+  },
+  cartBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: colors.green,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  cartBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
   infoCard: {
     backgroundColor: colors.card,
     marginHorizontal: 16,
@@ -687,12 +716,69 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontWeight: '600',
   },
+  toggleSection: {
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 12,
+    backgroundColor: colors.background,
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    backgroundColor: colors.card,
+    borderRadius: 8,
+    padding: 4,
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
+    elevation: 2,
+  },
+  toggleButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 6,
+  },
+  toggleButtonActive: {
+    backgroundColor: '#000000',
+  },
+  toggleButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  toggleButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  addressDropdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.card,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    padding: 12,
+    borderRadius: 8,
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
+    elevation: 2,
+  },
+  addressContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 8,
+  },
+  addressTextContainer: {
+    flex: 1,
+  },
+  addressLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.text,
+  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.card,
     marginHorizontal: 16,
-    marginTop: 16,
+    marginTop: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 12,
@@ -775,40 +861,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     backgroundColor: colors.border,
-  },
-  spiceButtonCard: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 16,
-    padding: 4,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.2)',
-    elevation: 4,
-    zIndex: 10,
-  },
-  spiceButtonContent: {
-    position: 'relative',
-  },
-  spiceEmoji: {
-    fontSize: 20,
-  },
-  spiceBadge: {
-    position: 'absolute',
-    top: -6,
-    right: -6,
-    backgroundColor: colors.green,
-    borderRadius: 10,
-    minWidth: 18,
-    height: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 4,
-  },
-  spiceBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '700',
   },
   dishInfo: {
     padding: 12,
@@ -915,21 +967,19 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
   },
-  menuSection: {
-    paddingHorizontal: 16,
-  },
   menuItem: {
     flexDirection: 'row',
     backgroundColor: colors.card,
-    borderRadius: 12,
-    marginBottom: 24,
-    overflow: 'hidden',
-    boxShadow: '0px 6px 16px rgba(0, 0, 0, 0.12)',
-    elevation: 6,
+    borderRadius: 0,
+    marginBottom: 0,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   menuInfo: {
     flex: 1,
-    padding: 16,
+    paddingRight: 12,
     justifyContent: 'space-between',
   },
   menuHeader: {
@@ -939,7 +989,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: colors.text,
-    marginBottom: 2,
+    marginBottom: 4,
   },
   menuDescription: {
     fontSize: 14,
@@ -957,51 +1007,21 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#000000',
   },
-  spiceLevelContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    marginTop: 2,
-  },
-  chilliEmoji: {
-    fontSize: 16,
-  },
   menuTags: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginLeft: 'auto',
-  },
-  ratingText: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
   menuImageContainer: {
     position: 'relative',
     width: 120,
-    height: '100%',
+    height: 120,
   },
   menuImage: {
-    width: '100%',
-    height: '100%',
+    width: 120,
+    height: 120,
+    borderRadius: 8,
     backgroundColor: colors.border,
-  },
-  spiceButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 20,
-    padding: 6,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.2)',
-    elevation: 4,
-    zIndex: 10,
   },
   addButtonUber: {
     position: 'absolute',
@@ -1017,7 +1037,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   addButtonTextUber: {
-    color: colors.green,
+    color: colors.primary,
     fontSize: 14,
     fontWeight: '700',
   },
@@ -1047,63 +1067,5 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.text,
     paddingHorizontal: 12,
-  },
-  floatingBasketIcon: {
-    position: 'absolute',
-    top: 120,
-    right: 16,
-    backgroundColor: '#000000',
-    borderRadius: 28,
-    width: 56,
-    height: 56,
-    justifyContent: 'center',
-    alignItems: 'center',
-    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.3)',
-    elevation: 8,
-    zIndex: 1000,
-  },
-  basketIconBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    backgroundColor: colors.error,
-    borderRadius: 12,
-    minWidth: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 6,
-    borderWidth: 2,
-    borderColor: colors.background,
-  },
-  basketIconBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  basketIconPrice: {
-    position: 'absolute',
-    bottom: -8,
-    backgroundColor: colors.green,
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderWidth: 2,
-    borderColor: colors.background,
-  },
-  basketIconPriceText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  emptyState: {
-    paddingHorizontal: 16,
-    paddingVertical: 40,
-    alignItems: 'center',
-  },
-  emptyStateText: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    fontWeight: '500',
   },
 });
