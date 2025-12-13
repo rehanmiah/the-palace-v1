@@ -146,6 +146,28 @@ export default function MenuScreen() {
         <View style={{ width: 40 }} />
       </View>
 
+      {/* Floating Basket Icon - Top Right */}
+      {cartItemCount > 0 && (
+        <TouchableOpacity
+          style={styles.floatingBasketIcon}
+          onPress={() => router.push('/cart')}
+          activeOpacity={0.8}
+        >
+          <IconSymbol
+            ios_icon_name="cart.fill"
+            android_material_icon_name="shopping-cart"
+            size={24}
+            color="#FFFFFF"
+          />
+          <View style={styles.basketIconBadge}>
+            <Text style={styles.basketIconBadgeText}>{cartItemCount}</Text>
+          </View>
+          <View style={styles.basketIconPrice}>
+            <Text style={styles.basketIconPriceText}>£{cartTotal.toFixed(2)}</Text>
+          </View>
+        </TouchableOpacity>
+      )}
+
       {/* Sticky Category Filter - Shows when scrolling */}
       {categoriesSticky && (
         <View style={styles.stickyCategorySection}>
@@ -380,28 +402,6 @@ export default function MenuScreen() {
         </View>
       </Animated.ScrollView>
 
-      {/* Floating Basket - Always visible when cart has items, positioned above sticky categories */}
-      {cartItemCount > 0 && (
-        <View style={[
-          styles.floatingBasket,
-          categoriesSticky && styles.floatingBasketWithStickyHeader
-        ]}>
-          <TouchableOpacity
-            style={styles.basketButton}
-            onPress={() => router.push('/cart')}
-            activeOpacity={0.9}
-          >
-            <View style={styles.basketLeft}>
-              <View style={styles.basketBadge}>
-                <Text style={styles.basketBadgeText}>{cartItemCount}</Text>
-              </View>
-              <Text style={styles.basketText}>View Basket</Text>
-            </View>
-            <Text style={styles.basketTotal}>£{cartTotal.toFixed(2)}</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
       {/* Address Selection Modal */}
       <AddressModal
         visible={showAddressModal}
@@ -596,7 +596,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 140,
+    paddingBottom: 40,
   },
   toggleSection: {
     paddingHorizontal: 16,
@@ -918,54 +918,52 @@ const styles = StyleSheet.create({
     color: colors.text,
     paddingHorizontal: 12,
   },
-  floatingBasket: {
+  floatingBasketIcon: {
     position: 'absolute',
-    bottom: 20,
-    left: 16,
+    top: 16,
     right: 16,
-    zIndex: 100,
-  },
-  floatingBasketWithStickyHeader: {
-    bottom: 20,
-  },
-  basketButton: {
     backgroundColor: '#000000',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    borderRadius: 28,
+    width: 56,
+    height: 56,
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.3)',
+    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.3)',
     elevation: 8,
+    zIndex: 1000,
   },
-  basketLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  basketBadge: {
-    backgroundColor: colors.green,
+  basketIconBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: colors.error,
     borderRadius: 12,
     minWidth: 24,
     height: 24,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 6,
+    borderWidth: 2,
+    borderColor: colors.background,
   },
-  basketBadgeText: {
+  basketIconBadgeText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '700',
   },
-  basketText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
+  basketIconPrice: {
+    position: 'absolute',
+    bottom: -8,
+    backgroundColor: colors.green,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderWidth: 2,
+    borderColor: colors.background,
   },
-  basketTotal: {
+  basketIconPriceText: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 11,
     fontWeight: '700',
   },
   errorText: {
