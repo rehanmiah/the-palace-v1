@@ -140,47 +140,42 @@ export default function MenuScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+      {/* Sticky Delivery/Collection Header */}
+      <View style={styles.stickyHeader}>
         {/* Delivery/Collection Toggle */}
-        <View style={styles.toggleSection}>
-          <View style={styles.toggleContainer}>
-            <TouchableOpacity
+        <View style={styles.toggleContainer}>
+          <TouchableOpacity
+            style={[
+              styles.toggleButton,
+              isDelivery && styles.toggleButtonActive,
+            ]}
+            onPress={() => setIsDelivery(true)}
+          >
+            <Text
               style={[
-                styles.toggleButton,
-                isDelivery && styles.toggleButtonActive,
+                styles.toggleButtonText,
+                isDelivery && styles.toggleButtonTextActive,
               ]}
-              onPress={() => setIsDelivery(true)}
             >
-              <Text
-                style={[
-                  styles.toggleButtonText,
-                  isDelivery && styles.toggleButtonTextActive,
-                ]}
-              >
-                Delivery
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
+              Delivery
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.toggleButton,
+              !isDelivery && styles.toggleButtonActive,
+            ]}
+            onPress={() => setIsDelivery(false)}
+          >
+            <Text
               style={[
-                styles.toggleButton,
-                !isDelivery && styles.toggleButtonActive,
+                styles.toggleButtonText,
+                !isDelivery && styles.toggleButtonTextActive,
               ]}
-              onPress={() => setIsDelivery(false)}
             >
-              <Text
-                style={[
-                  styles.toggleButtonText,
-                  !isDelivery && styles.toggleButtonTextActive,
-                ]}
-              >
-                Collection
-              </Text>
-            </TouchableOpacity>
-          </View>
+              Collection
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Address/Collection Dropdown */}
@@ -214,7 +209,13 @@ export default function MenuScreen() {
             color={colors.textSecondary}
           />
         </TouchableOpacity>
+      </View>
 
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Restaurant Info */}
         <View style={styles.restaurantSection}>
           <Image
@@ -495,7 +496,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 48,
+    paddingTop: Platform.OS === 'android' ? 48 : 48,
     paddingBottom: 12,
     backgroundColor: colors.background,
     borderBottomWidth: 1,
@@ -542,30 +543,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 100,
-  },
-  toggleSection: {
+  stickyHeader: {
+    backgroundColor: colors.background,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
+    elevation: 4,
+    zIndex: 100,
   },
   toggleContainer: {
     flexDirection: 'row',
     backgroundColor: colors.card,
     borderRadius: 8,
     padding: 4,
-    ...(Platform.OS === 'ios' ? {
-      shadowColor: '#000000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.06,
-      shadowRadius: 2,
-    } : {
-      elevation: 2,
-    }),
+    marginBottom: 12,
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
+    elevation: 2,
   },
   toggleButton: {
     flex: 1,
@@ -589,18 +584,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: colors.card,
-    marginHorizontal: 16,
-    marginBottom: 12,
     padding: 12,
     borderRadius: 8,
-    ...(Platform.OS === 'ios' ? {
-      shadowColor: '#000000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.06,
-      shadowRadius: 2,
-    } : {
-      elevation: 2,
-    }),
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
+    elevation: 2,
   },
   addressContent: {
     flexDirection: 'row',
@@ -615,6 +602,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: colors.text,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 100,
   },
   restaurantSection: {
     backgroundColor: colors.card,
@@ -710,14 +703,8 @@ const styles = StyleSheet.create({
     borderRadius: 0,
     marginBottom: 24,
     padding: 0,
-    ...(Platform.OS === 'ios' ? {
-      shadowColor: '#000000',
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.12,
-      shadowRadius: 8,
-    } : {
-      elevation: 6,
-    }),
+    boxShadow: '0px 6px 16px rgba(0, 0, 0, 0.12)',
+    elevation: 6,
     position: 'relative',
   },
   menuInfo: {
@@ -804,14 +791,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 20,
     padding: 6,
-    ...(Platform.OS === 'ios' ? {
-      shadowColor: '#000000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 4,
-    } : {
-      elevation: 4,
-    }),
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.2)',
+    elevation: 4,
     zIndex: 10,
   },
   spiceButtonContent: {
@@ -833,15 +814,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     borderWidth: Platform.OS === 'ios' ? 1.5 : 0,
     borderColor: Platform.OS === 'ios' ? '#C41E3A' : 'transparent',
-    ...(Platform.OS === 'android' && {
-      elevation: 4,
-    }),
   },
   spiceBadgeIOS: {
     shadowColor: '#C41E3A',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.8,
     shadowRadius: 3,
+    elevation: 4,
   },
   spiceBadgeText: {
     color: '#FFFFFF',
@@ -858,14 +837,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     borderColor: colors.border,
-    ...(Platform.OS === 'ios' ? {
-      shadowColor: '#000000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.15,
-      shadowRadius: 4,
-    } : {
-      elevation: 4,
-    }),
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.15)',
+    elevation: 4,
   },
   addButtonTextUber: {
     color: colors.primary,
@@ -882,14 +855,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     borderColor: colors.border,
-    ...(Platform.OS === 'ios' ? {
-      shadowColor: '#000000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.15,
-      shadowRadius: 4,
-    } : {
-      elevation: 4,
-    }),
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.15)',
+    elevation: 4,
   },
   quantityButtonUber: {
     width: 32,

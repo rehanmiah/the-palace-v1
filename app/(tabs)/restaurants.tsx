@@ -8,16 +8,39 @@ import {
   TextInput,
   TouchableOpacity,
   Image,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { restaurants } from '@/data/restaurants';
+import AddressModal from '@/components/AddressModal';
+
+interface Address {
+  id: string;
+  label: string;
+  address: string;
+}
 
 export default function RestaurantsScreen() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCuisine, setSelectedCuisine] = useState<string | null>(null);
+
+  const [isDelivery, setIsDelivery] = useState(true);
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [collectionName, setCollectionName] = useState('');
+  const [selectedAddress, setSelectedAddress] = useState<Address>({
+    id: '1',
+    label: 'Home',
+    address: '123 Main Street, London, SW1A 1AA',
+  });
+
+  const [addresses, setAddresses] = useState<Address[]>([
+    { id: '1', label: 'Home', address: '123 Main Street, London, SW1A 1AA' },
+    { id: '2', label: 'Work', address: '456 Office Road, London, EC1A 1BB' },
+    { id: '3', label: 'Other', address: '789 Park Avenue, London, W1A 1CC' },
+  ]);
 
   // Get unique cuisines
   const allCuisines = Array.from(
@@ -34,8 +57,89 @@ export default function RestaurantsScreen() {
     return matchesSearch && matchesCuisine;
   });
 
+  const handleAddAddress = (address: Address) => {
+    setAddresses([...addresses, address]);
+    setSelectedAddress(address);
+  };
+
+  const getPostcode = (address: string) => {
+    const parts = address.split(',').map(part => part.trim());
+    return parts[parts.length - 1] || '';
+  };
+
   return (
     <View style={styles.container}>
+      {/* Sticky Header with Delivery/Collection Toggle and Address */}
+      <View style={styles.stickyHeader}>
+        {/* Delivery/Collection Toggle */}
+        <View style={styles.toggleContainer}>
+          <TouchableOpacity
+            style={[
+              styles.toggleButton,
+              isDelivery && styles.toggleButtonActive,
+            ]}
+            onPress={() => setIsDelivery(true)}
+          >
+            <Text
+              style={[
+                styles.toggleButtonText,
+                isDelivery && styles.toggleButtonTextActive,
+              ]}
+            >
+              Delivery
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.toggleButton,
+              !isDelivery && styles.toggleButtonActive,
+            ]}
+            onPress={() => setIsDelivery(false)}
+          >
+            <Text
+              style={[
+                styles.toggleButtonText,
+                !isDelivery && styles.toggleButtonTextActive,
+              ]}
+            >
+              Collection
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Address/Collection Dropdown */}
+        <TouchableOpacity
+          style={styles.addressDropdown}
+          onPress={() => setShowAddressModal(true)}
+        >
+          <View style={styles.addressContent}>
+            <IconSymbol
+              ios_icon_name={isDelivery ? "location.fill" : "person.fill"}
+              android_material_icon_name={isDelivery ? "location-on" : "person"}
+              size={20}
+              color={colors.text}
+            />
+            <View style={styles.addressTextContainer}>
+              {isDelivery ? (
+                <Text style={styles.addressLabel}>
+                  {selectedAddress.label} - {getPostcode(selectedAddress.address)}
+                </Text>
+              ) : (
+                <Text style={styles.addressLabel}>
+                  {collectionName || 'Person collecting'}
+                </Text>
+              )}
+            </View>
+          </View>
+          <IconSymbol
+            ios_icon_name="chevron.down"
+            android_material_icon_name="keyboard-arrow-down"
+            size={20}
+            color={colors.textSecondary}
+          />
+        </TouchableOpacity>
+      </View>
+
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -192,6 +296,19 @@ export default function RestaurantsScreen() {
           ))}
         </View>
       </ScrollView>
+
+      {/* Address Selection Modal */}
+      <AddressModal
+        visible={showAddressModal}
+        onClose={() => setShowAddressModal(false)}
+        addresses={addresses}
+        selectedAddress={selectedAddress}
+        onSelectAddress={setSelectedAddress}
+        onAddAddress={handleAddAddress}
+        isDelivery={isDelivery}
+        collectionName={collectionName}
+        onCollectionNameChange={setCollectionName}
+      />
     </View>
   );
 }
@@ -201,15 +318,76 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  stickyHeader: {
+    backgroundColor: colors.background,
+    paddingTop: Platform.OS === 'android' ? 48 : 8,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
+    elevation: 4,
+    zIndex: 100,
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    backgroundColor: colors.card,
+    borderRadius: 8,
+    padding: 4,
+    marginBottom: 12,
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
+    elevation: 2,
+  },
+  toggleButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 6,
+  },
+  toggleButtonActive: {
+    backgroundColor: '#000000',
+  },
+  toggleButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  toggleButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  addressDropdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.card,
+    padding: 12,
+    borderRadius: 8,
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
+    elevation: 2,
+  },
+  addressContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 8,
+  },
+  addressTextContainer: {
+    flex: 1,
+  },
+  addressLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.text,
+  },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingTop: 48,
     paddingBottom: 120,
   },
   header: {
     paddingHorizontal: 16,
+    paddingTop: 16,
     marginBottom: 20,
   },
   title: {
