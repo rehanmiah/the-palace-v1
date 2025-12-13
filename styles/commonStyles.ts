@@ -5,7 +5,7 @@ export const colors = {
   background: '#F8F8FF',      // Almost White
   text: '#000000',            // Black
   textSecondary: '#585858',   // Medium Gray
-  primary: '#FF7F50',         // Coral
+  primary: '#2563EB',         // Blue (was Coral #FF7F50)
   secondary: '#6495ED',       // Cornflower Blue
   accent: '#FFD700',          // Gold
   card: '#FFFFFF',            // White
@@ -22,7 +22,7 @@ export const buttonStyles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: '0px 4px 8px rgba(255, 127, 80, 0.3)',
+    boxShadow: '0px 4px 8px rgba(37, 99, 235, 0.3)',
     elevation: 4,
   },
   secondary: {

@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     marginTop: 8,
-    boxShadow: '0px 4px 8px rgba(255, 127, 80, 0.3)',
+    boxShadow: '0px 4px 8px rgba(37, 99, 235, 0.3)',
     elevation: 4,
   },
   updateButtonDisabled: {
