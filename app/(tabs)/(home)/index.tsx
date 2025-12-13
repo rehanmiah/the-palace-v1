@@ -219,7 +219,7 @@ export default function HomeScreen() {
             >
               {popularDishes.map((dish, index) => (
                 <PopularDishCard
-                  key={`popular-${dish.id}-${index}`}
+                  key={`popular-dish-${dish.id || index}`}
                   dish={dish}
                   onAdd={handleAddToCart}
                   onUpdateQuantity={updateQuantity}
@@ -293,7 +293,7 @@ export default function HomeScreen() {
             </TouchableOpacity>
             {categories.map((category, index) => (
               <TouchableOpacity
-                key={`category-${category.id}-${index}`}
+                key={`category-${category.name}-${index}`}
                 style={[
                   styles.categoryChip,
                   selectedCategory === category.name && styles.categoryChipActive,
@@ -356,7 +356,7 @@ export default function HomeScreen() {
               <View style={styles.menuSection}>
                 {filteredItems.map((item, index) => (
                   <MenuItemRow
-                    key={`menu-item-${item.id}-${index}`}
+                    key={`menu-item-${item.id || index}`}
                     item={item}
                     onAdd={handleAddToCart}
                     onUpdateQuantity={updateQuantity}
@@ -500,7 +500,7 @@ function MenuItemRow({ item, onAdd, onUpdateQuantity, getItemQuantityInCart }: a
     const chilies = [];
     for (let i = 0; i < count; i++) {
       chilies.push(
-        <Text key={i} style={styles.chilliEmoji}>🌶️</Text>
+        <Text key={`chili-${i}`} style={styles.chilliEmoji}>🌶️</Text>
       );
     }
     
