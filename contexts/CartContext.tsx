@@ -5,12 +5,13 @@ import { CartItem, Dish } from '@/types/restaurant';
 interface CartContextType {
   cart: CartItem[];
   addToCart: (dish: Dish, restaurantId: string, spiceLevel?: number) => void;
-  removeFromCart: (dishId: number) => void;
-  updateQuantity: (dishId: number, quantity: number) => void;
+  removeFromCart: (dishId: number, spiceLevel?: number) => void;
+  updateQuantity: (dishId: number, quantity: number, spiceLevel?: number) => void;
   updateSpiceLevel: (dishId: number, spiceLevel: number) => void;
   clearCart: () => void;
   getCartTotal: () => number;
   getCartItemCount: () => number;
+  getItemQuantityInCart: (dishId: number, spiceLevel?: number) => number;
   currentRestaurantId: string | null;
 }
 
@@ -32,26 +33,33 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setCurrentRestaurantId(restaurantId);
     
     setCart((prevCart) => {
+      // Find existing item with SAME dish ID AND SAME spice level
+      // Items with different spice levels are treated as separate items
       const existingItem = prevCart.find((item) => 
-        item.dish.id === dish.id && item.spiceLevel === spiceLevel
+        item.dish.id === dish.id && 
+        (item.spiceLevel || 0) === (spiceLevel || 0)
       );
       
       if (existingItem) {
+        console.log('Item already in cart, incrementing quantity');
         return prevCart.map((item) =>
-          item.dish.id === dish.id && item.spiceLevel === spiceLevel
+          item.dish.id === dish.id && (item.spiceLevel || 0) === (spiceLevel || 0)
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
       }
       
-      return [...prevCart, { dish, quantity: 1, restaurantId, spiceLevel }];
+      console.log('Adding new item to cart');
+      return [...prevCart, { dish, quantity: 1, restaurantId, spiceLevel: spiceLevel || 0 }];
     });
   }, [currentRestaurantId]);
 
-  const removeFromCart = useCallback((dishId: number) => {
-    console.log('Removing from cart:', dishId);
+  const removeFromCart = useCallback((dishId: number, spiceLevel?: number) => {
+    console.log('Removing from cart:', dishId, 'spice level:', spiceLevel);
     setCart((prevCart) => {
-      const newCart = prevCart.filter((item) => item.dish.id !== dishId);
+      const newCart = prevCart.filter((item) => 
+        !(item.dish.id === dishId && (item.spiceLevel || 0) === (spiceLevel || 0))
+      );
       if (newCart.length === 0) {
         setCurrentRestaurantId(null);
       }
@@ -59,16 +67,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const updateQuantity = useCallback((dishId: number, quantity: number) => {
-    console.log('Updating quantity:', dishId, quantity);
+  const updateQuantity = useCallback((dishId: number, quantity: number, spiceLevel?: number) => {
+    console.log('Updating quantity:', dishId, quantity, 'spice level:', spiceLevel);
     if (quantity <= 0) {
-      removeFromCart(dishId);
+      removeFromCart(dishId, spiceLevel);
       return;
     }
     
     setCart((prevCart) =>
       prevCart.map((item) =>
-        item.dish.id === dishId ? { ...item, quantity } : item
+        item.dish.id === dishId && (item.spiceLevel || 0) === (spiceLevel || 0)
+          ? { ...item, quantity }
+          : item
       )
     );
   }, [removeFromCart]);
@@ -96,6 +106,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return cart.reduce((count, item) => count + item.quantity, 0);
   }, [cart]);
 
+  // Get quantity for a specific dish with a specific spice level
+  const getItemQuantityInCart = useCallback((dishId: number, spiceLevel?: number) => {
+    const item = cart.find((item) => 
+      item.dish.id === dishId && 
+      (item.spiceLevel || 0) === (spiceLevel || 0)
+    );
+    return item ? item.quantity : 0;
+  }, [cart]);
+
   return (
     <CartContext.Provider
       value={{
@@ -107,6 +126,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         clearCart,
         getCartTotal,
         getCartItemCount,
+        getItemQuantityInCart,
         currentRestaurantId,
       }}
     >

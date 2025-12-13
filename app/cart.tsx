@@ -18,6 +18,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { restaurants } from '@/data/restaurants';
 import AddressModal from '@/components/AddressModal';
+import { supabase } from '@/app/integrations/supabase/client';
 
 interface Address {
   id: string;
@@ -81,7 +82,7 @@ export default function CartScreen() {
     }
   }, [user]);
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (cart.length === 0) {
       Alert.alert('Empty Cart', 'Please add items to your cart first.');
       return;
@@ -100,24 +101,76 @@ export default function CartScreen() {
       return;
     }
 
-    const orderType = isDelivery ? 'delivery' : 'collection';
-    const paymentMethodText = selectedPaymentMethod === 'cash' 
-      ? `Cash on ${isDelivery ? 'Delivery' : 'Collection'}` 
-      : 'Card Payment';
+    try {
+      // Create order in database with spice levels
+      const orderData = {
+        user_id: user?.id || null,
+        order_type: isDelivery ? 'delivery' : 'collection',
+        status: 'pending',
+        subtotal: subtotal,
+        delivery_fee: deliveryFee,
+        discount: collectionDiscount,
+        total: total,
+        payment_type: selectedPaymentMethod,
+        delivery_address_text: isDelivery ? selectedAddress.address : null,
+        contact_phone: phoneNumber,
+      };
 
-    Alert.alert(
-      'Order Placed!',
-      `Your ${orderType} order has been placed successfully.\n\nPayment: ${paymentMethodText}\nTotal: £${total.toFixed(2)}\n\nYou will receive a confirmation shortly.`,
-      [
-        {
-          text: 'OK',
-          onPress: () => {
-            clearCart();
-            router.push('/(tabs)/(home)/');
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .insert(orderData)
+        .select()
+        .single();
+
+      if (orderError) {
+        console.error('Error creating order:', orderError);
+        Alert.alert('Error', 'Failed to place order. Please try again.');
+        return;
+      }
+
+      // Create order items with spice levels (stored only at checkout)
+      const orderItems = cart.map((item) => ({
+        order_id: order.id,
+        menu_item_id: null, // We don't have UUID menu_item_id
+        menu_item_name: item.dish.name,
+        menu_item_price: item.dish.price,
+        quantity: item.quantity,
+        subtotal: item.dish.price * item.quantity,
+        spice_level: item.spiceLevel || 0, // Store spice level here at checkout
+      }));
+
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .insert(orderItems);
+
+      if (itemsError) {
+        console.error('Error creating order items:', itemsError);
+        Alert.alert('Error', 'Failed to save order items. Please try again.');
+        return;
+      }
+
+      const orderType = isDelivery ? 'delivery' : 'collection';
+      const paymentMethodText = selectedPaymentMethod === 'cash' 
+        ? `Cash on ${isDelivery ? 'Delivery' : 'Collection'}` 
+        : 'Card Payment';
+
+      Alert.alert(
+        'Order Placed!',
+        `Your ${orderType} order has been placed successfully.\n\nPayment: ${paymentMethodText}\nTotal: £${total.toFixed(2)}\n\nYou will receive a confirmation shortly.`,
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              clearCart();
+              router.push('/(tabs)/(home)/');
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
+    } catch (error) {
+      console.error('Error during checkout:', error);
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+    }
   };
 
   const handleClearCart = () => {
@@ -344,7 +397,7 @@ export default function CartScreen() {
           )}
         </View>
 
-        {/* Cart Items with Images */}
+        {/* Cart Items with Images - Each spice level shown separately */}
         <View style={styles.cartItemsCard}>
           <Text style={styles.cartItemsTitle}>Your Order</Text>
           {cart.map((item, index) => (
@@ -368,7 +421,7 @@ export default function CartScreen() {
                 <View style={styles.quantityControlCart}>
                   <TouchableOpacity
                     style={styles.quantityButtonCart}
-                    onPress={() => updateQuantity(item.dish.id, item.quantity - 1)}
+                    onPress={() => updateQuantity(item.dish.id, item.quantity - 1, item.spiceLevel)}
                   >
                     <IconSymbol
                       ios_icon_name={item.quantity === 1 ? "trash.fill" : "minus"}
@@ -380,7 +433,7 @@ export default function CartScreen() {
                   <Text style={styles.quantityTextCart}>{item.quantity}</Text>
                   <TouchableOpacity
                     style={styles.quantityButtonCart}
-                    onPress={() => updateQuantity(item.dish.id, item.quantity + 1)}
+                    onPress={() => updateQuantity(item.dish.id, item.quantity + 1, item.spiceLevel)}
                   >
                     <IconSymbol
                       ios_icon_name="plus"

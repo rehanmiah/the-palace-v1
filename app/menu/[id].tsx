@@ -29,7 +29,7 @@ interface Address {
 export default function MenuScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { addToCart, updateQuantity, getCartItemCount, cart } = useCart();
+  const { addToCart, updateQuantity, getCartItemCount, getItemQuantityInCart, cart } = useCart();
   const { menuItems, categories, isLoading } = useMenu();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isDelivery, setIsDelivery] = useState(true);
@@ -85,11 +85,6 @@ export default function MenuScreen() {
   };
 
   const cartItemCount = getCartItemCount();
-
-  const getDishQuantity = (dishId: number) => {
-    const cartItem = cart.find((item) => item.dish.id === dishId);
-    return cartItem ? cartItem.quantity : 0;
-  };
 
   const handleAddAddress = (address: Address) => {
     setAddresses([...addresses, address]);
@@ -316,18 +311,15 @@ export default function MenuScreen() {
 
         {/* Menu Items - Uber Eats Style */}
         <View style={styles.menuSection}>
-          {filteredItems.map((item, index) => {
-            const quantity = getDishQuantity(item.id);
-            return (
-              <MenuItemRow
-                key={index}
-                item={item}
-                quantity={quantity}
-                onAdd={handleAddToCart}
-                onUpdateQuantity={updateQuantity}
-              />
-            );
-          })}
+          {filteredItems.map((item, index) => (
+            <MenuItemRow
+              key={index}
+              item={item}
+              onAdd={handleAddToCart}
+              onUpdateQuantity={updateQuantity}
+              getItemQuantityInCart={getItemQuantityInCart}
+            />
+          ))}
         </View>
       </ScrollView>
 
@@ -347,17 +339,24 @@ export default function MenuScreen() {
   );
 }
 
-function MenuItemRow({ item, quantity, onAdd, onUpdateQuantity }: any) {
+function MenuItemRow({ item, onAdd, onUpdateQuantity, getItemQuantityInCart }: any) {
   const { spiceLevel, cycleSpiceLevel } = useSpiceLevel(item.id);
+
+  // Get quantity for this specific item with this specific spice level
+  const quantity = getItemQuantityInCart(item.id, spiceLevel);
 
   const handleAddToCart = () => {
     console.log('Adding to cart with spice level:', spiceLevel);
-    onAdd(item, item.spicy ? spiceLevel : undefined);
+    onAdd(item, spiceLevel);
   };
 
   const handleSpiceClick = () => {
     console.log('Spice button clicked for:', item.name, 'Current level:', spiceLevel);
     cycleSpiceLevel();
+  };
+
+  const handleUpdateQuantity = (newQuantity: number) => {
+    onUpdateQuantity(item.id, newQuantity, spiceLevel);
   };
 
   const renderChilies = (count: number) => {
@@ -377,7 +376,7 @@ function MenuItemRow({ item, quantity, onAdd, onUpdateQuantity }: any) {
     );
   };
 
-  console.log('MenuItemRow render - Item:', item.name, 'Spice Level:', spiceLevel);
+  console.log('MenuItemRow render - Item:', item.name, 'Spice Level:', spiceLevel, 'Quantity:', quantity);
 
   return (
     <View style={styles.menuItem}>
@@ -433,6 +432,8 @@ function MenuItemRow({ item, quantity, onAdd, onUpdateQuantity }: any) {
           </View>
         </TouchableOpacity>
 
+        {/* Show Add button if no items with this spice level in cart */}
+        {/* Show quantity controls if items with this spice level exist in cart */}
         {quantity === 0 ? (
           <TouchableOpacity
             style={styles.addButtonUber}
@@ -444,7 +445,7 @@ function MenuItemRow({ item, quantity, onAdd, onUpdateQuantity }: any) {
           <View style={styles.quantityControlUber}>
             <TouchableOpacity
               style={styles.quantityButtonUber}
-              onPress={() => onUpdateQuantity(item.id, quantity - 1)}
+              onPress={() => handleUpdateQuantity(quantity - 1)}
             >
               <IconSymbol
                 ios_icon_name={quantity === 1 ? "trash.fill" : "minus"}
