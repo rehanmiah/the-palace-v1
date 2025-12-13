@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,8 @@ import {
   ActivityIndicator,
   LayoutChangeEvent,
   useWindowDimensions,
+  Platform,
+  FlatList,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { colors, buttonStyles } from '@/styles/commonStyles';
@@ -132,6 +134,45 @@ export default function MenuScreen() {
     setSelectedCategory(category);
   };
 
+  const renderCategoryChip = useCallback(({ item: category, index }: { item: any; index: number }) => {
+    const isAllItems = category === 'ALL_ITEMS';
+    const categoryName = isAllItems ? 'All Items' : category.name;
+    const isActive = isAllItems ? !selectedCategory : selectedCategory === category.name;
+
+    return (
+      <TouchableOpacity
+        key={isAllItems ? 'all-items' : `category-${category.id}-${index}`}
+        style={[
+          styles.categoryChip,
+          isActive && styles.categoryChipActive,
+        ]}
+        onPress={() => handleCategorySelect(isAllItems ? null : category.name)}
+      >
+        <Text
+          style={[
+            styles.categoryChipText,
+            isActive && styles.categoryChipTextActive,
+          ]}
+        >
+          {categoryName}
+        </Text>
+      </TouchableOpacity>
+    );
+  }, [selectedCategory]);
+
+  const renderMenuItem = useCallback(({ item, index }: { item: any; index: number }) => {
+    return (
+      <MenuItemRow
+        key={`menu-item-${item.id}`}
+        item={item}
+        screenWidth={screenWidth}
+        onAdd={handleAddToCart}
+        onUpdateQuantity={updateQuantity}
+        getItemQuantityInCart={getItemQuantityInCart}
+      />
+    );
+  }, [screenWidth, handleAddToCart, updateQuantity, getItemQuantityInCart]);
+
   if (isLoading) {
     return (
       <View style={[styles.container, styles.loadingContainer]}>
@@ -140,6 +181,8 @@ export default function MenuScreen() {
       </View>
     );
   }
+
+  const categoryData = [{ id: 'ALL_ITEMS', name: 'All Items' }, ...categories];
 
   return (
     <View style={styles.container}>
@@ -185,49 +228,14 @@ export default function MenuScreen() {
       {/* Sticky Category Bar - Shows when scrolled */}
       {categoriesSticky && (
         <View style={styles.stickyCategoryBar}>
-          <ScrollView
+          <FlatList
             horizontal
+            data={categoryData}
+            renderItem={renderCategoryChip}
+            keyExtractor={(item, index) => item.id === 'ALL_ITEMS' ? 'sticky-all-items' : `sticky-category-${item.id}-${index}`}
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.categoryScroll}
-          >
-            <TouchableOpacity
-              key="sticky-all-items"
-              style={[
-                styles.categoryChip,
-                !selectedCategory && styles.categoryChipActive,
-              ]}
-              onPress={() => handleCategorySelect(null)}
-            >
-              <Text
-                style={[
-                  styles.categoryChipText,
-                  !selectedCategory && styles.categoryChipTextActive,
-                ]}
-              >
-                All Items
-              </Text>
-            </TouchableOpacity>
-            {categories.map((category) => (
-              <TouchableOpacity
-                key={`sticky-${category.id}`}
-                style={[
-                  styles.categoryChip,
-                  selectedCategory === category.name && styles.categoryChipActive,
-                ]}
-                onPress={() => handleCategorySelect(category.name)}
-              >
-                <Text
-                  style={[
-                    styles.categoryChipText,
-                    selectedCategory === category.name &&
-                      styles.categoryChipTextActive,
-                  ]}
-                >
-                  {category.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          />
         </View>
       )}
 
@@ -364,65 +372,32 @@ export default function MenuScreen() {
           {/* Category Filter - Will scroll away and be replaced by sticky version */}
           {!categoriesSticky && (
             <View style={styles.categorySection}>
-              <ScrollView
+              <FlatList
                 horizontal
+                data={categoryData}
+                renderItem={renderCategoryChip}
+                keyExtractor={(item, index) => item.id === 'ALL_ITEMS' ? 'all-items' : `category-${item.id}-${index}`}
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.categoryScroll}
-              >
-                <TouchableOpacity
-                  key="all-items"
-                  style={[
-                    styles.categoryChip,
-                    !selectedCategory && styles.categoryChipActive,
-                  ]}
-                  onPress={() => handleCategorySelect(null)}
-                >
-                  <Text
-                    style={[
-                      styles.categoryChipText,
-                      !selectedCategory && styles.categoryChipTextActive,
-                    ]}
-                  >
-                    All Items
-                  </Text>
-                </TouchableOpacity>
-                {categories.map((category) => (
-                  <TouchableOpacity
-                    key={category.id}
-                    style={[
-                      styles.categoryChip,
-                      selectedCategory === category.name && styles.categoryChipActive,
-                    ]}
-                    onPress={() => handleCategorySelect(category.name)}
-                  >
-                    <Text
-                      style={[
-                        styles.categoryChipText,
-                        selectedCategory === category.name &&
-                          styles.categoryChipTextActive,
-                      ]}
-                    >
-                      {category.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
+              />
             </View>
           )}
         </View>
 
-        {/* Menu Items Section - Always scrollable */}
+        {/* Menu Items Section - Using FlatList for better performance */}
         <View style={styles.menuSection}>
-          {filteredItems.map((item) => (
-            <MenuItemRow
-              key={item.id}
-              item={item}
-              screenWidth={screenWidth}
-              onAdd={handleAddToCart}
-              onUpdateQuantity={updateQuantity}
-              getItemQuantityInCart={getItemQuantityInCart}
-            />
-          ))}
+          <FlatList
+            data={filteredItems}
+            renderItem={renderMenuItem}
+            keyExtractor={(item, index) => `menu-item-${item.id}-${index}`}
+            scrollEnabled={false}
+            showsVerticalScrollIndicator={false}
+            removeClippedSubviews={Platform.OS === 'android'}
+            maxToRenderPerBatch={10}
+            updateCellsBatchingPeriod={50}
+            initialNumToRender={10}
+            windowSize={10}
+          />
         </View>
       </ScrollView>
 
@@ -442,27 +417,27 @@ export default function MenuScreen() {
   );
 }
 
-function MenuItemRow({ item, screenWidth, onAdd, onUpdateQuantity, getItemQuantityInCart }: any) {
+const MenuItemRow = React.memo(({ item, screenWidth, onAdd, onUpdateQuantity, getItemQuantityInCart }: any) => {
   const { spiceLevel, cycleSpiceLevel } = useSpiceLevel(item.id);
 
   // Get quantity for this specific item with this specific spice level
   const quantity = getItemQuantityInCart(item.id, spiceLevel);
 
-  const handleAddToCart = () => {
+  const handleAddToCart = useCallback(() => {
     console.log('Adding to cart with spice level:', spiceLevel);
     onAdd(item, spiceLevel);
-  };
+  }, [item, spiceLevel, onAdd]);
 
-  const handleSpiceClick = () => {
+  const handleSpiceClick = useCallback(() => {
     console.log('Spice button clicked for:', item.name, 'Current level:', spiceLevel);
     cycleSpiceLevel();
-  };
+  }, [item.name, spiceLevel, cycleSpiceLevel]);
 
-  const handleUpdateQuantity = (newQuantity: number) => {
+  const handleUpdateQuantity = useCallback((newQuantity: number) => {
     onUpdateQuantity(item.id, newQuantity, spiceLevel);
-  };
+  }, [item.id, spiceLevel, onUpdateQuantity]);
 
-  const renderChilies = (count: number) => {
+  const renderChilies = useCallback((count: number) => {
     if (count === 0) return null;
     
     return (
@@ -472,33 +447,36 @@ function MenuItemRow({ item, screenWidth, onAdd, onUpdateQuantity, getItemQuanti
         ))}
       </View>
     );
-  };
-
-  console.log('MenuItemRow render - Item:', item.name, 'Spice Level:', spiceLevel, 'Quantity:', quantity);
+  }, [item.id, spiceLevel]);
 
   // Calculate responsive image width based on current screen width
   const MENU_IMAGE_WIDTH_PERCENTAGE = 0.30; // 30% of screen width
-  const MIN_IMAGE_WIDTH = 110;
-  const MAX_IMAGE_WIDTH = 150;
+  const MIN_IMAGE_WIDTH = 100;
+  const MAX_IMAGE_WIDTH = 140;
   const imageWidth = Math.max(
     MIN_IMAGE_WIDTH, 
     Math.min(MAX_IMAGE_WIDTH, screenWidth * MENU_IMAGE_WIDTH_PERCENTAGE)
   );
 
+  // Fallback image if no image_id is provided
+  const imageSource = item.image_id 
+    ? { uri: item.image_id }
+    : require('@/assets/images/7d34c77e-831d-4ee0-b02c-b042a09f6fa5.jpeg');
+
   return (
     <View style={styles.menuItem}>
-      <View style={styles.menuInfo}>
+      <View style={[styles.menuInfo, { flex: 1 }]}>
         <View style={styles.menuHeader}>
           <Text style={styles.menuName}>{item.name}</Text>
           {/* Display spice emojis under the item name */}
           {spiceLevel > 0 && renderChilies(spiceLevel)}
         </View>
         <Text style={styles.menuDescription} numberOfLines={2}>
-          {item.description}
+          {item.description || 'Delicious dish'}
         </Text>
         <View style={styles.menuFooter}>
           <Text style={styles.menuPrice}>
-            £{item.price.toFixed(2)}
+            £{parseFloat(item.price).toFixed(2)}
           </Text>
           <View style={styles.menuTags}>
             {item.is_vegetarian && (
@@ -520,8 +498,13 @@ function MenuItemRow({ item, screenWidth, onAdd, onUpdateQuantity, getItemQuanti
           </View>
         </View>
       </View>
-      <View style={[styles.menuImageContainer, { width: imageWidth }]}>
-        <Image source={{ uri: item.image_id || '' }} style={styles.menuImage} />
+      <View style={[styles.menuImageContainer, { width: imageWidth, height: 140 }]}>
+        <Image 
+          source={imageSource}
+          style={styles.menuImage}
+          resizeMode="cover"
+          defaultSource={require('@/assets/images/7d34c77e-831d-4ee0-b02c-b042a09f6fa5.jpeg')}
+        />
         
         {/* Spice Button - Show for all items so users can add spiciness */}
         <TouchableOpacity
@@ -578,7 +561,9 @@ function MenuItemRow({ item, screenWidth, onAdd, onUpdateQuantity, getItemQuanti
       </View>
     </View>
   );
-}
+});
+
+MenuItemRow.displayName = 'MenuItemRow';
 
 const styles = StyleSheet.create({
   container: {
@@ -599,7 +584,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 48,
+    paddingTop: Platform.OS === 'android' ? 48 : 48,
     paddingBottom: 12,
     backgroundColor: colors.background,
     borderBottomWidth: 1,
@@ -629,15 +614,27 @@ const styles = StyleSheet.create({
   },
   stickyCategoryBar: {
     position: 'absolute',
-    top: 85,
+    top: Platform.OS === 'android' ? 85 : 85,
     left: 0,
     right: 0,
     backgroundColor: colors.background,
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
-    elevation: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+      web: {
+        boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
+      },
+    }),
     zIndex: 99,
   },
   toggleSection: {
@@ -650,8 +647,20 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 8,
     padding: 4,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
-    elevation: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+      web: {
+        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
+      },
+    }),
   },
   toggleButton: {
     flex: 1,
@@ -679,8 +688,20 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     padding: 12,
     borderRadius: 8,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
-    elevation: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+      web: {
+        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
+      },
+    }),
   },
   addressContent: {
     flexDirection: 'row',
@@ -768,6 +789,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderWidth: 1.5,
     borderColor: colors.border,
+    marginRight: 8,
   },
   categoryChipActive: {
     backgroundColor: '#000000',
@@ -791,12 +813,23 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 16,
     overflow: 'hidden',
-    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.08)',
-    elevation: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 4,
+      },
+      web: {
+        boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.08)',
+      },
+    }),
     minHeight: 140,
   },
   menuInfo: {
-    flex: 1,
     padding: 12,
     justifyContent: 'space-between',
   },
@@ -867,12 +900,11 @@ const styles = StyleSheet.create({
   },
   menuImageContainer: {
     position: 'relative',
-    minHeight: 140,
+    backgroundColor: colors.border,
   },
   menuImage: {
     width: '100%',
     height: '100%',
-    backgroundColor: colors.border,
   },
   spiceButton: {
     position: 'absolute',
@@ -881,8 +913,20 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 18,
     padding: 5,
-    boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.15)',
-    elevation: 3,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 3,
+      },
+      web: {
+        boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.15)',
+      },
+    }),
     zIndex: 10,
   },
   spiceButtonContent: {
@@ -918,8 +962,20 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 1,
     borderColor: colors.border,
-    boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.12)',
-    elevation: 3,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.12,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 3,
+      },
+      web: {
+        boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.12)',
+      },
+    }),
   },
   addButtonTextUber: {
     color: colors.green,
@@ -936,8 +992,20 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 1,
     borderColor: colors.border,
-    boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.12)',
-    elevation: 3,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.12,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 3,
+      },
+      web: {
+        boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.12)',
+      },
+    }),
   },
   quantityButtonUber: {
     width: 28,
@@ -955,7 +1023,7 @@ const styles = StyleSheet.create({
   },
   floatingBasketIcon: {
     position: 'absolute',
-    top: 16,
+    top: Platform.OS === 'android' ? 16 : 16,
     right: 16,
     backgroundColor: '#000000',
     borderRadius: 28,
@@ -963,8 +1031,20 @@ const styles = StyleSheet.create({
     height: 56,
     justifyContent: 'center',
     alignItems: 'center',
-    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.3)',
-    elevation: 8,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 8,
+      },
+      web: {
+        boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.3)',
+      },
+    }),
     zIndex: 1000,
   },
   basketIconBadge: {
