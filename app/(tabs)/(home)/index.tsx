@@ -1007,15 +1007,15 @@ const styles = StyleSheet.create({
   menuItem: {
     flexDirection: 'row',
     backgroundColor: colors.card,
-    borderRadius: 12,
+    borderRadius: 0,
     marginBottom: 24,
-    padding: 16,
+    padding: 0,
     boxShadow: '0px 6px 16px rgba(0, 0, 0, 0.12)',
     elevation: 6,
   },
   menuInfo: {
     flex: 1,
-    paddingRight: 12,
+    padding: 16,
     justifyContent: 'space-between',
   },
   menuHeader: {
@@ -1072,7 +1072,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     width: 120,
     height: 120,
-    borderRadius: 8,
+    borderRadius: 0,
     overflow: 'hidden',
   },
   menuImage: {
