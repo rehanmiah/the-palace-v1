@@ -780,8 +780,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
     padding: 8,
-    boxShadow: '0px 3px 8px rgba(0, 0, 0, 0.1)',
-    elevation: 3,
   },
   menuImage: {
     width: '100%',
