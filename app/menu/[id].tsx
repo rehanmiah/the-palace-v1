@@ -414,9 +414,7 @@ function MenuItemRow({ item, onAdd, onUpdateQuantity, getItemQuantityInCart }: a
         </View>
       </View>
       <View style={styles.menuImageContainer}>
-        <View style={styles.imageWrapper}>
-          <Image source={{ uri: item.image_id || '' }} style={styles.menuImage} />
-        </View>
+        <Image source={{ uri: item.image_id || '' }} style={styles.menuImage} />
         
         {/* Spice Button - Show for all items so users can add spiciness */}
         <TouchableOpacity
@@ -696,13 +694,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 12,
     marginBottom: 24,
-    padding: 16,
+    overflow: 'hidden',
     boxShadow: '0px 6px 16px rgba(0, 0, 0, 0.12)',
     elevation: 6,
   },
   menuInfo: {
     flex: 1,
-    paddingRight: 12,
+    padding: 16,
     justifyContent: 'space-between',
   },
   menuHeader: {
@@ -772,19 +770,11 @@ const styles = StyleSheet.create({
   menuImageContainer: {
     position: 'relative',
     width: 120,
-    height: 120,
-  },
-  imageWrapper: {
-    width: 120,
-    height: 120,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    padding: 8,
+    height: '100%',
   },
   menuImage: {
     width: '100%',
     height: '100%',
-    borderRadius: 6,
     backgroundColor: colors.border,
   },
   spiceButton: {
