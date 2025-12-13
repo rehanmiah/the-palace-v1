@@ -378,6 +378,8 @@ function MenuItemRow({ item, quantity, onAdd, onUpdateQuantity }: any) {
       <View style={styles.menuInfo}>
         <View style={styles.menuHeader}>
           <Text style={styles.menuName}>{item.name}</Text>
+          {/* Display spice emojis under the item name */}
+          {spiceLevel > 0 && renderChilies(spiceLevel)}
         </View>
         <Text style={styles.menuDescription} numberOfLines={2}>
           {item.description}
@@ -386,7 +388,6 @@ function MenuItemRow({ item, quantity, onAdd, onUpdateQuantity }: any) {
           <Text style={styles.menuPrice}>
             £{item.price.toFixed(2)}
           </Text>
-          {spiceLevel > 0 && renderChilies(spiceLevel)}
           <View style={styles.menuTags}>
             {item.is_vegetarian && (
               <View style={styles.vegTag}>
@@ -410,10 +411,8 @@ function MenuItemRow({ item, quantity, onAdd, onUpdateQuantity }: any) {
       <View style={styles.menuImageContainer}>
         <Image source={{ uri: item.image_id || '' }} style={styles.menuImage} />
         
-        {/* Spice Button - Only show if item is spicy */}
-        {item.spicy && (
-          <SpiceButton menuItemId={item.id} />
-        )}
+        {/* Spice Button - Show for all items so users can add spiciness */}
+        <SpiceButton menuItemId={item.id} />
 
         {quantity === 0 ? (
           <TouchableOpacity
@@ -691,7 +690,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: colors.text,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   menuDescription: {
     fontSize: 14,
@@ -713,9 +712,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 2,
+    marginTop: 2,
   },
   chilliEmoji: {
-    fontSize: 14,
+    fontSize: 16,
   },
   menuTags: {
     flexDirection: 'row',
