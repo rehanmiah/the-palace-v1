@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,9 +9,7 @@ import {
   Image,
   Alert,
   ActivityIndicator,
-  useWindowDimensions,
-  Platform,
-  FlatList,
+  LayoutChangeEvent,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { colors, buttonStyles } from '@/styles/commonStyles';
@@ -50,10 +48,9 @@ export default function MenuScreen() {
     { id: '3', label: 'Other', address: '789 Park Avenue, London, W1A 1CC' },
   ]);
 
+  const [categoriesSticky, setCategoriesSticky] = useState(false);
+  const [headerHeight, setHeaderHeight] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
-
-  // Get dynamic screen dimensions for responsive sizing
-  const { width: screenWidth } = useWindowDimensions();
 
   const restaurant = restaurants.find((r) => r.id === id);
 
@@ -105,48 +102,31 @@ export default function MenuScreen() {
     return parts[parts.length - 1] || '';
   };
 
+  const handleScroll = (event: any) => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+    
+    // Adjusted threshold: Make categories sticky when scroll reaches headerHeight - 120
+    // This ensures the sticky bar appears well below the fixed header and is visible
+    const stickyThreshold = headerHeight - 120;
+    
+    if (offsetY >= stickyThreshold && !categoriesSticky) {
+      setCategoriesSticky(true);
+      console.log('Categories are now sticky at offset:', offsetY, 'headerHeight:', headerHeight, 'threshold:', stickyThreshold);
+    } else if (offsetY < stickyThreshold - 40 && categoriesSticky) {
+      setCategoriesSticky(false);
+      console.log('Categories are no longer sticky');
+    }
+  };
+
+  const handleHeaderLayout = (event: LayoutChangeEvent) => {
+    const { height } = event.nativeEvent.layout;
+    setHeaderHeight(height);
+    console.log('Header section height:', height);
+  };
+
   const handleCategorySelect = (category: string | null) => {
     setSelectedCategory(category);
   };
-
-  const renderCategoryChip = useCallback(({ item: category, index }: { item: any; index: number }) => {
-    const isAllItems = category === 'ALL_ITEMS';
-    const categoryName = isAllItems ? 'All Items' : category.name;
-    const isActive = isAllItems ? !selectedCategory : selectedCategory === category.name;
-
-    return (
-      <TouchableOpacity
-        key={isAllItems ? 'all-items' : `category-${category.id}-${index}`}
-        style={[
-          styles.categoryChip,
-          isActive && styles.categoryChipActive,
-        ]}
-        onPress={() => handleCategorySelect(isAllItems ? null : category.name)}
-      >
-        <Text
-          style={[
-            styles.categoryChipText,
-            isActive && styles.categoryChipTextActive,
-          ]}
-        >
-          {categoryName}
-        </Text>
-      </TouchableOpacity>
-    );
-  }, [selectedCategory]);
-
-  const renderMenuItem = useCallback(({ item, index }: { item: any; index: number }) => {
-    return (
-      <MenuItemRow
-        key={`menu-item-${item.id}`}
-        item={item}
-        screenWidth={screenWidth}
-        onAdd={handleAddToCart}
-        onUpdateQuantity={updateQuantity}
-        getItemQuantityInCart={getItemQuantityInCart}
-      />
-    );
-  }, [screenWidth, handleAddToCart, updateQuantity, getItemQuantityInCart]);
 
   if (isLoading) {
     return (
@@ -156,8 +136,6 @@ export default function MenuScreen() {
       </View>
     );
   }
-
-  const categoryData = [{ id: 'ALL_ITEMS', name: 'All Items' }, ...categories];
 
   return (
     <View style={styles.container}>
@@ -200,158 +178,244 @@ export default function MenuScreen() {
         </TouchableOpacity>
       )}
 
+      {/* Sticky Category Bar - Shows when scrolled */}
+      {categoriesSticky && (
+        <View style={styles.stickyCategoryBar}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoryScroll}
+          >
+            <TouchableOpacity
+              style={[
+                styles.categoryChip,
+                !selectedCategory && styles.categoryChipActive,
+              ]}
+              onPress={() => handleCategorySelect(null)}
+            >
+              <Text
+                style={[
+                  styles.categoryChipText,
+                  !selectedCategory && styles.categoryChipTextActive,
+                ]}
+              >
+                All Items
+              </Text>
+            </TouchableOpacity>
+            {categories.map((category, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.categoryChip,
+                  selectedCategory === category.name && styles.categoryChipActive,
+                ]}
+                onPress={() => handleCategorySelect(category.name)}
+              >
+                <Text
+                  style={[
+                    styles.categoryChipText,
+                    selectedCategory === category.name &&
+                      styles.categoryChipTextActive,
+                  ]}
+                >
+                  {category.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
       {/* Main Scrollable Content */}
       <ScrollView
         ref={scrollViewRef}
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
       >
-        {/* Delivery/Collection Toggle */}
-        <View style={styles.toggleSection}>
-          <View style={styles.toggleContainer}>
-            <TouchableOpacity
-              style={[
-                styles.toggleButton,
-                isDelivery && styles.toggleButtonActive,
-              ]}
-              onPress={() => setIsDelivery(true)}
-            >
-              <Text
+        {/* Header Section - Scrolls away */}
+        <View onLayout={handleHeaderLayout}>
+          {/* Delivery/Collection Toggle */}
+          <View style={styles.toggleSection}>
+            <View style={styles.toggleContainer}>
+              <TouchableOpacity
                 style={[
-                  styles.toggleButtonText,
-                  isDelivery && styles.toggleButtonTextActive,
+                  styles.toggleButton,
+                  isDelivery && styles.toggleButtonActive,
                 ]}
+                onPress={() => setIsDelivery(true)}
               >
-                Delivery
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.toggleButton,
-                !isDelivery && styles.toggleButtonActive,
-              ]}
-              onPress={() => setIsDelivery(false)}
-            >
-              <Text
-                style={[
-                  styles.toggleButtonText,
-                  !isDelivery && styles.toggleButtonTextActive,
-                ]}
-              >
-                Collection
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Address/Collection Dropdown */}
-        <TouchableOpacity
-          style={styles.addressDropdown}
-          onPress={() => setShowAddressModal(true)}
-        >
-          <View style={styles.addressContent}>
-            <IconSymbol
-              ios_icon_name={isDelivery ? "location.fill" : "person.fill"}
-              android_material_icon_name={isDelivery ? "location-on" : "person"}
-              size={20}
-              color={colors.text}
-            />
-            <View style={styles.addressTextContainer}>
-              {isDelivery ? (
-                <Text style={styles.addressLabel}>
-                  {selectedAddress.label} - {getPostcode(selectedAddress.address)}
+                <Text
+                  style={[
+                    styles.toggleButtonText,
+                    isDelivery && styles.toggleButtonTextActive,
+                  ]}
+                >
+                  Delivery
                 </Text>
-              ) : (
-                <Text style={styles.addressLabel}>
-                  {collectionName || 'Person collecting'}
-                </Text>
-              )}
-            </View>
-          </View>
-          <IconSymbol
-            ios_icon_name="chevron.down"
-            android_material_icon_name="keyboard-arrow-down"
-            size={20}
-            color={colors.textSecondary}
-          />
-        </TouchableOpacity>
-
-        {/* Restaurant Info */}
-        <View style={styles.restaurantSection}>
-          <Image
-            source={restaurant.image}
-            style={styles.restaurantImage}
-          />
-          <View style={styles.restaurantInfo}>
-            <View style={styles.restaurantHeader}>
-              {!restaurant.isOpen && (
-                <View style={styles.closedBadge}>
-                  <Text style={styles.closedText}>Closed</Text>
-                </View>
-              )}
-            </View>
-            <Text style={styles.restaurantDescription}>
-              {restaurant.description}
-            </Text>
-            <Text style={styles.restaurantAddress}>{restaurant.address}</Text>
-            <View style={styles.restaurantMeta}>
-              <TouchableOpacity 
-                style={styles.metaItem}
-                onPress={() => router.push('/reviews')}
-              >
-                <IconSymbol
-                  ios_icon_name="star.fill"
-                  android_material_icon_name="star"
-                  size={16}
-                  color={colors.accent}
-                />
-                <Text style={styles.metaText}>{restaurant.rating}</Text>
               </TouchableOpacity>
-              <View style={styles.metaItem}>
-                <IconSymbol
-                  ios_icon_name="clock.fill"
-                  android_material_icon_name="schedule"
-                  size={16}
-                  color={colors.textSecondary}
-                />
-                <Text style={styles.metaText}>{restaurant.deliveryTime}</Text>
-              </View>
-              <View style={styles.metaItem}>
-                <Text style={styles.metaText}>
-                  Min £{restaurant.minimumOrder}
+              <TouchableOpacity
+                style={[
+                  styles.toggleButton,
+                  !isDelivery && styles.toggleButtonActive,
+                ]}
+                onPress={() => setIsDelivery(false)}
+              >
+                <Text
+                  style={[
+                    styles.toggleButtonText,
+                    !isDelivery && styles.toggleButtonTextActive,
+                  ]}
+                >
+                  Collection
                 </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Address/Collection Dropdown */}
+          <TouchableOpacity
+            style={styles.addressDropdown}
+            onPress={() => setShowAddressModal(true)}
+          >
+            <View style={styles.addressContent}>
+              <IconSymbol
+                ios_icon_name={isDelivery ? "location.fill" : "person.fill"}
+                android_material_icon_name={isDelivery ? "location-on" : "person"}
+                size={20}
+                color={colors.text}
+              />
+              <View style={styles.addressTextContainer}>
+                {isDelivery ? (
+                  <Text style={styles.addressLabel}>
+                    {selectedAddress.label} - {getPostcode(selectedAddress.address)}
+                  </Text>
+                ) : (
+                  <Text style={styles.addressLabel}>
+                    {collectionName || 'Person collecting'}
+                  </Text>
+                )}
+              </View>
+            </View>
+            <IconSymbol
+              ios_icon_name="chevron.down"
+              android_material_icon_name="keyboard-arrow-down"
+              size={20}
+              color={colors.textSecondary}
+            />
+          </TouchableOpacity>
+
+          {/* Restaurant Info */}
+          <View style={styles.restaurantSection}>
+            <Image
+              source={restaurant.image}
+              style={styles.restaurantImage}
+            />
+            <View style={styles.restaurantInfo}>
+              <View style={styles.restaurantHeader}>
+                {!restaurant.isOpen && (
+                  <View style={styles.closedBadge}>
+                    <Text style={styles.closedText}>Closed</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={styles.restaurantDescription}>
+                {restaurant.description}
+              </Text>
+              <Text style={styles.restaurantAddress}>{restaurant.address}</Text>
+              <View style={styles.restaurantMeta}>
+                <TouchableOpacity 
+                  style={styles.metaItem}
+                  onPress={() => router.push('/reviews')}
+                >
+                  <IconSymbol
+                    ios_icon_name="star.fill"
+                    android_material_icon_name="star"
+                    size={16}
+                    color={colors.accent}
+                  />
+                  <Text style={styles.metaText}>{restaurant.rating}</Text>
+                </TouchableOpacity>
+                <View style={styles.metaItem}>
+                  <IconSymbol
+                    ios_icon_name="clock.fill"
+                    android_material_icon_name="schedule"
+                    size={16}
+                    color={colors.textSecondary}
+                  />
+                  <Text style={styles.metaText}>{restaurant.deliveryTime}</Text>
+                </View>
+                <View style={styles.metaItem}>
+                  <Text style={styles.metaText}>
+                    Min £{restaurant.minimumOrder}
+                  </Text>
+                </View>
               </View>
             </View>
           </View>
+
+          {/* Category Filter - Will scroll away and be replaced by sticky version */}
+          {!categoriesSticky && (
+            <View style={styles.categorySection}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.categoryScroll}
+              >
+                <TouchableOpacity
+                  style={[
+                    styles.categoryChip,
+                    !selectedCategory && styles.categoryChipActive,
+                  ]}
+                  onPress={() => handleCategorySelect(null)}
+                >
+                  <Text
+                    style={[
+                      styles.categoryChipText,
+                      !selectedCategory && styles.categoryChipTextActive,
+                    ]}
+                  >
+                    All Items
+                  </Text>
+                </TouchableOpacity>
+                {categories.map((category, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={[
+                      styles.categoryChip,
+                      selectedCategory === category.name && styles.categoryChipActive,
+                    ]}
+                    onPress={() => handleCategorySelect(category.name)}
+                  >
+                    <Text
+                      style={[
+                        styles.categoryChipText,
+                        selectedCategory === category.name &&
+                          styles.categoryChipTextActive,
+                      ]}
+                    >
+                      {category.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
         </View>
 
-        {/* Category Filter - Now scrolls with content */}
-        <View style={styles.categorySection}>
-          <FlatList
-            horizontal
-            data={categoryData}
-            renderItem={renderCategoryChip}
-            keyExtractor={(item, index) => item.id === 'ALL_ITEMS' ? 'all-items' : `category-${item.id}-${index}`}
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoryScroll}
-          />
-        </View>
-
-        {/* Menu Items Section - Using FlatList for better performance */}
+        {/* Menu Items Section - Always scrollable */}
         <View style={styles.menuSection}>
-          <FlatList
-            data={filteredItems}
-            renderItem={renderMenuItem}
-            keyExtractor={(item, index) => `menu-item-${item.id}-${index}`}
-            scrollEnabled={false}
-            showsVerticalScrollIndicator={false}
-            removeClippedSubviews={Platform.OS === 'android'}
-            maxToRenderPerBatch={10}
-            updateCellsBatchingPeriod={50}
-            initialNumToRender={10}
-            windowSize={10}
-          />
+          {filteredItems.map((item, index) => (
+            <MenuItemRow
+              key={`${item.id}-${index}`}
+              item={item}
+              onAdd={handleAddToCart}
+              onUpdateQuantity={updateQuantity}
+              getItemQuantityInCart={getItemQuantityInCart}
+            />
+          ))}
         </View>
       </ScrollView>
 
@@ -371,66 +435,59 @@ export default function MenuScreen() {
   );
 }
 
-const MenuItemRow = React.memo(({ item, screenWidth, onAdd, onUpdateQuantity, getItemQuantityInCart }: any) => {
+function MenuItemRow({ item, onAdd, onUpdateQuantity, getItemQuantityInCart }: any) {
   const { spiceLevel, cycleSpiceLevel } = useSpiceLevel(item.id);
 
   // Get quantity for this specific item with this specific spice level
   const quantity = getItemQuantityInCart(item.id, spiceLevel);
 
-  const handleAddToCart = useCallback(() => {
+  const handleAddToCart = () => {
     console.log('Adding to cart with spice level:', spiceLevel);
     onAdd(item, spiceLevel);
-  }, [item, spiceLevel, onAdd]);
+  };
 
-  const handleSpiceClick = useCallback(() => {
+  const handleSpiceClick = () => {
     console.log('Spice button clicked for:', item.name, 'Current level:', spiceLevel);
     cycleSpiceLevel();
-  }, [item.name, spiceLevel, cycleSpiceLevel]);
+  };
 
-  const handleUpdateQuantity = useCallback((newQuantity: number) => {
+  const handleUpdateQuantity = (newQuantity: number) => {
     onUpdateQuantity(item.id, newQuantity, spiceLevel);
-  }, [item.id, spiceLevel, onUpdateQuantity]);
+  };
 
-  const renderChilies = useCallback((count: number) => {
+  const renderChilies = (count: number) => {
     if (count === 0) return null;
+    
+    const chilies = [];
+    for (let i = 0; i < count; i++) {
+      chilies.push(
+        <Text key={i} style={styles.chilliEmoji}>🌶️</Text>
+      );
+    }
     
     return (
       <View style={styles.spiceLevelContainer}>
-        {Array.from({ length: count }).map((_, index) => (
-          <Text key={`chili-${item.id}-${spiceLevel}-${index}`} style={styles.chilliEmoji}>🌶️</Text>
-        ))}
+        {chilies}
       </View>
     );
-  }, [item.id, spiceLevel]);
+  };
 
-  // Calculate responsive image width based on current screen width
-  const MENU_IMAGE_WIDTH_PERCENTAGE = 0.30; // 30% of screen width
-  const MIN_IMAGE_WIDTH = 100;
-  const MAX_IMAGE_WIDTH = 140;
-  const imageWidth = Math.max(
-    MIN_IMAGE_WIDTH, 
-    Math.min(MAX_IMAGE_WIDTH, screenWidth * MENU_IMAGE_WIDTH_PERCENTAGE)
-  );
-
-  // Fallback image if no image_id is provided
-  const imageSource = item.image_id 
-    ? { uri: item.image_id }
-    : require('@/assets/images/7d34c77e-831d-4ee0-b02c-b042a09f6fa5.jpeg');
+  console.log('MenuItemRow render - Item:', item.name, 'Spice Level:', spiceLevel, 'Quantity:', quantity);
 
   return (
     <View style={styles.menuItem}>
-      <View style={[styles.menuInfo, { flex: 1 }]}>
+      <View style={styles.menuInfo}>
         <View style={styles.menuHeader}>
           <Text style={styles.menuName}>{item.name}</Text>
           {/* Display spice emojis under the item name */}
           {spiceLevel > 0 && renderChilies(spiceLevel)}
         </View>
         <Text style={styles.menuDescription} numberOfLines={2}>
-          {item.description || 'Delicious dish'}
+          {item.description}
         </Text>
         <View style={styles.menuFooter}>
           <Text style={styles.menuPrice}>
-            £{parseFloat(item.price).toFixed(2)}
+            £{item.price.toFixed(2)}
           </Text>
           <View style={styles.menuTags}>
             {item.is_vegetarian && (
@@ -452,13 +509,8 @@ const MenuItemRow = React.memo(({ item, screenWidth, onAdd, onUpdateQuantity, ge
           </View>
         </View>
       </View>
-      <View style={[styles.menuImageContainer, { width: imageWidth, height: 140 }]}>
-        <Image 
-          source={imageSource}
-          style={styles.menuImage}
-          resizeMode="cover"
-          defaultSource={require('@/assets/images/7d34c77e-831d-4ee0-b02c-b042a09f6fa5.jpeg')}
-        />
+      <View style={styles.menuImageContainer}>
+        <Image source={{ uri: item.image_id || '' }} style={styles.menuImage} />
         
         {/* Spice Button - Show for all items so users can add spiciness */}
         <TouchableOpacity
@@ -515,9 +567,7 @@ const MenuItemRow = React.memo(({ item, screenWidth, onAdd, onUpdateQuantity, ge
       </View>
     </View>
   );
-});
-
-MenuItemRow.displayName = 'MenuItemRow';
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -538,7 +588,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'android' ? 48 : 48,
+    paddingTop: 48,
     paddingBottom: 12,
     backgroundColor: colors.background,
     borderBottomWidth: 1,
@@ -566,6 +616,19 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 120,
   },
+  stickyCategoryBar: {
+    position: 'absolute',
+    top: 85,
+    left: 0,
+    right: 0,
+    backgroundColor: colors.background,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
+    elevation: 4,
+    zIndex: 99,
+  },
   toggleSection: {
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -576,20 +639,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 8,
     padding: 4,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.06,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-      web: {
-        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
-      },
-    }),
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
+    elevation: 2,
   },
   toggleButton: {
     flex: 1,
@@ -617,20 +668,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     padding: 12,
     borderRadius: 8,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.06,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-      web: {
-        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
-      },
-    }),
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
+    elevation: 2,
   },
   addressContent: {
     flexDirection: 'row',
@@ -704,6 +743,8 @@ const styles = StyleSheet.create({
   categorySection: {
     paddingVertical: 12,
     backgroundColor: colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   categoryScroll: {
     paddingHorizontal: 16,
@@ -716,7 +757,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderWidth: 1.5,
     borderColor: colors.border,
-    marginRight: 8,
   },
   categoryChipActive: {
     backgroundColor: '#000000',
@@ -738,30 +778,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: colors.card,
     borderRadius: 12,
-    marginBottom: 16,
+    marginBottom: 24,
     overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 12,
-      },
-      android: {
-        elevation: 4,
-      },
-      web: {
-        boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.08)',
-      },
-    }),
-    minHeight: 140,
+    boxShadow: '0px 6px 16px rgba(0, 0, 0, 0.12)',
+    elevation: 6,
   },
   menuInfo: {
-    padding: 12,
+    flex: 1,
+    padding: 16,
     justifyContent: 'space-between',
   },
   menuHeader: {
-    marginBottom: 4,
+    marginBottom: 6,
   },
   menuName: {
     fontSize: 16,
@@ -770,16 +798,15 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   menuDescription: {
-    fontSize: 13,
+    fontSize: 14,
     color: colors.textSecondary,
-    marginBottom: 6,
-    lineHeight: 18,
+    marginBottom: 8,
+    lineHeight: 20,
   },
   menuFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    flexWrap: 'wrap',
+    gap: 8,
   },
   menuPrice: {
     fontSize: 16,
@@ -793,7 +820,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   chilliEmoji: {
-    fontSize: 14,
+    fontSize: 16,
   },
   menuTags: {
     flexDirection: 'row',
@@ -821,88 +848,66 @@ const styles = StyleSheet.create({
     marginLeft: 'auto',
   },
   ratingText: {
-    fontSize: 12,
+    fontSize: 13,
     color: colors.textSecondary,
     fontWeight: '500',
   },
   menuImageContainer: {
     position: 'relative',
-    backgroundColor: colors.border,
+    width: 120,
+    height: '100%',
   },
   menuImage: {
     width: '100%',
     height: '100%',
+    backgroundColor: colors.border,
   },
   spiceButton: {
     position: 'absolute',
-    top: 6,
-    right: 6,
+    top: 8,
+    right: 8,
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 18,
-    padding: 5,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 3,
-      },
-      web: {
-        boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.15)',
-      },
-    }),
+    borderRadius: 20,
+    padding: 6,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.2)',
+    elevation: 4,
     zIndex: 10,
   },
   spiceButtonContent: {
     position: 'relative',
   },
   spiceEmoji: {
-    fontSize: 18,
+    fontSize: 20,
   },
   spiceBadge: {
     position: 'absolute',
-    top: -5,
-    right: -5,
+    top: -6,
+    right: -6,
     backgroundColor: colors.green,
-    borderRadius: 9,
-    minWidth: 16,
-    height: 16,
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 3,
+    paddingHorizontal: 4,
   },
   spiceBadgeText: {
     color: '#FFFFFF',
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
   },
   addButtonUber: {
     position: 'absolute',
-    bottom: 6,
-    right: 6,
+    bottom: 8,
+    right: 8,
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 18,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: colors.border,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.12,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 3,
-      },
-      web: {
-        boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.12)',
-      },
-    }),
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.15)',
+    elevation: 4,
   },
   addButtonTextUber: {
     color: colors.green,
@@ -911,34 +916,22 @@ const styles = StyleSheet.create({
   },
   quantityControlUber: {
     position: 'absolute',
-    bottom: 6,
-    right: 6,
+    bottom: 8,
+    right: 8,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 18,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: colors.border,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.12,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 3,
-      },
-      web: {
-        boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.12)',
-      },
-    }),
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.15)',
+    elevation: 4,
   },
   quantityButtonUber: {
-    width: 28,
-    height: 28,
+    width: 32,
+    height: 32,
     backgroundColor: '#000000',
-    borderRadius: 14,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -950,7 +943,7 @@ const styles = StyleSheet.create({
   },
   floatingBasketIcon: {
     position: 'absolute',
-    top: Platform.OS === 'android' ? 16 : 16,
+    top: 16,
     right: 16,
     backgroundColor: '#000000',
     borderRadius: 28,
@@ -958,20 +951,8 @@ const styles = StyleSheet.create({
     height: 56,
     justifyContent: 'center',
     alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 12,
-      },
-      android: {
-        elevation: 8,
-      },
-      web: {
-        boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.3)',
-      },
-    }),
+    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.3)',
+    elevation: 8,
     zIndex: 1000,
   },
   basketIconBadge: {

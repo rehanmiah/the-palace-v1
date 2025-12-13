@@ -219,7 +219,7 @@ export default function HomeScreen() {
             >
               {popularDishes.map((dish, index) => (
                 <PopularDishCard
-                  key={`popular-${dish.id}`}
+                  key={`popular-${dish.id}-${index}`}
                   dish={dish}
                   onAdd={handleAddToCart}
                   onUpdateQuantity={updateQuantity}
@@ -289,9 +289,9 @@ export default function HomeScreen() {
                 All Items
               </Text>
             </TouchableOpacity>
-            {categories.map((category) => (
+            {categories.map((category, index) => (
               <TouchableOpacity
-                key={`category-${category.id}`}
+                key={`category-${category.id}-${index}`}
                 style={[
                   styles.categoryChip,
                   selectedCategory === category.name && styles.categoryChipActive,
@@ -351,9 +351,9 @@ export default function HomeScreen() {
               </Text>
             </View>
             <View style={styles.menuSection}>
-              {filteredItems.map((item) => (
+              {filteredItems.map((item, index) => (
                 <MenuItemRow
-                  key={`menu-${item.id}`}
+                  key={`menu-${item.id}-${index}`}
                   item={item}
                   onAdd={handleAddToCart}
                   onUpdateQuantity={updateQuantity}

@@ -195,9 +195,9 @@ export default function AddressModal({
               >
                 {isDelivery ? (
                   <React.Fragment>
-                    {addresses.map((address) => (
+                    {addresses.map((address, index) => (
                       <TouchableOpacity
-                        key={address.id}
+                        key={index}
                         style={styles.addressOption}
                         onPress={() => {
                           onSelectAddress(address);
@@ -212,7 +212,6 @@ export default function AddressModal({
                       </TouchableOpacity>
                     ))}
                     <TouchableOpacity
-                      key="add-new-address"
                       style={styles.addressOption}
                       onPress={handleAddNewAddress}
                     >
