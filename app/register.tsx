@@ -15,6 +15,81 @@ import { colors } from '@/styles/commonStyles';
 import { useAuth } from '@/contexts/AuthContext';
 import { IconSymbol } from '@/components/IconSymbol';
 
+// Validation functions
+const validateEmail = (email: string): { isValid: boolean; error?: string } => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!email) {
+    return { isValid: false, error: 'Email is required' };
+  }
+  if (!emailRegex.test(email)) {
+    return { isValid: false, error: 'Please enter a valid email address' };
+  }
+  return { isValid: true };
+};
+
+const validateUKMobile = (phone: string): { isValid: boolean; error?: string } => {
+  // Remove all spaces and dashes for validation
+  const cleanPhone = phone.replace(/[\s-]/g, '');
+  
+  // UK mobile number patterns:
+  // 07xxx xxxxxx (11 digits starting with 07)
+  // +447xxx xxxxxx (13 digits starting with +447)
+  // 00447xxx xxxxxx (14 digits starting with 00447)
+  const ukMobileRegex = /^(?:(?:\+44|0044|0)7\d{9})$/;
+  
+  if (!phone) {
+    return { isValid: false, error: 'Phone number is required' };
+  }
+  
+  if (!ukMobileRegex.test(cleanPhone)) {
+    return { 
+      isValid: false, 
+      error: 'Please enter a valid UK mobile number (e.g., 07xxx xxxxxx or +447xxx xxxxxx)' 
+    };
+  }
+  
+  return { isValid: true };
+};
+
+const validatePassword = (password: string): { isValid: boolean; error?: string } => {
+  if (!password) {
+    return { isValid: false, error: 'Password is required' };
+  }
+  
+  if (password.length < 8) {
+    return { isValid: false, error: 'Password must be at least 8 characters long' };
+  }
+  
+  // Check for at least one uppercase letter
+  if (!/[A-Z]/.test(password)) {
+    return { isValid: false, error: 'Password must contain at least one uppercase letter' };
+  }
+  
+  // Check for at least one lowercase letter
+  if (!/[a-z]/.test(password)) {
+    return { isValid: false, error: 'Password must contain at least one lowercase letter' };
+  }
+  
+  // Check for at least one special character
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+    return { isValid: false, error: 'Password must contain at least one special character (!@#$%^&*...)' };
+  }
+  
+  return { isValid: true };
+};
+
+const validateConfirmPassword = (password: string, confirmPassword: string): { isValid: boolean; error?: string } => {
+  if (!confirmPassword) {
+    return { isValid: false, error: 'Please confirm your password' };
+  }
+  
+  if (password !== confirmPassword) {
+    return { isValid: false, error: 'Passwords do not match' };
+  }
+  
+  return { isValid: true };
+};
+
 export default function RegisterScreen() {
   const router = useRouter();
   const { register, isLoading } = useAuth();
@@ -25,28 +100,103 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+  // Error states for real-time validation feedback
+  const [emailError, setEmailError] = useState('');
+  const [phoneError, setPhoneError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [confirmPasswordError, setConfirmPasswordError] = useState('');
+
+  // Real-time validation handlers
+  const handleEmailBlur = () => {
+    const validation = validateEmail(email);
+    setEmailError(validation.error || '');
+  };
+
+  const handlePhoneBlur = () => {
+    const validation = validateUKMobile(phone);
+    setPhoneError(validation.error || '');
+  };
+
+  const handlePasswordBlur = () => {
+    const validation = validatePassword(password);
+    setPasswordError(validation.error || '');
+  };
+
+  const handleConfirmPasswordBlur = () => {
+    const validation = validateConfirmPassword(password, confirmPassword);
+    setConfirmPasswordError(validation.error || '');
+  };
 
   const handleRegister = async () => {
-    if (!name || !email || !phone || !password || !confirmPassword) {
-      Alert.alert('Error', 'Please fill in all fields');
+    // Clear previous errors
+    setEmailError('');
+    setPhoneError('');
+    setPasswordError('');
+    setConfirmPasswordError('');
+
+    // Validate all fields before submission
+    let hasError = false;
+    let firstErrorMessage = '';
+
+    // Validate name
+    if (!name.trim()) {
+      firstErrorMessage = 'Please enter your full name';
+      hasError = true;
+    }
+
+    // Validate email
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.isValid) {
+      setEmailError(emailValidation.error || '');
+      if (!firstErrorMessage) {
+        firstErrorMessage = emailValidation.error || 'Invalid email';
+      }
+      hasError = true;
+    }
+
+    // Validate phone
+    const phoneValidation = validateUKMobile(phone);
+    if (!phoneValidation.isValid) {
+      setPhoneError(phoneValidation.error || '');
+      if (!firstErrorMessage) {
+        firstErrorMessage = phoneValidation.error || 'Invalid phone number';
+      }
+      hasError = true;
+    }
+
+    // Validate password
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      setPasswordError(passwordValidation.error || '');
+      if (!firstErrorMessage) {
+        firstErrorMessage = passwordValidation.error || 'Invalid password';
+      }
+      hasError = true;
+    }
+
+    // Validate confirm password
+    const confirmPasswordValidation = validateConfirmPassword(password, confirmPassword);
+    if (!confirmPasswordValidation.isValid) {
+      setConfirmPasswordError(confirmPasswordValidation.error || '');
+      if (!firstErrorMessage) {
+        firstErrorMessage = confirmPasswordValidation.error || 'Passwords do not match';
+      }
+      hasError = true;
+    }
+
+    // Stop if there are validation errors and show the first error
+    if (hasError) {
+      Alert.alert('Validation Error', firstErrorMessage);
       return;
     }
 
-    if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
-      return;
-    }
-
-    if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
-      return;
-    }
-
+    // All validations passed, proceed with registration
     try {
       await register(name, email, phone, password);
       Alert.alert(
         'Success',
-        'Account created! Please check your email and phone for verification codes.',
+        'Account created! Please check your email to verify your account before signing in.',
         [
           {
             text: 'OK',
@@ -54,8 +204,10 @@ export default function RegisterScreen() {
           },
         ]
       );
-    } catch (error) {
-      Alert.alert('Error', 'Failed to create account. Please try again.');
+    } catch (error: any) {
+      console.log('Registration error:', error);
+      const errorMessage = error?.message || 'Failed to create account. Please try again.';
+      Alert.alert('Registration Error', errorMessage);
     }
   };
 
@@ -75,7 +227,7 @@ export default function RegisterScreen() {
       <View style={styles.form}>
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Full Name</Text>
-          <View style={styles.inputWrapper}>
+          <View style={[styles.inputWrapper]}>
             <IconSymbol
               ios_icon_name="person.fill"
               android_material_icon_name="person"
@@ -96,62 +248,79 @@ export default function RegisterScreen() {
 
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Email</Text>
-          <View style={styles.inputWrapper}>
+          <View style={[styles.inputWrapper, emailError ? styles.inputWrapperError : null]}>
             <IconSymbol
               ios_icon_name="envelope.fill"
               android_material_icon_name="email"
               size={20}
-              color={colors.textSecondary}
+              color={emailError ? colors.error : colors.textSecondary}
             />
             <TextInput
               style={styles.input}
               placeholder="Enter your email"
               placeholderTextColor={colors.textSecondary}
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(text) => {
+                setEmail(text);
+                if (emailError) setEmailError('');
+              }}
+              onBlur={handleEmailBlur}
               keyboardType="email-address"
               autoCapitalize="none"
               autoComplete="email"
             />
           </View>
+          {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
         </View>
 
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Phone Number</Text>
-          <View style={styles.inputWrapper}>
+          <Text style={styles.label}>Phone Number (UK Mobile)</Text>
+          <View style={[styles.inputWrapper, phoneError ? styles.inputWrapperError : null]}>
             <IconSymbol
               ios_icon_name="phone.fill"
               android_material_icon_name="phone"
               size={20}
-              color={colors.textSecondary}
+              color={phoneError ? colors.error : colors.textSecondary}
             />
             <TextInput
               style={styles.input}
-              placeholder="Enter your phone number"
+              placeholder="07xxx xxxxxx or +447xxx xxxxxx"
               placeholderTextColor={colors.textSecondary}
               value={phone}
-              onChangeText={setPhone}
+              onChangeText={(text) => {
+                setPhone(text);
+                if (phoneError) setPhoneError('');
+              }}
+              onBlur={handlePhoneBlur}
               keyboardType="phone-pad"
               autoComplete="tel"
             />
           </View>
+          {phoneError ? <Text style={styles.errorText}>{phoneError}</Text> : null}
         </View>
 
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Password</Text>
-          <View style={styles.inputWrapper}>
+          <View style={[styles.inputWrapper, passwordError ? styles.inputWrapperError : null]}>
             <IconSymbol
               ios_icon_name="lock.fill"
               android_material_icon_name="lock"
               size={20}
-              color={colors.textSecondary}
+              color={passwordError ? colors.error : colors.textSecondary}
             />
             <TextInput
               style={styles.input}
               placeholder="Create a password"
               placeholderTextColor={colors.textSecondary}
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(text) => {
+                setPassword(text);
+                if (passwordError) setPasswordError('');
+                if (confirmPassword && confirmPasswordError) {
+                  setConfirmPasswordError('');
+                }
+              }}
+              onBlur={handlePasswordBlur}
               secureTextEntry={!showPassword}
               autoCapitalize="none"
               autoComplete="password-new"
@@ -165,23 +334,31 @@ export default function RegisterScreen() {
               />
             </TouchableOpacity>
           </View>
+          {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+          <Text style={styles.hintText}>
+            Must be at least 8 characters with uppercase, lowercase, and special character
+          </Text>
         </View>
 
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Confirm Password</Text>
-          <View style={styles.inputWrapper}>
+          <View style={[styles.inputWrapper, confirmPasswordError ? styles.inputWrapperError : null]}>
             <IconSymbol
               ios_icon_name="lock.fill"
               android_material_icon_name="lock"
               size={20}
-              color={colors.textSecondary}
+              color={confirmPasswordError ? colors.error : colors.textSecondary}
             />
             <TextInput
               style={styles.input}
               placeholder="Confirm your password"
               placeholderTextColor={colors.textSecondary}
               value={confirmPassword}
-              onChangeText={setConfirmPassword}
+              onChangeText={(text) => {
+                setConfirmPassword(text);
+                if (confirmPasswordError) setConfirmPasswordError('');
+              }}
+              onBlur={handleConfirmPasswordBlur}
               secureTextEntry={!showConfirmPassword}
               autoCapitalize="none"
               autoComplete="password-new"
@@ -195,6 +372,7 @@ export default function RegisterScreen() {
               />
             </TouchableOpacity>
           </View>
+          {confirmPasswordError ? <Text style={styles.errorText}>{confirmPasswordError}</Text> : null}
         </View>
 
         <TouchableOpacity
@@ -275,11 +453,29 @@ const styles = StyleSheet.create({
     gap: 12,
     boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
     elevation: 2,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  inputWrapperError: {
+    borderColor: colors.error || '#ff4444',
+    borderWidth: 1,
   },
   input: {
     flex: 1,
     fontSize: 16,
     color: colors.text,
+  },
+  errorText: {
+    fontSize: 12,
+    color: colors.error || '#ff4444',
+    marginTop: 4,
+    marginLeft: 4,
+  },
+  hintText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 4,
+    marginLeft: 4,
   },
   registerButton: {
     backgroundColor: colors.primary,
