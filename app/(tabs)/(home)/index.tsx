@@ -31,10 +31,11 @@ interface Address {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { addToCart, updateQuantity, cart, getCartItemCount } = useCart();
+  const { addToCart, updateQuantity, cart, getCartItemCount, getItemQuantityInCart } = useCart();
   const { menuItems, categories, isLoading, getPopularItems } = useMenu();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [showAllItems, setShowAllItems] = useState(false);
   const [isDelivery, setIsDelivery] = useState(true);
   const [collectionName, setCollectionName] = useState('');
   const [selectedAddress, setSelectedAddress] = useState<Address>({
@@ -70,11 +71,6 @@ export default function HomeScreen() {
     return matchesSearch && matchesCategory;
   });
 
-  const getDishQuantity = (dishId: string) => {
-    const cartItem = cart.find((item) => item.dish.id === dishId);
-    return cartItem ? cartItem.quantity : 0;
-  };
-
   const handleAddToCart = (menuItem: any, spiceLevel?: number) => {
     console.log('Adding to cart from home:', menuItem.name, 'spice level:', spiceLevel);
     // Convert menu item to Dish format for cart
@@ -94,18 +90,18 @@ export default function HomeScreen() {
 
   const handleCategorySelect = (category: string | null) => {
     if (category === 'All Items') {
-      // Navigate to menu page for "All Items"
-      router.push({
-        pathname: '/menu/[id]',
-        params: { id: restaurant.id },
-      });
+      // Consistent behavior: show all items on home screen
+      setShowAllItems(true);
+      setSelectedCategory(null);
     } else {
       // Stay on home page and filter
+      setShowAllItems(false);
       setSelectedCategory(category);
     }
   };
 
   const cartItemCount = getCartItemCount();
+  const cartTotal = cart.reduce((total, item) => total + item.dish.price * item.quantity, 0);
 
   // Render chili emojis based on spice level
   const renderChilies = (count: number) => {
@@ -152,22 +148,6 @@ export default function HomeScreen() {
             <Text style={styles.restaurantName}>{restaurant.name}</Text>
             <Text style={styles.restaurantAddress}>{restaurant.address}</Text>
           </View>
-          <TouchableOpacity
-            style={styles.cartButton}
-            onPress={() => router.push('/cart')}
-          >
-            <IconSymbol
-              ios_icon_name="cart.fill"
-              android_material_icon_name="shopping-cart"
-              size={28}
-              color="#FFFFFF"
-            />
-            {cartItemCount > 0 && (
-              <View style={styles.cartBadge}>
-                <Text style={styles.cartBadgeText}>{cartItemCount}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
         </View>
 
         {/* Restaurant Info Card */}
@@ -202,7 +182,7 @@ export default function HomeScreen() {
         </View>
 
         {/* Popular Dishes - Moved above search */}
-        {!searchQuery && !selectedCategory && popularDishes.length > 0 && (
+        {!searchQuery && !selectedCategory && !showAllItems && popularDishes.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Popular Dishes</Text>
@@ -215,18 +195,15 @@ export default function HomeScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.horizontalScroll}
             >
-              {popularDishes.map((dish, index) => {
-                const quantity = getDishQuantity(dish.id);
-                return (
-                  <PopularDishCard
-                    key={index}
-                    dish={dish}
-                    quantity={quantity}
-                    onAdd={handleAddToCart}
-                    onUpdateQuantity={updateQuantity}
-                  />
-                );
-              })}
+              {popularDishes.map((dish, index) => (
+                <PopularDishCard
+                  key={`popular-${dish.id}-${index}`}
+                  dish={dish}
+                  onAdd={handleAddToCart}
+                  onUpdateQuantity={updateQuantity}
+                  getItemQuantityInCart={getItemQuantityInCart}
+                />
+              ))}
             </ScrollView>
           </View>
         )}
@@ -258,30 +235,41 @@ export default function HomeScreen() {
             <TouchableOpacity
               style={[
                 styles.categoryChip,
-                !selectedCategory && styles.categoryChipActive,
+                !selectedCategory && !showAllItems && styles.categoryChipActive,
               ]}
-              onPress={() => setSelectedCategory(null)}
+              onPress={() => {
+                setSelectedCategory(null);
+                setShowAllItems(false);
+              }}
             >
               <Text
                 style={[
                   styles.categoryChipText,
-                  !selectedCategory && styles.categoryChipTextActive,
+                  !selectedCategory && !showAllItems && styles.categoryChipTextActive,
                 ]}
               >
                 Picked for you
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.categoryChip}
+              style={[
+                styles.categoryChip,
+                showAllItems && !selectedCategory && styles.categoryChipActive,
+              ]}
               onPress={() => handleCategorySelect('All Items')}
             >
-              <Text style={styles.categoryChipText}>
+              <Text
+                style={[
+                  styles.categoryChipText,
+                  showAllItems && !selectedCategory && styles.categoryChipTextActive,
+                ]}
+              >
                 All Items
               </Text>
             </TouchableOpacity>
             {categories.map((category, index) => (
               <TouchableOpacity
-                key={index}
+                key={`category-${category.id}-${index}`}
                 style={[
                   styles.categoryChip,
                   selectedCategory === category.name && styles.categoryChipActive,
@@ -303,7 +291,7 @@ export default function HomeScreen() {
         </View>
 
         {/* Menu Items Display */}
-        {!searchQuery && !selectedCategory && (
+        {!searchQuery && !selectedCategory && !showAllItems && (
           <React.Fragment>
             {/* Full Menu Button */}
             <View style={styles.menuButtonContainer}>
@@ -328,41 +316,71 @@ export default function HomeScreen() {
           </React.Fragment>
         )}
 
-        {/* Filtered Results - When search or category is selected */}
-        {(searchQuery || selectedCategory) && (
+        {/* Filtered Results - When search, category, or "All Items" is selected */}
+        {(searchQuery || selectedCategory || showAllItems) && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>
-                {selectedCategory || `${filteredItems.length} ${filteredItems.length === 1 ? 'Result' : 'Results'}`}
+                {showAllItems && !selectedCategory 
+                  ? 'All Items' 
+                  : selectedCategory 
+                  ? selectedCategory 
+                  : `${filteredItems.length} ${filteredItems.length === 1 ? 'Result' : 'Results'}`}
               </Text>
             </View>
             <View style={styles.menuSection}>
-              {filteredItems.map((item, index) => {
-                const quantity = getDishQuantity(item.id);
-                return (
-                  <MenuItemRow
-                    key={index}
-                    item={item}
-                    quantity={quantity}
-                    onAdd={handleAddToCart}
-                    onUpdateQuantity={updateQuantity}
-                  />
-                );
-              })}
+              {filteredItems.map((item, index) => (
+                <MenuItemRow
+                  key={`menu-${item.id}-${index}`}
+                  item={item}
+                  onAdd={handleAddToCart}
+                  onUpdateQuantity={updateQuantity}
+                  getItemQuantityInCart={getItemQuantityInCart}
+                />
+              ))}
             </View>
           </View>
         )}
       </ScrollView>
+
+      {/* Floating Basket - Always visible when cart has items */}
+      {cartItemCount > 0 && (
+        <View style={styles.floatingBasket}>
+          <TouchableOpacity
+            style={styles.basketButton}
+            onPress={() => router.push('/cart')}
+            activeOpacity={0.9}
+          >
+            <View style={styles.basketLeft}>
+              <View style={styles.basketBadge}>
+                <Text style={styles.basketBadgeText}>{cartItemCount}</Text>
+              </View>
+              <Text style={styles.basketText}>View Basket</Text>
+            </View>
+            <Text style={styles.basketTotal}>£{cartTotal.toFixed(2)}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
 
 // Popular Dish Card Component
-function PopularDishCard({ dish, quantity, onAdd, onUpdateQuantity }: any) {
-  const { spiceLevel } = useSpiceLevel(dish.id);
+function PopularDishCard({ dish, onAdd, onUpdateQuantity, getItemQuantityInCart }: any) {
+  const { spiceLevel, cycleSpiceLevel } = useSpiceLevel(dish.id);
+  const quantity = getItemQuantityInCart(dish.id, spiceLevel);
 
   const handleAddToCart = () => {
-    onAdd(dish, dish.spicy ? spiceLevel : undefined);
+    onAdd(dish, spiceLevel);
+  };
+
+  const handleSpiceClick = () => {
+    console.log('Spice button clicked for:', dish.name, 'Current level:', spiceLevel);
+    cycleSpiceLevel();
+  };
+
+  const handleUpdateQuantity = (newQuantity: number) => {
+    onUpdateQuantity(dish.id, newQuantity, spiceLevel);
   };
 
   const renderChilies = (count: number) => {
@@ -378,9 +396,20 @@ function PopularDishCard({ dish, quantity, onAdd, onUpdateQuantity }: any) {
     <View style={styles.dishCard}>
       <View style={styles.dishImageContainer}>
         <Image source={{ uri: dish.image_id || '' }} style={styles.dishImage} />
-        {dish.spicy && (
-          <SpiceButton menuItemId={dish.id} />
-        )}
+        <TouchableOpacity
+          style={styles.spiceButtonCard}
+          onPress={handleSpiceClick}
+          activeOpacity={0.8}
+        >
+          <View style={styles.spiceButtonContent}>
+            <Text style={styles.spiceEmoji}>🌶️</Text>
+            {spiceLevel > 0 && (
+              <View style={styles.spiceBadge}>
+                <Text style={styles.spiceBadgeText}>{spiceLevel}</Text>
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
       </View>
       <View style={styles.dishInfo}>
         <Text style={styles.dishName} numberOfLines={1}>
@@ -408,7 +437,7 @@ function PopularDishCard({ dish, quantity, onAdd, onUpdateQuantity }: any) {
           <View style={styles.quantityControl}>
             <TouchableOpacity
               style={styles.quantityButton}
-              onPress={() => onUpdateQuantity(dish.id, quantity - 1)}
+              onPress={() => handleUpdateQuantity(quantity - 1)}
             >
               <IconSymbol
                 ios_icon_name={quantity === 1 ? "trash.fill" : "minus"}
@@ -437,11 +466,21 @@ function PopularDishCard({ dish, quantity, onAdd, onUpdateQuantity }: any) {
 }
 
 // Menu Item Row Component - Updated to match menu/[id].tsx styling
-function MenuItemRow({ item, quantity, onAdd, onUpdateQuantity }: any) {
-  const { spiceLevel } = useSpiceLevel(item.id);
+function MenuItemRow({ item, onAdd, onUpdateQuantity, getItemQuantityInCart }: any) {
+  const { spiceLevel, cycleSpiceLevel } = useSpiceLevel(item.id);
+  const quantity = getItemQuantityInCart(item.id, spiceLevel);
 
   const handleAddToCart = () => {
-    onAdd(item, item.spicy ? spiceLevel : undefined);
+    onAdd(item, spiceLevel);
+  };
+
+  const handleSpiceClick = () => {
+    console.log('Spice button clicked for:', item.name, 'Current level:', spiceLevel);
+    cycleSpiceLevel();
+  };
+
+  const handleUpdateQuantity = (newQuantity: number) => {
+    onUpdateQuantity(item.id, newQuantity, spiceLevel);
   };
 
   const renderChilies = (count: number) => {
@@ -498,9 +537,20 @@ function MenuItemRow({ item, quantity, onAdd, onUpdateQuantity }: any) {
       <View style={styles.menuImageContainer}>
         <Image source={{ uri: item.image_id || '' }} style={styles.menuImage} />
         
-        {item.spicy && (
-          <SpiceButton menuItemId={item.id} />
-        )}
+        <TouchableOpacity
+          style={styles.spiceButton}
+          onPress={handleSpiceClick}
+          activeOpacity={0.8}
+        >
+          <View style={styles.spiceButtonContent}>
+            <Text style={styles.spiceEmoji}>🌶️</Text>
+            {spiceLevel > 0 && (
+              <View style={styles.spiceBadge}>
+                <Text style={styles.spiceBadgeText}>{spiceLevel}</Text>
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
 
         {quantity === 0 ? (
           <TouchableOpacity
@@ -513,7 +563,7 @@ function MenuItemRow({ item, quantity, onAdd, onUpdateQuantity }: any) {
           <View style={styles.quantityControlUber}>
             <TouchableOpacity
               style={styles.quantityButtonUber}
-              onPress={() => onUpdateQuantity(item.id, quantity - 1)}
+              onPress={() => handleUpdateQuantity(quantity - 1)}
             >
               <IconSymbol
                 ios_icon_name={quantity === 1 ? "trash.fill" : "minus"}
@@ -559,7 +609,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 120,
+    paddingBottom: 140,
   },
   headerImageContainer: {
     width: '100%',
@@ -596,36 +646,6 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
-  },
-  cartButton: {
-    position: 'absolute',
-    top: 48,
-    right: 16,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#000000',
-    justifyContent: 'center',
-    alignItems: 'center',
-    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.3)',
-    elevation: 5,
-  },
-  cartBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    backgroundColor: colors.green,
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 4,
-  },
-  cartBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
   },
   infoCard: {
     backgroundColor: colors.card,
@@ -744,6 +764,40 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     backgroundColor: colors.border,
+  },
+  spiceButtonCard: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 16,
+    padding: 4,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.2)',
+    elevation: 4,
+    zIndex: 10,
+  },
+  spiceButtonContent: {
+    position: 'relative',
+  },
+  spiceEmoji: {
+    fontSize: 20,
+  },
+  spiceBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    backgroundColor: colors.error,
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  spiceBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
   },
   dishInfo: {
     padding: 12,
@@ -927,6 +981,17 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: colors.border,
   },
+  spiceButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 20,
+    padding: 6,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.2)',
+    elevation: 4,
+    zIndex: 10,
+  },
   addButtonUber: {
     position: 'absolute',
     bottom: 8,
@@ -971,5 +1036,52 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.text,
     paddingHorizontal: 12,
+  },
+  floatingBasket: {
+    position: 'absolute',
+    bottom: 20,
+    left: 16,
+    right: 16,
+    zIndex: 100,
+  },
+  basketButton: {
+    backgroundColor: '#000000',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.3)',
+    elevation: 8,
+  },
+  basketLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  basketBadge: {
+    backgroundColor: colors.green,
+    borderRadius: 12,
+    minWidth: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+  },
+  basketBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  basketText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  basketTotal: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '700',
   },
 });

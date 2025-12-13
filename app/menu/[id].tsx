@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Image,
   Alert,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { colors, buttonStyles } from '@/styles/commonStyles';
@@ -46,6 +47,9 @@ export default function MenuScreen() {
     { id: '2', label: 'Work', address: '456 Office Road, London, EC1A 1BB' },
     { id: '3', label: 'Other', address: '789 Park Avenue, London, W1A 1CC' },
   ]);
+
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const [categoriesSticky, setCategoriesSticky] = useState(false);
 
   const restaurant = restaurants.find((r) => r.id === id);
 
@@ -85,6 +89,7 @@ export default function MenuScreen() {
   };
 
   const cartItemCount = getCartItemCount();
+  const cartTotal = cart.reduce((total, item) => total + item.dish.price * item.quantity, 0);
 
   const handleAddAddress = (address: Address) => {
     setAddresses([...addresses, address]);
@@ -94,6 +99,23 @@ export default function MenuScreen() {
   const getPostcode = (address: string) => {
     const parts = address.split(',').map(part => part.trim());
     return parts[parts.length - 1] || '';
+  };
+
+  const handleScroll = Animated.event(
+    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+    {
+      useNativeDriver: false,
+      listener: (event: any) => {
+        const offsetY = event.nativeEvent.contentOffset.y;
+        // Make categories sticky after scrolling past restaurant info (around 400px)
+        setCategoriesSticky(offsetY > 400);
+      },
+    }
+  );
+
+  const handleCategorySelect = (category: string | null) => {
+    // Consistent behavior: just filter, don't navigate
+    setSelectedCategory(category);
   };
 
   if (isLoading) {
@@ -121,28 +143,63 @@ export default function MenuScreen() {
           />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{restaurant.name}</Text>
-        <TouchableOpacity
-          style={styles.cartButton}
-          onPress={() => router.push('/cart')}
-        >
-          <IconSymbol
-            ios_icon_name="cart.fill"
-            android_material_icon_name="shopping-cart"
-            size={24}
-            color="#FFFFFF"
-          />
-          {cartItemCount > 0 && (
-            <View style={styles.cartBadge}>
-              <Text style={styles.cartBadgeText}>{cartItemCount}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
+        <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView
+      {/* Sticky Category Filter - Shows when scrolling */}
+      {categoriesSticky && (
+        <View style={styles.stickyCategorySection}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoryScroll}
+          >
+            <TouchableOpacity
+              style={[
+                styles.categoryChip,
+                !selectedCategory && styles.categoryChipActive,
+              ]}
+              onPress={() => handleCategorySelect(null)}
+            >
+              <Text
+                style={[
+                  styles.categoryChipText,
+                  !selectedCategory && styles.categoryChipTextActive,
+                ]}
+              >
+                All Items
+              </Text>
+            </TouchableOpacity>
+            {categories.map((category, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.categoryChip,
+                  selectedCategory === category.name && styles.categoryChipActive,
+                ]}
+                onPress={() => handleCategorySelect(category.name)}
+              >
+                <Text
+                  style={[
+                    styles.categoryChipText,
+                    selectedCategory === category.name &&
+                      styles.categoryChipTextActive,
+                  ]}
+                >
+                  {category.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
+      <Animated.ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
       >
         {/* Delivery/Collection Toggle */}
         <View style={styles.toggleSection}>
@@ -275,7 +332,7 @@ export default function MenuScreen() {
                 styles.categoryChip,
                 !selectedCategory && styles.categoryChipActive,
               ]}
-              onPress={() => setSelectedCategory(null)}
+              onPress={() => handleCategorySelect(null)}
             >
               <Text
                 style={[
@@ -293,7 +350,7 @@ export default function MenuScreen() {
                   styles.categoryChip,
                   selectedCategory === category.name && styles.categoryChipActive,
                 ]}
-                onPress={() => setSelectedCategory(category.name)}
+                onPress={() => handleCategorySelect(category.name)}
               >
                 <Text
                   style={[
@@ -313,7 +370,7 @@ export default function MenuScreen() {
         <View style={styles.menuSection}>
           {filteredItems.map((item, index) => (
             <MenuItemRow
-              key={index}
+              key={`${item.id}-${index}`}
               item={item}
               onAdd={handleAddToCart}
               onUpdateQuantity={updateQuantity}
@@ -321,7 +378,29 @@ export default function MenuScreen() {
             />
           ))}
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
+
+      {/* Floating Basket - Always visible when cart has items, positioned above sticky categories */}
+      {cartItemCount > 0 && (
+        <View style={[
+          styles.floatingBasket,
+          categoriesSticky && styles.floatingBasketWithStickyHeader
+        ]}>
+          <TouchableOpacity
+            style={styles.basketButton}
+            onPress={() => router.push('/cart')}
+            activeOpacity={0.9}
+          >
+            <View style={styles.basketLeft}>
+              <View style={styles.basketBadge}>
+                <Text style={styles.basketBadgeText}>{cartItemCount}</Text>
+              </View>
+              <Text style={styles.basketText}>View Basket</Text>
+            </View>
+            <Text style={styles.basketTotal}>£{cartTotal.toFixed(2)}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Address Selection Modal */}
       <AddressModal
@@ -513,37 +592,11 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
   },
-  cartButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#000000',
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-  },
-  cartBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    backgroundColor: colors.green,
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 4,
-  },
-  cartBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
-  },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 100,
+    paddingBottom: 140,
   },
   toggleSection: {
     paddingHorizontal: 16,
@@ -656,6 +709,15 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontWeight: '600',
   },
+  stickyCategorySection: {
+    backgroundColor: colors.background,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
+    elevation: 4,
+    zIndex: 10,
+  },
   categorySection: {
     paddingVertical: 12,
     backgroundColor: colors.background,
@@ -680,7 +742,7 @@ const styles = StyleSheet.create({
   categoryChipText: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.primary,
+    color: '#000000',
   },
   categoryChipTextActive: {
     color: '#FFFFFF',
@@ -855,6 +917,56 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.text,
     paddingHorizontal: 12,
+  },
+  floatingBasket: {
+    position: 'absolute',
+    bottom: 20,
+    left: 16,
+    right: 16,
+    zIndex: 100,
+  },
+  floatingBasketWithStickyHeader: {
+    bottom: 20,
+  },
+  basketButton: {
+    backgroundColor: '#000000',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.3)',
+    elevation: 8,
+  },
+  basketLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  basketBadge: {
+    backgroundColor: colors.green,
+    borderRadius: 12,
+    minWidth: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+  },
+  basketBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  basketText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  basketTotal: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '700',
   },
   errorText: {
     fontSize: 18,
