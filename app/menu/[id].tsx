@@ -9,7 +9,7 @@ import {
   Image,
   Alert,
   ActivityIndicator,
-  Animated,
+  LayoutChangeEvent,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { colors, buttonStyles } from '@/styles/commonStyles';
@@ -48,8 +48,9 @@ export default function MenuScreen() {
     { id: '3', label: 'Other', address: '789 Park Avenue, London, W1A 1CC' },
   ]);
 
-  const scrollY = useRef(new Animated.Value(0)).current;
   const [categoriesSticky, setCategoriesSticky] = useState(false);
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const restaurant = restaurants.find((r) => r.id === id);
 
@@ -101,20 +102,26 @@ export default function MenuScreen() {
     return parts[parts.length - 1] || '';
   };
 
-  const handleScroll = Animated.event(
-    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-    {
-      useNativeDriver: false,
-      listener: (event: any) => {
-        const offsetY = event.nativeEvent.contentOffset.y;
-        // Make categories sticky after scrolling past restaurant info (around 400px)
-        setCategoriesSticky(offsetY > 400);
-      },
+  const handleScroll = (event: any) => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+    
+    // When scroll position reaches the header height, make categories sticky
+    if (offsetY >= headerHeight - 10 && !categoriesSticky) {
+      setCategoriesSticky(true);
+      console.log('Categories are now sticky at offset:', offsetY);
+    } else if (offsetY < headerHeight - 50 && categoriesSticky) {
+      setCategoriesSticky(false);
+      console.log('Categories are no longer sticky');
     }
-  );
+  };
+
+  const handleHeaderLayout = (event: LayoutChangeEvent) => {
+    const { height } = event.nativeEvent.layout;
+    setHeaderHeight(height);
+    console.log('Header section height:', height);
+  };
 
   const handleCategorySelect = (category: string | null) => {
-    // Consistent behavior: just filter, don't navigate
     setSelectedCategory(category);
   };
 
@@ -168,9 +175,9 @@ export default function MenuScreen() {
         </TouchableOpacity>
       )}
 
-      {/* Sticky Category Filter - Shows when scrolling */}
+      {/* Sticky Category Bar - Shows when scrolled */}
       {categoriesSticky && (
-        <View style={styles.stickyCategorySection}>
+        <View style={styles.stickyCategoryBar}>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -216,179 +223,184 @@ export default function MenuScreen() {
         </View>
       )}
 
-      <Animated.ScrollView
+      {/* Main Scrollable Content */}
+      <ScrollView
+        ref={scrollViewRef}
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         onScroll={handleScroll}
         scrollEventThrottle={16}
       >
-        {/* Delivery/Collection Toggle */}
-        <View style={styles.toggleSection}>
-          <View style={styles.toggleContainer}>
-            <TouchableOpacity
-              style={[
-                styles.toggleButton,
-                isDelivery && styles.toggleButtonActive,
-              ]}
-              onPress={() => setIsDelivery(true)}
-            >
-              <Text
-                style={[
-                  styles.toggleButtonText,
-                  isDelivery && styles.toggleButtonTextActive,
-                ]}
-              >
-                Delivery
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.toggleButton,
-                !isDelivery && styles.toggleButtonActive,
-              ]}
-              onPress={() => setIsDelivery(false)}
-            >
-              <Text
-                style={[
-                  styles.toggleButtonText,
-                  !isDelivery && styles.toggleButtonTextActive,
-                ]}
-              >
-                Collection
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Address/Collection Dropdown */}
-        <TouchableOpacity
-          style={styles.addressDropdown}
-          onPress={() => setShowAddressModal(true)}
-        >
-          <View style={styles.addressContent}>
-            <IconSymbol
-              ios_icon_name={isDelivery ? "location.fill" : "person.fill"}
-              android_material_icon_name={isDelivery ? "location-on" : "person"}
-              size={20}
-              color={colors.text}
-            />
-            <View style={styles.addressTextContainer}>
-              {isDelivery ? (
-                <Text style={styles.addressLabel}>
-                  {selectedAddress.label} - {getPostcode(selectedAddress.address)}
-                </Text>
-              ) : (
-                <Text style={styles.addressLabel}>
-                  {collectionName || 'Person collecting'}
-                </Text>
-              )}
-            </View>
-          </View>
-          <IconSymbol
-            ios_icon_name="chevron.down"
-            android_material_icon_name="keyboard-arrow-down"
-            size={20}
-            color={colors.textSecondary}
-          />
-        </TouchableOpacity>
-
-        {/* Restaurant Info */}
-        <View style={styles.restaurantSection}>
-          <Image
-            source={restaurant.image}
-            style={styles.restaurantImage}
-          />
-          <View style={styles.restaurantInfo}>
-            <View style={styles.restaurantHeader}>
-              {!restaurant.isOpen && (
-                <View style={styles.closedBadge}>
-                  <Text style={styles.closedText}>Closed</Text>
-                </View>
-              )}
-            </View>
-            <Text style={styles.restaurantDescription}>
-              {restaurant.description}
-            </Text>
-            <Text style={styles.restaurantAddress}>{restaurant.address}</Text>
-            <View style={styles.restaurantMeta}>
-              <TouchableOpacity 
-                style={styles.metaItem}
-                onPress={() => router.push('/reviews')}
-              >
-                <IconSymbol
-                  ios_icon_name="star.fill"
-                  android_material_icon_name="star"
-                  size={16}
-                  color={colors.accent}
-                />
-                <Text style={styles.metaText}>{restaurant.rating}</Text>
-              </TouchableOpacity>
-              <View style={styles.metaItem}>
-                <IconSymbol
-                  ios_icon_name="clock.fill"
-                  android_material_icon_name="schedule"
-                  size={16}
-                  color={colors.textSecondary}
-                />
-                <Text style={styles.metaText}>{restaurant.deliveryTime}</Text>
-              </View>
-              <View style={styles.metaItem}>
-                <Text style={styles.metaText}>
-                  Min £{restaurant.minimumOrder}
-                </Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* Category Filter - From Database */}
-        <View style={styles.categorySection}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoryScroll}
-          >
-            <TouchableOpacity
-              style={[
-                styles.categoryChip,
-                !selectedCategory && styles.categoryChipActive,
-              ]}
-              onPress={() => handleCategorySelect(null)}
-            >
-              <Text
-                style={[
-                  styles.categoryChipText,
-                  !selectedCategory && styles.categoryChipTextActive,
-                ]}
-              >
-                All Items
-              </Text>
-            </TouchableOpacity>
-            {categories.map((category, index) => (
+        {/* Header Section - Scrolls away */}
+        <View onLayout={handleHeaderLayout}>
+          {/* Delivery/Collection Toggle */}
+          <View style={styles.toggleSection}>
+            <View style={styles.toggleContainer}>
               <TouchableOpacity
-                key={index}
+                style={[
+                  styles.toggleButton,
+                  isDelivery && styles.toggleButtonActive,
+                ]}
+                onPress={() => setIsDelivery(true)}
+              >
+                <Text
+                  style={[
+                    styles.toggleButtonText,
+                    isDelivery && styles.toggleButtonTextActive,
+                  ]}
+                >
+                  Delivery
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.toggleButton,
+                  !isDelivery && styles.toggleButtonActive,
+                ]}
+                onPress={() => setIsDelivery(false)}
+              >
+                <Text
+                  style={[
+                    styles.toggleButtonText,
+                    !isDelivery && styles.toggleButtonTextActive,
+                  ]}
+                >
+                  Collection
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Address/Collection Dropdown */}
+          <TouchableOpacity
+            style={styles.addressDropdown}
+            onPress={() => setShowAddressModal(true)}
+          >
+            <View style={styles.addressContent}>
+              <IconSymbol
+                ios_icon_name={isDelivery ? "location.fill" : "person.fill"}
+                android_material_icon_name={isDelivery ? "location-on" : "person"}
+                size={20}
+                color={colors.text}
+              />
+              <View style={styles.addressTextContainer}>
+                {isDelivery ? (
+                  <Text style={styles.addressLabel}>
+                    {selectedAddress.label} - {getPostcode(selectedAddress.address)}
+                  </Text>
+                ) : (
+                  <Text style={styles.addressLabel}>
+                    {collectionName || 'Person collecting'}
+                  </Text>
+                )}
+              </View>
+            </View>
+            <IconSymbol
+              ios_icon_name="chevron.down"
+              android_material_icon_name="keyboard-arrow-down"
+              size={20}
+              color={colors.textSecondary}
+            />
+          </TouchableOpacity>
+
+          {/* Restaurant Info */}
+          <View style={styles.restaurantSection}>
+            <Image
+              source={restaurant.image}
+              style={styles.restaurantImage}
+            />
+            <View style={styles.restaurantInfo}>
+              <View style={styles.restaurantHeader}>
+                {!restaurant.isOpen && (
+                  <View style={styles.closedBadge}>
+                    <Text style={styles.closedText}>Closed</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={styles.restaurantDescription}>
+                {restaurant.description}
+              </Text>
+              <Text style={styles.restaurantAddress}>{restaurant.address}</Text>
+              <View style={styles.restaurantMeta}>
+                <TouchableOpacity 
+                  style={styles.metaItem}
+                  onPress={() => router.push('/reviews')}
+                >
+                  <IconSymbol
+                    ios_icon_name="star.fill"
+                    android_material_icon_name="star"
+                    size={16}
+                    color={colors.accent}
+                  />
+                  <Text style={styles.metaText}>{restaurant.rating}</Text>
+                </TouchableOpacity>
+                <View style={styles.metaItem}>
+                  <IconSymbol
+                    ios_icon_name="clock.fill"
+                    android_material_icon_name="schedule"
+                    size={16}
+                    color={colors.textSecondary}
+                  />
+                  <Text style={styles.metaText}>{restaurant.deliveryTime}</Text>
+                </View>
+                <View style={styles.metaItem}>
+                  <Text style={styles.metaText}>
+                    Min £{restaurant.minimumOrder}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Category Filter - Will become sticky */}
+          <View style={styles.categorySection}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.categoryScroll}
+            >
+              <TouchableOpacity
                 style={[
                   styles.categoryChip,
-                  selectedCategory === category.name && styles.categoryChipActive,
+                  !selectedCategory && styles.categoryChipActive,
                 ]}
-                onPress={() => handleCategorySelect(category.name)}
+                onPress={() => handleCategorySelect(null)}
               >
                 <Text
                   style={[
                     styles.categoryChipText,
-                    selectedCategory === category.name &&
-                      styles.categoryChipTextActive,
+                    !selectedCategory && styles.categoryChipTextActive,
                   ]}
                 >
-                  {category.name}
+                  All Items
                 </Text>
               </TouchableOpacity>
-            ))}
-          </ScrollView>
+              {categories.map((category, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.categoryChip,
+                    selectedCategory === category.name && styles.categoryChipActive,
+                  ]}
+                  onPress={() => handleCategorySelect(category.name)}
+                >
+                  <Text
+                    style={[
+                      styles.categoryChipText,
+                      selectedCategory === category.name &&
+                        styles.categoryChipTextActive,
+                    ]}
+                  >
+                    {category.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
         </View>
 
-        {/* Menu Items - Uber Eats Style */}
+        {/* Menu Items Section - Always scrollable */}
         <View style={styles.menuSection}>
           {filteredItems.map((item, index) => (
             <MenuItemRow
@@ -400,7 +412,7 @@ export default function MenuScreen() {
             />
           ))}
         </View>
-      </Animated.ScrollView>
+      </ScrollView>
 
       {/* Address Selection Modal */}
       <AddressModal
@@ -576,6 +588,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+    zIndex: 100,
   },
   backButton: {
     width: 40,
@@ -596,7 +609,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: 120,
+  },
+  stickyCategoryBar: {
+    position: 'absolute',
+    top: 61,
+    left: 0,
+    right: 0,
+    backgroundColor: colors.background,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
+    elevation: 4,
+    zIndex: 99,
   },
   toggleSection: {
     paddingHorizontal: 16,
@@ -709,23 +735,15 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontWeight: '600',
   },
-  stickyCategorySection: {
-    backgroundColor: colors.background,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
-    elevation: 4,
-    zIndex: 10,
-  },
   categorySection: {
     paddingVertical: 12,
     backgroundColor: colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   categoryScroll: {
     paddingHorizontal: 16,
     gap: 8,
-    marginBottom: 8,
   },
   categoryChip: {
     paddingHorizontal: 16,
@@ -860,7 +878,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -6,
     right: -6,
-    backgroundColor: colors.error,
+    backgroundColor: '#B91C1C',
     borderRadius: 10,
     minWidth: 18,
     height: 18,
