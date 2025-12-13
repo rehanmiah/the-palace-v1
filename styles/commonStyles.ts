@@ -12,6 +12,7 @@ export const colors = {
   highlight: '#90EE90',       // LightGreen
   border: '#E0E0E0',          // Light border
   error: '#FF6B6B',           // Error red
+  green: '#4CAF50',           // Green for Add button and quantity badges
 };
 
 export const buttonStyles = StyleSheet.create({
