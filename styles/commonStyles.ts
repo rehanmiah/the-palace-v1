@@ -5,8 +5,8 @@ export const colors = {
   background: '#F8F8FF',      // Almost White
   text: '#000000',            // Black
   textSecondary: '#585858',   // Medium Gray
-  primary: '#2563EB',         // Blue (was Coral #FF7F50)
-  secondary: '#6495ED',       // Cornflower Blue
+  primary: '#1B7FC0',         // Blue (matching the provided image)
+  secondary: '#2B8FD0',       // Lighter Blue
   accent: '#FFD700',          // Gold
   card: '#FFFFFF',            // White
   highlight: '#90EE90',       // LightGreen
@@ -22,7 +22,7 @@ export const buttonStyles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: '0px 4px 8px rgba(37, 99, 235, 0.3)',
+    boxShadow: '0px 4px 8px rgba(27, 127, 192, 0.3)',
     elevation: 4,
   },
   secondary: {
@@ -32,7 +32,7 @@ export const buttonStyles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: '0px 4px 8px rgba(100, 149, 237, 0.3)',
+    boxShadow: '0px 4px 8px rgba(43, 143, 208, 0.3)',
     elevation: 4,
   },
   outline: {
