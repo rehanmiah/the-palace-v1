@@ -93,6 +93,15 @@ export default function ProfileScreen() {
       },
     },
     {
+      icon: 'settings',
+      iosIcon: 'wrench.and.screwdriver.fill',
+      title: 'Admin Utilities',
+      subtitle: 'Update menu images and manage popular items',
+      onPress: () => {
+        router.push('/admin-utils');
+      },
+    },
+    {
       icon: 'info',
       iosIcon: 'info.circle.fill',
       title: 'About',
