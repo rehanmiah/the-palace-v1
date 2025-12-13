@@ -190,13 +190,13 @@ export default function CartScreen() {
     return parts[parts.length - 1] || '';
   };
 
-  const renderChillies = (count: number) => {
+  const renderChillies = (count: number, itemId: string) => {
     if (count === 0) return null;
     
     const chilies = [];
     for (let i = 0; i < count; i++) {
       chilies.push(
-        <Text key={i} style={styles.chilliEmoji}>🌶️</Text>
+        <Text key={`${itemId}-chili-${i}`} style={styles.chilliEmoji}>🌶️</Text>
       );
     }
     
@@ -400,55 +400,60 @@ export default function CartScreen() {
         {/* Cart Items with Images - Each spice level shown separately */}
         <View style={styles.cartItemsCard}>
           <Text style={styles.cartItemsTitle}>Your Order</Text>
-          {cart.map((item, index) => (
-            <View key={index} style={styles.cartItem}>
-              <Image 
-                source={{ uri: item.dish.image || '' }} 
-                style={styles.cartItemImage}
-              />
-              <View style={styles.cartItemInfo}>
-                <Text style={styles.cartItemName}>{item.dish.name}</Text>
-                {item.spiceLevel && item.spiceLevel > 0 && (
-                  <View style={styles.spiceLevelIndicator}>
-                    {renderChillies(item.spiceLevel)}
-                  </View>
-                )}
-                <Text style={styles.cartItemPrice}>
-                  £{item.dish.price.toFixed(2)}
-                </Text>
-              </View>
-              <View style={styles.cartItemControls}>
-                <View style={styles.quantityControlCart}>
-                  <TouchableOpacity
-                    style={styles.quantityButtonCart}
-                    onPress={() => updateQuantity(item.dish.id, item.quantity - 1, item.spiceLevel)}
-                  >
-                    <IconSymbol
-                      ios_icon_name={item.quantity === 1 ? "trash.fill" : "minus"}
-                      android_material_icon_name={item.quantity === 1 ? "delete" : "remove"}
-                      size={16}
-                      color="#FFFFFF"
-                    />
-                  </TouchableOpacity>
-                  <Text style={styles.quantityTextCart}>{item.quantity}</Text>
-                  <TouchableOpacity
-                    style={styles.quantityButtonCart}
-                    onPress={() => updateQuantity(item.dish.id, item.quantity + 1, item.spiceLevel)}
-                  >
-                    <IconSymbol
-                      ios_icon_name="plus"
-                      android_material_icon_name="add"
-                      size={16}
-                      color="#FFFFFF"
-                    />
-                  </TouchableOpacity>
+          {cart.map((item) => {
+            // Create a unique key combining dish id and spice level
+            const uniqueKey = `${item.dish.id}-spice-${item.spiceLevel || 0}`;
+            
+            return (
+              <View key={uniqueKey} style={styles.cartItem}>
+                <Image 
+                  source={{ uri: item.dish.image || '' }} 
+                  style={styles.cartItemImage}
+                />
+                <View style={styles.cartItemInfo}>
+                  <Text style={styles.cartItemName}>{item.dish.name}</Text>
+                  {item.spiceLevel && item.spiceLevel > 0 && (
+                    <View style={styles.spiceLevelIndicator}>
+                      {renderChillies(item.spiceLevel, uniqueKey)}
+                    </View>
+                  )}
+                  <Text style={styles.cartItemPrice}>
+                    £{item.dish.price.toFixed(2)}
+                  </Text>
                 </View>
-                <Text style={styles.cartItemTotal}>
-                  £{(item.dish.price * item.quantity).toFixed(2)}
-                </Text>
+                <View style={styles.cartItemControls}>
+                  <View style={styles.quantityControlCart}>
+                    <TouchableOpacity
+                      style={styles.quantityButtonCart}
+                      onPress={() => updateQuantity(item.dish.id, item.quantity - 1, item.spiceLevel)}
+                    >
+                      <IconSymbol
+                        ios_icon_name={item.quantity === 1 ? "trash.fill" : "minus"}
+                        android_material_icon_name={item.quantity === 1 ? "delete" : "remove"}
+                        size={16}
+                        color="#FFFFFF"
+                      />
+                    </TouchableOpacity>
+                    <Text style={styles.quantityTextCart}>{item.quantity}</Text>
+                    <TouchableOpacity
+                      style={styles.quantityButtonCart}
+                      onPress={() => updateQuantity(item.dish.id, item.quantity + 1, item.spiceLevel)}
+                    >
+                      <IconSymbol
+                        ios_icon_name="plus"
+                        android_material_icon_name="add"
+                        size={16}
+                        color="#FFFFFF"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={styles.cartItemTotal}>
+                    £{(item.dish.price * item.quantity).toFixed(2)}
+                  </Text>
+                </View>
               </View>
-            </View>
-          ))}
+            );
+          })}
         </View>
 
         {/* Order Summary - Receipt View */}

@@ -191,7 +191,7 @@ export default function MenuScreen() {
             contentContainerStyle={styles.categoryScroll}
           >
             <TouchableOpacity
-              key="all-items"
+              key="sticky-all-items"
               style={[
                 styles.categoryChip,
                 !selectedCategory && styles.categoryChipActive,
@@ -209,7 +209,7 @@ export default function MenuScreen() {
             </TouchableOpacity>
             {categories.map((category) => (
               <TouchableOpacity
-                key={category.id}
+                key={`sticky-${category.id}`}
                 style={[
                   styles.categoryChip,
                   selectedCategory === category.name && styles.categoryChipActive,
@@ -465,16 +465,11 @@ function MenuItemRow({ item, screenWidth, onAdd, onUpdateQuantity, getItemQuanti
   const renderChilies = (count: number) => {
     if (count === 0) return null;
     
-    const chilies = [];
-    for (let i = 0; i < count; i++) {
-      chilies.push(
-        <Text key={`chili-${i}`} style={styles.chilliEmoji}>🌶️</Text>
-      );
-    }
-    
     return (
       <View style={styles.spiceLevelContainer}>
-        {chilies}
+        {Array.from({ length: count }).map((_, index) => (
+          <Text key={`chili-${item.id}-${spiceLevel}-${index}`} style={styles.chilliEmoji}>🌶️</Text>
+        ))}
       </View>
     );
   };
