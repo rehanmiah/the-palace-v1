@@ -9,6 +9,7 @@ import {
   Image,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { colors, buttonStyles } from '@/styles/commonStyles';
@@ -425,7 +426,10 @@ function MenuItemRow({ item, onAdd, onUpdateQuantity, getItemQuantityInCart }: a
         <View style={styles.spiceButtonContent}>
           <Text style={styles.spiceEmoji}>🌶️</Text>
           {spiceLevel > 0 && (
-            <View style={styles.spiceBadge}>
+            <View style={[
+              styles.spiceBadge,
+              Platform.OS === 'ios' && styles.spiceBadgeIOS
+            ]}>
               <Text style={styles.spiceBadgeText}>{spiceLevel}</Text>
             </View>
           )}
@@ -554,8 +558,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 8,
     padding: 4,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
-    elevation: 2,
+    ...(Platform.OS === 'ios' ? {
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06,
+      shadowRadius: 2,
+    } : {
+      elevation: 2,
+    }),
   },
   toggleButton: {
     flex: 1,
@@ -583,8 +593,14 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     padding: 12,
     borderRadius: 8,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
-    elevation: 2,
+    ...(Platform.OS === 'ios' ? {
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06,
+      shadowRadius: 2,
+    } : {
+      elevation: 2,
+    }),
   },
   addressContent: {
     flexDirection: 'row',
@@ -694,8 +710,14 @@ const styles = StyleSheet.create({
     borderRadius: 0,
     marginBottom: 24,
     padding: 0,
-    boxShadow: '0px 6px 16px rgba(0, 0, 0, 0.12)',
-    elevation: 6,
+    ...(Platform.OS === 'ios' ? {
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.12,
+      shadowRadius: 8,
+    } : {
+      elevation: 6,
+    }),
     position: 'relative',
   },
   menuInfo: {
@@ -782,8 +804,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 20,
     padding: 6,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.2)',
-    elevation: 4,
+    ...(Platform.OS === 'ios' ? {
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+    } : {
+      elevation: 4,
+    }),
     zIndex: 10,
   },
   spiceButtonContent: {
@@ -796,15 +824,24 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -6,
     right: -6,
-    backgroundColor: '#660000',
+    backgroundColor: '#C41E3A',
     borderRadius: 10,
     minWidth: 18,
     height: 18,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 4,
-    boxShadow: '0px 3px 8px rgba(102, 0, 0, 0.6)',
-    elevation: 4,
+    borderWidth: Platform.OS === 'ios' ? 1.5 : 0,
+    borderColor: Platform.OS === 'ios' ? '#C41E3A' : 'transparent',
+    ...(Platform.OS === 'android' && {
+      elevation: 4,
+    }),
+  },
+  spiceBadgeIOS: {
+    shadowColor: '#C41E3A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.8,
+    shadowRadius: 3,
   },
   spiceBadgeText: {
     color: '#FFFFFF',
@@ -821,8 +858,14 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     borderColor: colors.border,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.15)',
-    elevation: 4,
+    ...(Platform.OS === 'ios' ? {
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.15,
+      shadowRadius: 4,
+    } : {
+      elevation: 4,
+    }),
   },
   addButtonTextUber: {
     color: colors.primary,
@@ -839,8 +882,14 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     borderColor: colors.border,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.15)',
-    elevation: 4,
+    ...(Platform.OS === 'ios' ? {
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.15,
+      shadowRadius: 4,
+    } : {
+      elevation: 4,
+    }),
   },
   quantityButtonUber: {
     width: 32,

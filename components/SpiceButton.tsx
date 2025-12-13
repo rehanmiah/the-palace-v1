@@ -5,6 +5,7 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import { colors } from '@/styles/commonStyles';
 import { useSpiceLevel } from '@/hooks/useSpiceLevel';
@@ -34,7 +35,10 @@ export function SpiceButton({ menuItemId, onSpiceLevelChange }: SpiceButtonProps
       <View style={styles.spiceButtonContent}>
         <Text style={styles.chilliEmoji}>🌶️</Text>
         {spiceLevel > 0 && (
-          <View style={styles.spiceBadge}>
+          <View style={[
+            styles.spiceBadge,
+            Platform.OS === 'ios' && styles.spiceBadgeIOS
+          ]}>
             <Text style={styles.spiceBadgeText}>{spiceLevel}</Text>
           </View>
         )}
@@ -51,8 +55,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 20,
     padding: 6,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.2)',
-    elevation: 4,
+    ...(Platform.OS === 'ios' ? {
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+    } : {
+      elevation: 4,
+    }),
     zIndex: 10,
   },
   spiceButtonContent: {
@@ -65,15 +75,24 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -6,
     right: -6,
-    backgroundColor: '#660000',
+    backgroundColor: '#C41E3A',
     borderRadius: 10,
     minWidth: 18,
     height: 18,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 4,
-    boxShadow: '0px 3px 8px rgba(102, 0, 0, 0.6)',
-    elevation: 4,
+    borderWidth: Platform.OS === 'ios' ? 1.5 : 0,
+    borderColor: Platform.OS === 'ios' ? '#C41E3A' : 'transparent',
+    ...(Platform.OS === 'android' && {
+      elevation: 4,
+    }),
+  },
+  spiceBadgeIOS: {
+    shadowColor: '#C41E3A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.8,
+    shadowRadius: 3,
   },
   spiceBadgeText: {
     color: '#FFFFFF',
