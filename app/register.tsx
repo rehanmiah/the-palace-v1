@@ -16,6 +16,19 @@ import { useAuth } from '@/contexts/AuthContext';
 import { IconSymbol } from '@/components/IconSymbol';
 
 // Validation functions
+const validateName = (name: string): { isValid: boolean; error?: string } => {
+  if (!name.trim()) {
+    return { isValid: false, error: 'Name is required' };
+  }
+  
+  // Check if name contains any numbers
+  if (/\d/.test(name)) {
+    return { isValid: false, error: 'Name must not contain any numbers' };
+  }
+  
+  return { isValid: true };
+};
+
 const validateEmail = (email: string): { isValid: boolean; error?: string } => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!email) {
@@ -102,12 +115,18 @@ export default function RegisterScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   // Error states for real-time validation feedback
+  const [nameError, setNameError] = useState('');
   const [emailError, setEmailError] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
 
   // Real-time validation handlers
+  const handleNameBlur = () => {
+    const validation = validateName(name);
+    setNameError(validation.error || '');
+  };
+
   const handleEmailBlur = () => {
     const validation = validateEmail(email);
     setEmailError(validation.error || '');
@@ -130,6 +149,7 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     // Clear previous errors
+    setNameError('');
     setEmailError('');
     setPhoneError('');
     setPasswordError('');
@@ -140,8 +160,12 @@ export default function RegisterScreen() {
     let firstErrorMessage = '';
 
     // Validate name
-    if (!name.trim()) {
-      firstErrorMessage = 'Please enter your full name';
+    const nameValidation = validateName(name);
+    if (!nameValidation.isValid) {
+      setNameError(nameValidation.error || '');
+      if (!firstErrorMessage) {
+        firstErrorMessage = nameValidation.error || 'Invalid name';
+      }
       hasError = true;
     }
 
@@ -227,23 +251,28 @@ export default function RegisterScreen() {
       <View style={styles.form}>
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Full Name</Text>
-          <View style={[styles.inputWrapper]}>
+          <View style={[styles.inputWrapper, nameError ? styles.inputWrapperError : null]}>
             <IconSymbol
               ios_icon_name="person.fill"
               android_material_icon_name="person"
               size={20}
-              color={colors.textSecondary}
+              color={nameError ? colors.error : colors.textSecondary}
             />
             <TextInput
               style={styles.input}
               placeholder="Enter your full name"
               placeholderTextColor={colors.textSecondary}
               value={name}
-              onChangeText={setName}
+              onChangeText={(text) => {
+                setName(text);
+                if (nameError) setNameError('');
+              }}
+              onBlur={handleNameBlur}
               autoCapitalize="words"
               autoComplete="name"
             />
           </View>
+          {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
         </View>
 
         <View style={styles.inputContainer}>
