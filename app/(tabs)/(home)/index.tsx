@@ -10,6 +10,7 @@ import {
   Image,
   Dimensions,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors, commonStyles } from '@/styles/commonStyles';
@@ -125,6 +126,77 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Sticky Header with Delivery/Collection Toggle and Address */}
+      <View style={styles.stickyHeader}>
+        {/* Delivery/Collection Toggle */}
+        <View style={styles.toggleContainer}>
+          <TouchableOpacity
+            style={[
+              styles.toggleButton,
+              isDelivery && styles.toggleButtonActive,
+            ]}
+            onPress={() => setIsDelivery(true)}
+          >
+            <Text
+              style={[
+                styles.toggleButtonText,
+                isDelivery && styles.toggleButtonTextActive,
+              ]}
+            >
+              Delivery
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.toggleButton,
+              !isDelivery && styles.toggleButtonActive,
+            ]}
+            onPress={() => setIsDelivery(false)}
+          >
+            <Text
+              style={[
+                styles.toggleButtonText,
+                !isDelivery && styles.toggleButtonTextActive,
+              ]}
+            >
+              Collection
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Address/Collection Dropdown */}
+        <TouchableOpacity
+          style={styles.addressDropdown}
+          onPress={() => setShowAddressModal(true)}
+        >
+          <View style={styles.addressContent}>
+            <IconSymbol
+              ios_icon_name={isDelivery ? "location.fill" : "person.fill"}
+              android_material_icon_name={isDelivery ? "location-on" : "person"}
+              size={20}
+              color={colors.text}
+            />
+            <View style={styles.addressTextContainer}>
+              {isDelivery ? (
+                <Text style={styles.addressLabel}>
+                  {selectedAddress.label} - {getPostcode(selectedAddress.address)}
+                </Text>
+              ) : (
+                <Text style={styles.addressLabel}>
+                  {collectionName || 'Person collecting'}
+                </Text>
+              )}
+            </View>
+          </View>
+          <IconSymbol
+            ios_icon_name="chevron.down"
+            android_material_icon_name="keyboard-arrow-down"
+            size={20}
+            color={colors.textSecondary}
+          />
+        </TouchableOpacity>
+      </View>
+
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -185,76 +257,6 @@ export default function HomeScreen() {
             </View>
           </View>
         </View>
-
-        {/* Delivery/Collection Toggle */}
-        <View style={styles.toggleSection}>
-          <View style={styles.toggleContainer}>
-            <TouchableOpacity
-              style={[
-                styles.toggleButton,
-                isDelivery && styles.toggleButtonActive,
-              ]}
-              onPress={() => setIsDelivery(true)}
-            >
-              <Text
-                style={[
-                  styles.toggleButtonText,
-                  isDelivery && styles.toggleButtonTextActive,
-                ]}
-              >
-                Delivery
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.toggleButton,
-                !isDelivery && styles.toggleButtonActive,
-              ]}
-              onPress={() => setIsDelivery(false)}
-            >
-              <Text
-                style={[
-                  styles.toggleButtonText,
-                  !isDelivery && styles.toggleButtonTextActive,
-                ]}
-              >
-                Collection
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Address/Collection Dropdown */}
-        <TouchableOpacity
-          style={styles.addressDropdown}
-          onPress={() => setShowAddressModal(true)}
-        >
-          <View style={styles.addressContent}>
-            <IconSymbol
-              ios_icon_name={isDelivery ? "location.fill" : "person.fill"}
-              android_material_icon_name={isDelivery ? "location-on" : "person"}
-              size={20}
-              color={colors.text}
-            />
-            <View style={styles.addressTextContainer}>
-              {isDelivery ? (
-                <Text style={styles.addressLabel}>
-                  {selectedAddress.label} - {getPostcode(selectedAddress.address)}
-                </Text>
-              ) : (
-                <Text style={styles.addressLabel}>
-                  {collectionName || 'Person collecting'}
-                </Text>
-              )}
-            </View>
-          </View>
-          <IconSymbol
-            ios_icon_name="chevron.down"
-            android_material_icon_name="keyboard-arrow-down"
-            size={20}
-            color={colors.textSecondary}
-          />
-        </TouchableOpacity>
 
         {/* Popular Dishes - Moved above search */}
         {!searchQuery && !selectedCategory && popularDishes.length > 0 && (
@@ -648,6 +650,67 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.textSecondary,
   },
+  stickyHeader: {
+    backgroundColor: colors.background,
+    paddingTop: Platform.OS === 'android' ? 48 : 8,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
+    elevation: 4,
+    zIndex: 100,
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    backgroundColor: colors.card,
+    borderRadius: 8,
+    padding: 4,
+    marginBottom: 12,
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
+    elevation: 2,
+  },
+  toggleButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 6,
+  },
+  toggleButtonActive: {
+    backgroundColor: '#000000',
+  },
+  toggleButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  toggleButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  addressDropdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.card,
+    padding: 12,
+    borderRadius: 8,
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
+    elevation: 2,
+  },
+  addressContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 8,
+  },
+  addressTextContainer: {
+    flex: 1,
+  },
+  addressLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.text,
+  },
   scrollView: {
     flex: 1,
   },
@@ -692,7 +755,7 @@ const styles = StyleSheet.create({
   },
   cartButton: {
     position: 'absolute',
-    top: 48,
+    top: Platform.OS === 'android' ? 56 : 48,
     right: 16,
     width: 48,
     height: 48,
@@ -723,7 +786,7 @@ const styles = StyleSheet.create({
   infoCard: {
     backgroundColor: colors.card,
     marginHorizontal: 16,
-    marginTop: -20,
+    marginTop: 16,
     borderRadius: 16,
     padding: 16,
     boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
@@ -749,69 +812,12 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontWeight: '600',
   },
-  toggleSection: {
-    paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 12,
-    backgroundColor: colors.background,
-  },
-  toggleContainer: {
-    flexDirection: 'row',
-    backgroundColor: colors.card,
-    borderRadius: 8,
-    padding: 4,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
-    elevation: 2,
-  },
-  toggleButton: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderRadius: 6,
-  },
-  toggleButtonActive: {
-    backgroundColor: '#000000',
-  },
-  toggleButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  toggleButtonTextActive: {
-    color: '#FFFFFF',
-  },
-  addressDropdown: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.card,
-    marginHorizontal: 16,
-    marginBottom: 12,
-    padding: 12,
-    borderRadius: 8,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
-    elevation: 2,
-  },
-  addressContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    gap: 8,
-  },
-  addressTextContainer: {
-    flex: 1,
-  },
-  addressLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.text,
-  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.card,
     marginHorizontal: 16,
-    marginTop: 8,
+    marginTop: 16,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 12,
