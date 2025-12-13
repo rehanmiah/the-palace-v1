@@ -353,51 +353,53 @@ export default function MenuScreen() {
             </View>
           </View>
 
-          {/* Category Filter - Will become sticky */}
-          <View style={styles.categorySection}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.categoryScroll}
-            >
-              <TouchableOpacity
-                style={[
-                  styles.categoryChip,
-                  !selectedCategory && styles.categoryChipActive,
-                ]}
-                onPress={() => handleCategorySelect(null)}
+          {/* Category Filter - Will scroll away and be replaced by sticky version */}
+          {!categoriesSticky && (
+            <View style={styles.categorySection}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.categoryScroll}
               >
-                <Text
-                  style={[
-                    styles.categoryChipText,
-                    !selectedCategory && styles.categoryChipTextActive,
-                  ]}
-                >
-                  All Items
-                </Text>
-              </TouchableOpacity>
-              {categories.map((category, index) => (
                 <TouchableOpacity
-                  key={index}
                   style={[
                     styles.categoryChip,
-                    selectedCategory === category.name && styles.categoryChipActive,
+                    !selectedCategory && styles.categoryChipActive,
                   ]}
-                  onPress={() => handleCategorySelect(category.name)}
+                  onPress={() => handleCategorySelect(null)}
                 >
                   <Text
                     style={[
                       styles.categoryChipText,
-                      selectedCategory === category.name &&
-                        styles.categoryChipTextActive,
+                      !selectedCategory && styles.categoryChipTextActive,
                     ]}
                   >
-                    {category.name}
+                    All Items
                   </Text>
                 </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
+                {categories.map((category, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={[
+                      styles.categoryChip,
+                      selectedCategory === category.name && styles.categoryChipActive,
+                    ]}
+                    onPress={() => handleCategorySelect(category.name)}
+                  >
+                    <Text
+                      style={[
+                        styles.categoryChipText,
+                        selectedCategory === category.name &&
+                          styles.categoryChipTextActive,
+                      ]}
+                    >
+                      {category.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
         </View>
 
         {/* Menu Items Section - Always scrollable */}
@@ -622,7 +624,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
     boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
     elevation: 4,
-    zIndex: 99,
+    zIndex: 999,
   },
   toggleSection: {
     paddingHorizontal: 16,
@@ -878,7 +880,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -6,
     right: -6,
-    backgroundColor: '#B91C1C',
+    backgroundColor: colors.green,
     borderRadius: 10,
     minWidth: 18,
     height: 18,
@@ -905,7 +907,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   addButtonTextUber: {
-    color: colors.primary,
+    color: colors.green,
     fontSize: 14,
     fontWeight: '700',
   },
