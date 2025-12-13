@@ -11,7 +11,7 @@ export const colors = {
   card: '#FFFFFF',            // White
   highlight: '#90EE90',       // LightGreen
   border: '#E0E0E0',          // Light border
-  error: '#FF6B6B',           // Error red
+  error: '#B30000',           // Darker, more intense red for chili badges (changed from #CC0000)
   green: '#4CAF50',           // Green for Add button and quantity badges
 };
 

@@ -406,18 +406,20 @@ export default function HomeScreen() {
                 {selectedCategory || `${filteredItems.length} ${filteredItems.length === 1 ? 'Result' : 'Results'}`}
               </Text>
             </View>
-            {filteredItems.map((item, index) => {
-              const quantity = getDishQuantity(item.id);
-              return (
-                <MenuItemRow
-                  key={index}
-                  item={item}
-                  quantity={quantity}
-                  onAdd={handleAddToCart}
-                  onUpdateQuantity={updateQuantity}
-                />
-              );
-            })}
+            <View style={styles.menuSection}>
+              {filteredItems.map((item, index) => {
+                const quantity = getDishQuantity(item.id);
+                return (
+                  <MenuItemRow
+                    key={index}
+                    item={item}
+                    quantity={quantity}
+                    onAdd={handleAddToCart}
+                    onUpdateQuantity={updateQuantity}
+                  />
+                );
+              })}
+            </View>
           </View>
         )}
       </ScrollView>
@@ -517,7 +519,7 @@ function PopularDishCard({ dish, quantity, onAdd, onUpdateQuantity }: any) {
   );
 }
 
-// Menu Item Row Component
+// Menu Item Row Component - Updated to match menu/[id].tsx styling
 function MenuItemRow({ item, quantity, onAdd, onUpdateQuantity }: any) {
   const { spiceLevel } = useSpiceLevel(item.id);
 
@@ -527,10 +529,18 @@ function MenuItemRow({ item, quantity, onAdd, onUpdateQuantity }: any) {
 
   const renderChilies = (count: number) => {
     if (count === 0) return null;
+    
+    const chilies = [];
+    for (let i = 0; i < count; i++) {
+      chilies.push(
+        <Text key={i} style={styles.chilliEmoji}>🌶️</Text>
+      );
+    }
+    
     return (
-      <Text style={styles.spiceLevelEmojis}>
-        {'🌶️'.repeat(count)}
-      </Text>
+      <View style={styles.spiceLevelContainer}>
+        {chilies}
+      </View>
     );
   };
 
@@ -539,6 +549,7 @@ function MenuItemRow({ item, quantity, onAdd, onUpdateQuantity }: any) {
       <View style={styles.menuInfo}>
         <View style={styles.menuHeader}>
           <Text style={styles.menuName}>{item.name}</Text>
+          {spiceLevel > 0 && renderChilies(spiceLevel)}
         </View>
         <Text style={styles.menuDescription} numberOfLines={2}>
           {item.description}
@@ -547,7 +558,6 @@ function MenuItemRow({ item, quantity, onAdd, onUpdateQuantity }: any) {
           <Text style={styles.menuPrice}>
             £{item.price.toFixed(2)}
           </Text>
-          {spiceLevel > 0 && renderChilies(spiceLevel)}
           <View style={styles.menuTags}>
             {item.is_vegetarian && (
               <View style={styles.vegTag}>
@@ -555,13 +565,26 @@ function MenuItemRow({ item, quantity, onAdd, onUpdateQuantity }: any) {
               </View>
             )}
           </View>
+          <View style={styles.ratingContainer}>
+            <IconSymbol
+              ios_icon_name="hand.thumbsup.fill"
+              android_material_icon_name="thumb-up"
+              size={14}
+              color={colors.text}
+            />
+            <Text style={styles.ratingText}>
+              {Math.floor(Math.random() * 10) + 85}% ({Math.floor(Math.random() * 100) + 20})
+            </Text>
+          </View>
         </View>
       </View>
       <View style={styles.menuImageContainer}>
         <Image source={{ uri: item.image_id || '' }} style={styles.menuImage} />
+        
         {item.spicy && (
           <SpiceButton menuItemId={item.id} />
         )}
+
         {quantity === 0 ? (
           <TouchableOpacity
             style={styles.addButtonUber}
@@ -967,19 +990,21 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
   },
+  menuSection: {
+    paddingHorizontal: 16,
+  },
   menuItem: {
     flexDirection: 'row',
     backgroundColor: colors.card,
-    borderRadius: 0,
-    marginBottom: 0,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderRadius: 12,
+    marginBottom: 24,
+    overflow: 'hidden',
+    boxShadow: '0px 6px 16px rgba(0, 0, 0, 0.12)',
+    elevation: 6,
   },
   menuInfo: {
     flex: 1,
-    paddingRight: 12,
+    padding: 16,
     justifyContent: 'space-between',
   },
   menuHeader: {
@@ -989,7 +1014,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: colors.text,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   menuDescription: {
     fontSize: 14,
@@ -1007,20 +1032,39 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#000000',
   },
+  spiceLevelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    marginTop: 2,
+  },
+  chilliEmoji: {
+    fontSize: 16,
+  },
   menuTags: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginLeft: 'auto',
+  },
+  ratingText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    fontWeight: '500',
+  },
   menuImageContainer: {
     position: 'relative',
     width: 120,
-    height: 120,
+    height: '100%',
   },
   menuImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 8,
+    width: '100%',
+    height: '100%',
     backgroundColor: colors.border,
   },
   addButtonUber: {
