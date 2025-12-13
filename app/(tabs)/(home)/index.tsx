@@ -145,61 +145,69 @@ export default function HomeScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header with Restaurant Image */}
-        <View style={styles.headerImageContainer}>
-          <Image source={restaurant.image} style={styles.headerImage} />
-          <View style={styles.headerOverlay}>
-            <Text style={styles.restaurantName}>{restaurant.name}</Text>
-            <Text style={styles.restaurantAddress}>{restaurant.address}</Text>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerTop}>
+            <Text style={styles.headerTitle}>{restaurant.name}</Text>
+            <TouchableOpacity
+              style={styles.searchIconButton}
+              onPress={() => {}}
+            >
+              <IconSymbol
+                ios_icon_name="magnifyingglass"
+                android_material_icon_name="search"
+                size={24}
+                color={colors.secondary}
+              />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            style={styles.cartButton}
-            onPress={() => router.push('/cart')}
-          >
-            <IconSymbol
-              ios_icon_name="cart.fill"
-              android_material_icon_name="shopping-cart"
-              size={28}
-              color="#FFFFFF"
-            />
-            {cartItemCount > 0 && (
-              <View style={styles.cartBadge}>
-                <Text style={styles.cartBadgeText}>{cartItemCount}</Text>
-              </View>
-            )}
+          <Text style={styles.headerSubtitle}>Founder, Martin Lewis. Editor-In-Chief, Marcus Herbert</Text>
+        </View>
+
+        {/* Tab Navigation */}
+        <View style={styles.tabNavigation}>
+          <TouchableOpacity style={styles.tabNavItem}>
+            <Text style={[styles.tabNavText, styles.tabNavTextActive]}>Latest</Text>
+            <View style={styles.tabNavIndicator} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.tabNavItem}>
+            <Text style={styles.tabNavText}>Weekly Email</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.tabNavItem}>
+            <Text style={styles.tabNavText}>Cards & Loans</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.tabNavItem}>
+            <Text style={styles.tabNavText}>Household</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Restaurant Info Card */}
-        <View style={styles.infoCard}>
-          <Text style={styles.description}>{restaurant.description}</Text>
-          <View style={styles.metaContainer}>
-            <TouchableOpacity 
-              style={styles.metaItem}
-              onPress={() => router.push('/reviews')}
-            >
-              <IconSymbol
-                ios_icon_name="star.fill"
-                android_material_icon_name="star"
-                size={18}
-                color={colors.accent}
-              />
-              <Text style={styles.metaText}>{restaurant.rating}</Text>
-            </TouchableOpacity>
-            <View style={styles.metaItem}>
-              <IconSymbol
-                ios_icon_name="clock.fill"
-                android_material_icon_name="schedule"
-                size={18}
-                color={colors.text}
-              />
-              <Text style={styles.metaText}>{restaurant.deliveryTime}</Text>
-            </View>
-            <View style={styles.metaItem}>
-              <Text style={styles.metaText}>Min £{restaurant.minimumOrder}</Text>
-            </View>
-          </View>
+        {/* Subtitle Banner */}
+        <View style={styles.subtitleBanner}>
+          <Text style={styles.subtitleText}>Plus Avios warning & lots more</Text>
         </View>
+
+        {/* Email Signup Card */}
+        <View style={styles.emailCard}>
+          <Text style={styles.emailCardText}>Want the famous Money Tips email?</Text>
+        </View>
+
+        {/* Popular Dishes Section */}
+        {popularDishes.length > 0 && (
+          <View style={styles.section}>
+            {popularDishes.map((dish, index) => {
+              const quantity = getDishQuantity(dish.id);
+              return (
+                <PopularDishCard
+                  key={index}
+                  dish={dish}
+                  quantity={quantity}
+                  onAdd={handleAddToCart}
+                  onUpdateQuantity={updateQuantity}
+                />
+              );
+            })}
+          </View>
+        )}
 
         {/* Delivery/Collection Toggle */}
         <View style={styles.toggleSection}>
@@ -271,36 +279,6 @@ export default function HomeScreen() {
           />
         </TouchableOpacity>
 
-        {/* Popular Dishes - Moved above search */}
-        {!searchQuery && !selectedCategory && popularDishes.length > 0 && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Popular Dishes</Text>
-              <TouchableOpacity onPress={() => router.push({ pathname: '/menu/[id]', params: { id: restaurant.id } })}>
-                <Text style={styles.seeAllText}>See All</Text>
-              </TouchableOpacity>
-            </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalScroll}
-            >
-              {popularDishes.map((dish, index) => {
-                const quantity = getDishQuantity(dish.id);
-                return (
-                  <PopularDishCard
-                    key={index}
-                    dish={dish}
-                    quantity={quantity}
-                    onAdd={handleAddToCart}
-                    onUpdateQuantity={updateQuantity}
-                  />
-                );
-              })}
-            </ScrollView>
-          </View>
-        )}
-
         {/* Search Bar */}
         <View style={styles.searchContainer}>
           <IconSymbol
@@ -318,7 +296,7 @@ export default function HomeScreen() {
           />
         </View>
 
-        {/* Category Filter - Menu Subheadings from Database */}
+        {/* Category Filter */}
         <View style={styles.categorySection}>
           <ScrollView
             horizontal
@@ -372,40 +350,9 @@ export default function HomeScreen() {
           </ScrollView>
         </View>
 
-        {/* Menu Items Display */}
-        {!searchQuery && !selectedCategory && (
-          <React.Fragment>
-            {/* Full Menu Button */}
-            <View style={styles.menuButtonContainer}>
-              <TouchableOpacity
-                style={styles.menuButton}
-                onPress={() =>
-                  router.push({
-                    pathname: '/menu/[id]',
-                    params: { id: restaurant.id },
-                  })
-                }
-              >
-                <Text style={styles.menuButtonText}>View Full Menu</Text>
-                <IconSymbol
-                  ios_icon_name="arrow.right"
-                  android_material_icon_name="arrow-forward"
-                  size={20}
-                  color="#FFFFFF"
-                />
-              </TouchableOpacity>
-            </View>
-          </React.Fragment>
-        )}
-
-        {/* Filtered Results - When search or category is selected */}
+        {/* Filtered Results */}
         {(searchQuery || selectedCategory) && (
           <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>
-                {selectedCategory || `${filteredItems.length} ${filteredItems.length === 1 ? 'Result' : 'Results'}`}
-              </Text>
-            </View>
             {filteredItems.map((item, index) => {
               const quantity = getDishQuantity(item.id);
               return (
@@ -419,6 +366,45 @@ export default function HomeScreen() {
               );
             })}
           </View>
+        )}
+
+        {/* View Full Menu Button */}
+        {!searchQuery && !selectedCategory && (
+          <View style={styles.menuButtonContainer}>
+            <TouchableOpacity
+              style={styles.menuButton}
+              onPress={() =>
+                router.push({
+                  pathname: '/menu/[id]',
+                  params: { id: restaurant.id },
+                })
+              }
+            >
+              <Text style={styles.menuButtonText}>View Full Menu</Text>
+              <IconSymbol
+                ios_icon_name="arrow.right"
+                android_material_icon_name="arrow-forward"
+                size={20}
+                color={colors.card}
+              />
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Cart Button */}
+        {cartItemCount > 0 && (
+          <TouchableOpacity
+            style={styles.cartFloatingButton}
+            onPress={() => router.push('/cart')}
+          >
+            <IconSymbol
+              ios_icon_name="cart.fill"
+              android_material_icon_name="shopping-cart"
+              size={24}
+              color={colors.card}
+            />
+            <Text style={styles.cartFloatingText}>View Cart ({cartItemCount})</Text>
+          </TouchableOpacity>
         )}
       </ScrollView>
 
@@ -464,12 +450,49 @@ function PopularDishCard({ dish, quantity, onAdd, onUpdateQuantity }: any) {
         )}
       </View>
       <View style={styles.dishInfo}>
-        <Text style={styles.dishName} numberOfLines={1}>
-          {dish.name}
+        <Text style={styles.dishName}>{dish.name}</Text>
+        <Text style={styles.dishDescription} numberOfLines={2}>
+          {dish.description}
         </Text>
-        <View style={styles.priceRow}>
-          <Text style={styles.dishPrice}>£{dish.price.toFixed(2)}</Text>
-          {spiceLevel > 0 && renderChilies(spiceLevel)}
+        <View style={styles.dishFooter}>
+          <View style={styles.priceRow}>
+            <Text style={styles.dishPrice}>£{dish.price.toFixed(2)}</Text>
+            {spiceLevel > 0 && renderChilies(spiceLevel)}
+          </View>
+          {quantity === 0 ? (
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={handleAddToCart}
+            >
+              <Text style={styles.addButtonText}>Add</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.quantityControl}>
+              <TouchableOpacity
+                style={styles.quantityButton}
+                onPress={() => onUpdateQuantity(dish.id, quantity - 1)}
+              >
+                <IconSymbol
+                  ios_icon_name={quantity === 1 ? "trash.fill" : "minus"}
+                  android_material_icon_name={quantity === 1 ? "delete" : "remove"}
+                  size={16}
+                  color={colors.card}
+                />
+              </TouchableOpacity>
+              <Text style={styles.quantityText}>{quantity}</Text>
+              <TouchableOpacity
+                style={styles.quantityButton}
+                onPress={handleAddToCart}
+              >
+                <IconSymbol
+                  ios_icon_name="plus"
+                  android_material_icon_name="add"
+                  size={16}
+                  color={colors.card}
+                />
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
         <View style={styles.dishTags}>
           {dish.is_vegetarian && (
@@ -478,40 +501,6 @@ function PopularDishCard({ dish, quantity, onAdd, onUpdateQuantity }: any) {
             </View>
           )}
         </View>
-        {quantity === 0 ? (
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={handleAddToCart}
-          >
-            <Text style={styles.addButtonText}>Add</Text>
-          </TouchableOpacity>
-        ) : (
-          <View style={styles.quantityControl}>
-            <TouchableOpacity
-              style={styles.quantityButton}
-              onPress={() => onUpdateQuantity(dish.id, quantity - 1)}
-            >
-              <IconSymbol
-                ios_icon_name={quantity === 1 ? "trash.fill" : "minus"}
-                android_material_icon_name={quantity === 1 ? "delete" : "remove"}
-                size={14}
-                color="#FFFFFF"
-              />
-            </TouchableOpacity>
-            <Text style={styles.quantityText}>{quantity}</Text>
-            <TouchableOpacity
-              style={styles.quantityButton}
-              onPress={handleAddToCart}
-            >
-              <IconSymbol
-                ios_icon_name="plus"
-                android_material_icon_name="add"
-                size={14}
-                color="#FFFFFF"
-              />
-            </TouchableOpacity>
-          </View>
-        )}
       </View>
     </View>
   );
@@ -537,24 +526,13 @@ function MenuItemRow({ item, quantity, onAdd, onUpdateQuantity }: any) {
   return (
     <View style={styles.menuItem}>
       <View style={styles.menuInfo}>
-        <View style={styles.menuHeader}>
-          <Text style={styles.menuName}>{item.name}</Text>
-        </View>
+        <Text style={styles.menuName}>{item.name}</Text>
         <Text style={styles.menuDescription} numberOfLines={2}>
           {item.description}
         </Text>
         <View style={styles.menuFooter}>
-          <Text style={styles.menuPrice}>
-            £{item.price.toFixed(2)}
-          </Text>
+          <Text style={styles.menuPrice}>£{item.price.toFixed(2)}</Text>
           {spiceLevel > 0 && renderChilies(spiceLevel)}
-          <View style={styles.menuTags}>
-            {item.is_vegetarian && (
-              <View style={styles.vegTag}>
-                <Text style={styles.vegTagText}>VEG</Text>
-              </View>
-            )}
-          </View>
         </View>
       </View>
       <View style={styles.menuImageContainer}>
@@ -564,34 +542,34 @@ function MenuItemRow({ item, quantity, onAdd, onUpdateQuantity }: any) {
         )}
         {quantity === 0 ? (
           <TouchableOpacity
-            style={styles.addButtonUber}
+            style={styles.addButtonSmall}
             onPress={handleAddToCart}
           >
-            <Text style={styles.addButtonTextUber}>Add</Text>
+            <Text style={styles.addButtonTextSmall}>Add</Text>
           </TouchableOpacity>
         ) : (
-          <View style={styles.quantityControlUber}>
+          <View style={styles.quantityControlSmall}>
             <TouchableOpacity
-              style={styles.quantityButtonUber}
+              style={styles.quantityButtonSmall}
               onPress={() => onUpdateQuantity(item.id, quantity - 1)}
             >
               <IconSymbol
                 ios_icon_name={quantity === 1 ? "trash.fill" : "minus"}
                 android_material_icon_name={quantity === 1 ? "delete" : "remove"}
-                size={16}
-                color="#FFFFFF"
+                size={14}
+                color={colors.card}
               />
             </TouchableOpacity>
-            <Text style={styles.quantityTextUber}>{quantity}</Text>
+            <Text style={styles.quantityTextSmall}>{quantity}</Text>
             <TouchableOpacity
-              style={styles.quantityButtonUber}
+              style={styles.quantityButtonSmall}
               onPress={handleAddToCart}
             >
               <IconSymbol
                 ios_icon_name="plus"
                 android_material_icon_name="add"
-                size={16}
-                color="#FFFFFF"
+                size={14}
+                color={colors.card}
               />
             </TouchableOpacity>
           </View>
@@ -621,114 +599,202 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 120,
   },
-  headerImageContainer: {
-    width: '100%',
-    height: 280,
+  header: {
+    backgroundColor: colors.background,
+    paddingHorizontal: 16,
+    paddingTop: 48,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    fontWeight: '400',
+  },
+  searchIconButton: {
+    padding: 8,
+  },
+  tabNavigation: {
+    flexDirection: 'row',
+    backgroundColor: colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    paddingHorizontal: 8,
+  },
+  tabNavItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     position: 'relative',
   },
-  headerImage: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: colors.border,
+  tabNavText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: colors.textSecondary,
   },
-  headerOverlay: {
+  tabNavTextActive: {
+    color: colors.secondary,
+    fontWeight: '600',
+  },
+  tabNavIndicator: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    padding: 20,
-    paddingTop: 40,
-  },
-  restaurantName: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    marginBottom: 8,
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
-  },
-  restaurantAddress: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    fontWeight: '500',
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-  cartButton: {
-    position: 'absolute',
-    top: 48,
-    right: 16,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#000000',
-    justifyContent: 'center',
-    alignItems: 'center',
-    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.3)',
-    elevation: 5,
-  },
-  cartBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
+    height: 3,
     backgroundColor: colors.primary,
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 4,
   },
-  cartBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
+  subtitleBanner: {
+    backgroundColor: colors.backgroundSecondary,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
-  infoCard: {
+  subtitleText: {
+    fontSize: 14,
+    color: colors.text,
+    fontWeight: '400',
+  },
+  emailCard: {
     backgroundColor: colors.card,
     marginHorizontal: 16,
-    marginTop: -20,
-    borderRadius: 16,
+    marginTop: 16,
     padding: 16,
-    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
-    elevation: 4,
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.primary,
+    boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.1)',
+    elevation: 2,
   },
-  description: {
-    fontSize: 15,
+  emailCardText: {
+    fontSize: 16,
+    fontWeight: '600',
     color: colors.text,
+  },
+  section: {
+    marginTop: 16,
+    paddingHorizontal: 16,
+  },
+  dishCard: {
+    backgroundColor: colors.card,
+    borderRadius: 8,
+    marginBottom: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border,
+    boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.1)',
+    elevation: 2,
+  },
+  dishImageContainer: {
+    position: 'relative',
+    width: '100%',
+    height: 200,
+  },
+  dishImage: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: colors.backgroundSecondary,
+  },
+  dishInfo: {
+    padding: 16,
+  },
+  dishName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 8,
+  },
+  dishDescription: {
+    fontSize: 14,
+    color: colors.textSecondary,
     marginBottom: 12,
-    lineHeight: 22,
+    lineHeight: 20,
   },
-  metaContainer: {
+  dishFooter: {
     flexDirection: 'row',
-    gap: 20,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
   },
-  metaItem: {
+  priceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
-  metaText: {
-    fontSize: 15,
+  dishPrice: {
+    fontSize: 18,
+    fontWeight: '700',
     color: colors.text,
-    fontWeight: '600',
+  },
+  spiceLevelEmojis: {
+    fontSize: 14,
+  },
+  dishTags: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  vegTag: {
+    backgroundColor: colors.success,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  vegTagText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.card,
+  },
+  addButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 6,
+  },
+  addButtonText: {
+    color: colors.card,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  quantityControl: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  quantityButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  quantityText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+    paddingHorizontal: 16,
   },
   toggleSection: {
     paddingHorizontal: 16,
-    paddingTop: 20,
+    paddingTop: 16,
     paddingBottom: 12,
-    backgroundColor: colors.background,
   },
   toggleContainer: {
     flexDirection: 'row',
-    backgroundColor: colors.card,
+    backgroundColor: colors.backgroundSecondary,
     borderRadius: 8,
     padding: 4,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
-    elevation: 2,
   },
   toggleButton: {
     flex: 1,
@@ -737,15 +803,15 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   toggleButtonActive: {
-    backgroundColor: '#000000',
+    backgroundColor: colors.card,
   },
   toggleButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.textSecondary,
   },
   toggleButtonTextActive: {
-    color: '#FFFFFF',
+    color: colors.text,
   },
   addressDropdown: {
     flexDirection: 'row',
@@ -756,8 +822,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     padding: 12,
     borderRadius: 8,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   addressContent: {
     flexDirection: 'row',
@@ -770,7 +836,7 @@ const styles = StyleSheet.create({
   },
   addressLabel: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.text,
   },
   searchContainer: {
@@ -781,10 +847,10 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: 8,
     marginBottom: 16,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   searchInput: {
     flex: 1,
@@ -794,7 +860,6 @@ const styles = StyleSheet.create({
   },
   categorySection: {
     paddingVertical: 12,
-    backgroundColor: colors.background,
   },
   categoryScroll: {
     paddingHorizontal: 16,
@@ -803,193 +868,43 @@ const styles = StyleSheet.create({
   categoryChip: {
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 24,
+    borderRadius: 20,
     backgroundColor: colors.card,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.border,
   },
   categoryChipActive: {
-    backgroundColor: '#000000',
-    borderColor: '#000000',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   categoryChipText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#000000',
+    color: colors.text,
   },
   categoryChipTextActive: {
-    color: '#FFFFFF',
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  seeAllText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#808080',
-  },
-  horizontalScroll: {
-    paddingHorizontal: 16,
-    gap: 12,
-  },
-  dishCard: {
-    width: width * 0.4,
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    overflow: 'hidden',
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
-    elevation: 3,
-  },
-  dishImageContainer: {
-    position: 'relative',
-    width: '100%',
-    height: 120,
-  },
-  dishImage: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: colors.border,
-  },
-  dishInfo: {
-    padding: 12,
-  },
-  dishName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 4,
-  },
-  priceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 8,
-  },
-  dishPrice: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  spiceLevelEmojis: {
-    fontSize: 14,
-  },
-  dishTags: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 8,
-  },
-  vegTag: {
-    backgroundColor: colors.highlight,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  vegTagText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  spicyIcon: {
-    fontSize: 14,
-  },
-  addButton: {
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-    elevation: 2,
-  },
-  addButtonText: {
-    color: colors.primary,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  quantityControl: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-    elevation: 2,
-    paddingHorizontal: 4,
-    paddingVertical: 4,
-  },
-  quantityButton: {
-    width: 28,
-    height: 28,
-    backgroundColor: '#000000',
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  quantityText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.text,
-    paddingHorizontal: 10,
-  },
-  menuButtonContainer: {
-    paddingHorizontal: 16,
-    marginBottom: 24,
-  },
-  menuButton: {
-    backgroundColor: '#000000',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 12,
-    gap: 8,
-    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.2)',
-    elevation: 4,
-  },
-  menuButtonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '700',
+    color: colors.card,
   },
   menuItem: {
     flexDirection: 'row',
     backgroundColor: colors.card,
-    borderRadius: 0,
-    marginBottom: 0,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderRadius: 8,
+    marginBottom: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.1)',
+    elevation: 2,
   },
   menuInfo: {
     flex: 1,
     paddingRight: 12,
-    justifyContent: 'space-between',
-  },
-  menuHeader: {
-    marginBottom: 6,
   },
   menuName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.text,
-    marginBottom: 4,
+    marginBottom: 6,
   },
   menuDescription: {
     fontSize: 14,
@@ -1005,67 +920,94 @@ const styles = StyleSheet.create({
   menuPrice: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#000000',
-  },
-  menuTags: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+    color: colors.text,
   },
   menuImageContainer: {
     position: 'relative',
-    width: 120,
-    height: 120,
+    width: 100,
+    height: 100,
   },
   menuImage: {
-    width: 120,
-    height: 120,
+    width: 100,
+    height: 100,
     borderRadius: 8,
-    backgroundColor: colors.border,
+    backgroundColor: colors.backgroundSecondary,
   },
-  addButtonUber: {
+  addButtonSmall: {
     position: 'absolute',
     bottom: 8,
     right: 8,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.15)',
-    elevation: 4,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
   },
-  addButtonTextUber: {
-    color: colors.primary,
-    fontSize: 14,
+  addButtonTextSmall: {
+    color: colors.card,
+    fontSize: 13,
     fontWeight: '700',
   },
-  quantityControlUber: {
+  quantityControlSmall: {
     position: 'absolute',
     bottom: 8,
     right: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    backgroundColor: colors.card,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: colors.border,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.15)',
-    elevation: 4,
+    overflow: 'hidden',
   },
-  quantityButtonUber: {
-    width: 32,
-    height: 32,
-    backgroundColor: '#000000',
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
+  quantityButtonSmall: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
-  quantityTextUber: {
+  quantityTextSmall: {
     fontSize: 14,
     fontWeight: '700',
     color: colors.text,
     paddingHorizontal: 12,
+  },
+  menuButtonContainer: {
+    paddingHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 24,
+  },
+  menuButton: {
+    backgroundColor: colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 8,
+    gap: 8,
+    boxShadow: '0px 2px 4px rgba(220, 36, 31, 0.2)',
+    elevation: 2,
+  },
+  menuButtonText: {
+    color: colors.card,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  cartFloatingButton: {
+    position: 'absolute',
+    bottom: 100,
+    right: 16,
+    backgroundColor: colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 30,
+    gap: 8,
+    boxShadow: '0px 4px 12px rgba(220, 36, 31, 0.3)',
+    elevation: 6,
+  },
+  cartFloatingText: {
+    color: colors.card,
+    fontSize: 16,
+    fontWeight: '700',
   },
 });
