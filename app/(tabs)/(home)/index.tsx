@@ -255,6 +255,7 @@ export default function HomeScreen() {
             contentContainerStyle={styles.categoryScroll}
           >
             <TouchableOpacity
+              key="picked-for-you"
               style={[
                 styles.categoryChip,
                 !selectedCategory && !showAllItems && styles.categoryChipActive,
@@ -274,6 +275,7 @@ export default function HomeScreen() {
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
+              key="all-items"
               style={[
                 styles.categoryChip,
                 showAllItems && !selectedCategory && styles.categoryChipActive,
@@ -350,17 +352,23 @@ export default function HomeScreen() {
                   : `${filteredItems.length} ${filteredItems.length === 1 ? 'Result' : 'Results'}`}
               </Text>
             </View>
-            <View style={styles.menuSection}>
-              {filteredItems.map((item, index) => (
-                <MenuItemRow
-                  key={`menu-${item.id}-${index}`}
-                  item={item}
-                  onAdd={handleAddToCart}
-                  onUpdateQuantity={updateQuantity}
-                  getItemQuantityInCart={getItemQuantityInCart}
-                />
-              ))}
-            </View>
+            {filteredItems.length > 0 ? (
+              <View style={styles.menuSection}>
+                {filteredItems.map((item, index) => (
+                  <MenuItemRow
+                    key={`menu-item-${item.id}-${index}`}
+                    item={item}
+                    onAdd={handleAddToCart}
+                    onUpdateQuantity={updateQuantity}
+                    getItemQuantityInCart={getItemQuantityInCart}
+                  />
+                ))}
+              </View>
+            ) : (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateText}>No items found</Text>
+              </View>
+            )}
           </View>
         )}
       </ScrollView>
@@ -789,7 +797,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -6,
     right: -6,
-    backgroundColor: colors.error,
+    backgroundColor: colors.green,
     borderRadius: 10,
     minWidth: 18,
     height: 18,
@@ -1009,7 +1017,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   addButtonTextUber: {
-    color: colors.primary,
+    color: colors.green,
     fontSize: 14,
     fontWeight: '700',
   },
@@ -1087,5 +1095,15 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '700',
+  },
+  emptyState: {
+    paddingHorizontal: 16,
+    paddingVertical: 40,
+    alignItems: 'center',
+  },
+  emptyStateText: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    fontWeight: '500',
   },
 });
