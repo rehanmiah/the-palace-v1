@@ -10,6 +10,7 @@ import {
   Alert,
   ActivityIndicator,
   LayoutChangeEvent,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { colors, buttonStyles } from '@/styles/commonStyles';
@@ -51,6 +52,9 @@ export default function MenuScreen() {
   const [categoriesSticky, setCategoriesSticky] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
+
+  // Get dynamic screen dimensions for responsive sizing
+  const { width: screenWidth } = useWindowDimensions();
 
   const restaurant = restaurants.find((r) => r.id === id);
 
@@ -187,6 +191,7 @@ export default function MenuScreen() {
             contentContainerStyle={styles.categoryScroll}
           >
             <TouchableOpacity
+              key="all-items"
               style={[
                 styles.categoryChip,
                 !selectedCategory && styles.categoryChipActive,
@@ -202,9 +207,9 @@ export default function MenuScreen() {
                 All Items
               </Text>
             </TouchableOpacity>
-            {categories.map((category, index) => (
+            {categories.map((category) => (
               <TouchableOpacity
-                key={index}
+                key={category.id}
                 style={[
                   styles.categoryChip,
                   selectedCategory === category.name && styles.categoryChipActive,
@@ -365,6 +370,7 @@ export default function MenuScreen() {
                 contentContainerStyle={styles.categoryScroll}
               >
                 <TouchableOpacity
+                  key="all-items"
                   style={[
                     styles.categoryChip,
                     !selectedCategory && styles.categoryChipActive,
@@ -380,9 +386,9 @@ export default function MenuScreen() {
                     All Items
                   </Text>
                 </TouchableOpacity>
-                {categories.map((category, index) => (
+                {categories.map((category) => (
                   <TouchableOpacity
-                    key={index}
+                    key={category.id}
                     style={[
                       styles.categoryChip,
                       selectedCategory === category.name && styles.categoryChipActive,
@@ -407,10 +413,11 @@ export default function MenuScreen() {
 
         {/* Menu Items Section - Always scrollable */}
         <View style={styles.menuSection}>
-          {filteredItems.map((item, index) => (
+          {filteredItems.map((item) => (
             <MenuItemRow
-              key={`${item.id}-${index}`}
+              key={item.id}
               item={item}
+              screenWidth={screenWidth}
               onAdd={handleAddToCart}
               onUpdateQuantity={updateQuantity}
               getItemQuantityInCart={getItemQuantityInCart}
@@ -435,7 +442,7 @@ export default function MenuScreen() {
   );
 }
 
-function MenuItemRow({ item, onAdd, onUpdateQuantity, getItemQuantityInCart }: any) {
+function MenuItemRow({ item, screenWidth, onAdd, onUpdateQuantity, getItemQuantityInCart }: any) {
   const { spiceLevel, cycleSpiceLevel } = useSpiceLevel(item.id);
 
   // Get quantity for this specific item with this specific spice level
@@ -461,7 +468,7 @@ function MenuItemRow({ item, onAdd, onUpdateQuantity, getItemQuantityInCart }: a
     const chilies = [];
     for (let i = 0; i < count; i++) {
       chilies.push(
-        <Text key={i} style={styles.chilliEmoji}>🌶️</Text>
+        <Text key={`chili-${i}`} style={styles.chilliEmoji}>🌶️</Text>
       );
     }
     
@@ -473,6 +480,15 @@ function MenuItemRow({ item, onAdd, onUpdateQuantity, getItemQuantityInCart }: a
   };
 
   console.log('MenuItemRow render - Item:', item.name, 'Spice Level:', spiceLevel, 'Quantity:', quantity);
+
+  // Calculate responsive image width based on current screen width
+  const MENU_IMAGE_WIDTH_PERCENTAGE = 0.30; // 30% of screen width
+  const MIN_IMAGE_WIDTH = 110;
+  const MAX_IMAGE_WIDTH = 150;
+  const imageWidth = Math.max(
+    MIN_IMAGE_WIDTH, 
+    Math.min(MAX_IMAGE_WIDTH, screenWidth * MENU_IMAGE_WIDTH_PERCENTAGE)
+  );
 
   return (
     <View style={styles.menuItem}>
@@ -509,7 +525,7 @@ function MenuItemRow({ item, onAdd, onUpdateQuantity, getItemQuantityInCart }: a
           </View>
         </View>
       </View>
-      <View style={styles.menuImageContainer}>
+      <View style={[styles.menuImageContainer, { width: imageWidth }]}>
         <Image source={{ uri: item.image_id || '' }} style={styles.menuImage} />
         
         {/* Spice Button - Show for all items so users can add spiciness */}
@@ -778,18 +794,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: colors.card,
     borderRadius: 12,
-    marginBottom: 24,
+    marginBottom: 16,
     overflow: 'hidden',
-    boxShadow: '0px 6px 16px rgba(0, 0, 0, 0.12)',
-    elevation: 6,
+    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.08)',
+    elevation: 4,
+    minHeight: 140,
   },
   menuInfo: {
     flex: 1,
-    padding: 16,
+    padding: 12,
     justifyContent: 'space-between',
   },
   menuHeader: {
-    marginBottom: 6,
+    marginBottom: 4,
   },
   menuName: {
     fontSize: 16,
@@ -798,15 +815,16 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   menuDescription: {
-    fontSize: 14,
+    fontSize: 13,
     color: colors.textSecondary,
-    marginBottom: 8,
-    lineHeight: 20,
+    marginBottom: 6,
+    lineHeight: 18,
   },
   menuFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
+    flexWrap: 'wrap',
   },
   menuPrice: {
     fontSize: 16,
@@ -820,7 +838,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   chilliEmoji: {
-    fontSize: 16,
+    fontSize: 14,
   },
   menuTags: {
     flexDirection: 'row',
@@ -848,14 +866,13 @@ const styles = StyleSheet.create({
     marginLeft: 'auto',
   },
   ratingText: {
-    fontSize: 13,
+    fontSize: 12,
     color: colors.textSecondary,
     fontWeight: '500',
   },
   menuImageContainer: {
     position: 'relative',
-    width: 120,
-    height: '100%',
+    minHeight: 140,
   },
   menuImage: {
     width: '100%',
@@ -864,50 +881,50 @@ const styles = StyleSheet.create({
   },
   spiceButton: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: 6,
+    right: 6,
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 20,
-    padding: 6,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.2)',
-    elevation: 4,
+    borderRadius: 18,
+    padding: 5,
+    boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.15)',
+    elevation: 3,
     zIndex: 10,
   },
   spiceButtonContent: {
     position: 'relative',
   },
   spiceEmoji: {
-    fontSize: 20,
+    fontSize: 18,
   },
   spiceBadge: {
     position: 'absolute',
-    top: -6,
-    right: -6,
+    top: -5,
+    right: -5,
     backgroundColor: colors.green,
-    borderRadius: 10,
-    minWidth: 18,
-    height: 18,
+    borderRadius: 9,
+    minWidth: 16,
+    height: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 4,
+    paddingHorizontal: 3,
   },
   spiceBadgeText: {
     color: '#FFFFFF',
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
   },
   addButtonUber: {
     position: 'absolute',
-    bottom: 8,
-    right: 8,
+    bottom: 6,
+    right: 6,
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: colors.border,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.15)',
-    elevation: 4,
+    boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.12)',
+    elevation: 3,
   },
   addButtonTextUber: {
     color: colors.green,
@@ -916,22 +933,22 @@ const styles = StyleSheet.create({
   },
   quantityControlUber: {
     position: 'absolute',
-    bottom: 8,
-    right: 8,
+    bottom: 6,
+    right: 6,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: colors.border,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.15)',
-    elevation: 4,
+    boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.12)',
+    elevation: 3,
   },
   quantityButtonUber: {
-    width: 32,
-    height: 32,
+    width: 28,
+    height: 28,
     backgroundColor: '#000000',
-    borderRadius: 16,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
