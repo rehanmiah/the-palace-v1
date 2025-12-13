@@ -682,7 +682,7 @@ const styles = StyleSheet.create({
   categoryChipText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#000000',
+    color: colors.primary,
   },
   categoryChipTextActive: {
     color: '#FFFFFF',
@@ -808,7 +808,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -6,
     right: -6,
-    backgroundColor: colors.green,
+    backgroundColor: colors.error,
     borderRadius: 10,
     minWidth: 18,
     height: 18,
@@ -835,7 +835,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   addButtonTextUber: {
-    color: colors.green,
+    color: colors.primary,
     fontSize: 14,
     fontWeight: '700',
   },
