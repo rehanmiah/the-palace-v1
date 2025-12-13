@@ -105,11 +105,14 @@ export default function MenuScreen() {
   const handleScroll = (event: any) => {
     const offsetY = event.nativeEvent.contentOffset.y;
     
-    // When scroll position reaches the header height, make categories sticky
-    if (offsetY >= headerHeight - 10 && !categoriesSticky) {
+    // Adjusted threshold: Make categories sticky when scroll reaches headerHeight - 120
+    // This ensures the sticky bar appears well below the fixed header and is visible
+    const stickyThreshold = headerHeight - 120;
+    
+    if (offsetY >= stickyThreshold && !categoriesSticky) {
       setCategoriesSticky(true);
-      console.log('Categories are now sticky at offset:', offsetY);
-    } else if (offsetY < headerHeight - 50 && categoriesSticky) {
+      console.log('Categories are now sticky at offset:', offsetY, 'headerHeight:', headerHeight, 'threshold:', stickyThreshold);
+    } else if (offsetY < stickyThreshold - 40 && categoriesSticky) {
       setCategoriesSticky(false);
       console.log('Categories are no longer sticky');
     }
@@ -615,7 +618,7 @@ const styles = StyleSheet.create({
   },
   stickyCategoryBar: {
     position: 'absolute',
-    top: 61,
+    top: 85,
     left: 0,
     right: 0,
     backgroundColor: colors.background,
@@ -624,7 +627,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
     boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
     elevation: 4,
-    zIndex: 999,
+    zIndex: 99,
   },
   toggleSection: {
     paddingHorizontal: 16,
