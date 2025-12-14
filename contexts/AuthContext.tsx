@@ -65,6 +65,15 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const SESSION_KEY = '@auth_session';
 
+// Generate a UUID v4
+function generateUUID(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -228,6 +237,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error('No internet connection. Please check your network and try again.');
       }
       
+      // Sanitize inputs
+      const sanitizedName = name.trim();
+      const sanitizedEmail = email.trim().toLowerCase();
+      const sanitizedPhone = phone.trim();
+      
       // Check if email already exists with better error handling
       let existingUsers;
       let checkError;
@@ -236,7 +250,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const result = await supabase
           .from('users')
           .select('id')
-          .eq('email', email.trim().toLowerCase())
+          .eq('email', sanitizedEmail)
           .limit(1);
         
         existingUsers = result.data;
@@ -286,41 +300,82 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         passwordHash = await hashPassword(password);
         console.log('Password hashed successfully');
+        
+        // Verify the hash was created properly
+        if (!passwordHash || typeof passwordHash !== 'string' || passwordHash.length === 0) {
+          throw new Error('Invalid password hash generated');
+        }
       } catch (hashError: any) {
         console.error('Password hashing error:', hashError);
         throw new Error('Failed to process password. Please try again.');
       }
 
+      // Generate a UUID for the new user
+      const userId = generateUUID();
+      console.log('Generated user ID:', userId);
+
       // Create user profile in users table
       console.log('Creating user in database...');
-      const { data: newUser, error: insertError } = await supabase
-        .from('users')
-        .insert({
-          name: name.trim(),
-          email: email.trim().toLowerCase(),
-          phone: phone.trim(),
-          password_hash: passwordHash,
-          email_verified: false,
-          phone_verified: false,
-        })
-        .select()
-        .single();
+      
+      const newUserData = {
+        id: userId,
+        name: sanitizedName,
+        email: sanitizedEmail,
+        phone: sanitizedPhone,
+        password_hash: passwordHash,
+        email_verified: false,
+        phone_verified: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      
+      console.log('Inserting user data:', { ...newUserData, password_hash: '[REDACTED]' });
+      
+      let insertResult;
+      try {
+        insertResult = await supabase
+          .from('users')
+          .insert(newUserData)
+          .select()
+          .single();
+      } catch (insertException: any) {
+        console.error('Insert exception:', insertException);
+        throw new Error('Database insert failed: ' + (insertException.message || 'Unknown error'));
+      }
+
+      const { data: newUser, error: insertError } = insertResult;
 
       if (insertError) {
         console.error('Registration error:', insertError);
+        console.error('Error code:', insertError.code);
+        console.error('Error details:', insertError.details);
+        console.error('Error hint:', insertError.hint);
+        console.error('Error message:', insertError.message);
         
         // Handle specific insert errors
         if (insertError.code === '23505') {
           // Unique constraint violation
           throw new Error('An account with this email already exists');
+        } else if (insertError.code === '23503') {
+          // Foreign key constraint violation
+          throw new Error('Database constraint error. Please contact support.');
+        } else if (insertError.code === '42501') {
+          // Insufficient privilege
+          throw new Error('Permission denied. Please contact support.');
         } else if (insertError.message?.includes('network') || insertError.message?.includes('fetch')) {
           throw new Error('Network error during registration. Please try again.');
+        } else if (insertError.message?.includes('JWT')) {
+          throw new Error('Authentication error. Please try again.');
         }
         
         throw new Error(insertError.message || 'Failed to create account');
       }
 
-      console.log('User created successfully:', newUser?.id);
+      if (!newUser) {
+        throw new Error('Failed to create user account. Please try again.');
+      }
+
+      console.log('User created successfully:', newUser.id);
 
       // Show success message
       Alert.alert(
