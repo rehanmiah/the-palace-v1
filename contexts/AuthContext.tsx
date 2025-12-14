@@ -70,27 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
 
-  // Check authentication status on mount
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
-    try {
-      const sessionData = await AsyncStorage.getItem(SESSION_KEY);
-      
-      if (sessionData) {
-        const session = JSON.parse(sessionData);
-        await loadUserProfile(session.userId);
-      }
-    } catch (error) {
-      console.error('Check auth error:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const loadUserProfile = async (userId: string) => {
+  const loadUserProfile = useCallback(async (userId: string) => {
     try {
       const { data: profile, error } = await supabase
         .from('users')
@@ -117,12 +97,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // Load related data
         await fetchPaymentMethods(userId);
-        await fetchOrders(userId);
+        await fetchOrdersInternal(userId);
       }
     } catch (error) {
       console.error('Load user profile error:', error);
     }
-  };
+  }, []);
+
+  const checkAuth = useCallback(async () => {
+    try {
+      const sessionData = await AsyncStorage.getItem(SESSION_KEY);
+      
+      if (sessionData) {
+        const session = JSON.parse(sessionData);
+        await loadUserProfile(session.userId);
+      }
+    } catch (error) {
+      console.error('Check auth error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [loadUserProfile]);
+
+  // Check authentication status on mount
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
   const login = useCallback(async (email: string, password: string) => {
     setIsLoading(true);
@@ -181,25 +181,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [loadUserProfile]);
 
   const register = useCallback(async (name: string, email: string, phone: string, password: string) => {
     setIsLoading(true);
     try {
       console.log('Registering user:', { name, email, phone });
       
-      // Check if email already exists
+      // Check if email already exists with better error handling
       const { data: existingUsers, error: checkError } = await supabase
         .from('users')
         .select('id')
         .eq('email', email)
         .limit(1);
 
+      // Handle database connection errors
       if (checkError) {
-        console.error('Email check error:', checkError);
-        throw new Error('Failed to check email availability');
+        console.error('Email check error details:', checkError);
+        throw new Error('Unable to verify email availability. Please check your connection and try again.');
       }
 
+      // Check if email is already taken
       if (existingUsers && existingUsers.length > 0) {
         throw new Error('An account with this email already exists');
       }
@@ -233,8 +235,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         'You can now sign in with your email and password.',
         [{ text: 'OK' }]
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error('Registration error:', error);
+      // Re-throw the error so it can be caught in the UI
       throw error;
     } finally {
       setIsLoading(false);
@@ -293,7 +296,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, loadUserProfile]);
 
   const resendEmailVerification = useCallback(async () => {
     if (!user?.email) return;
@@ -474,7 +477,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, fetchPaymentMethods]);
 
-  const fetchOrders = useCallback(async (userId?: string) => {
+  const fetchOrdersInternal = useCallback(async (userId?: string) => {
     const targetUserId = userId || user?.id;
     if (!targetUserId) return;
     
@@ -515,6 +518,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Fetch orders error:', error);
     }
   }, [user]);
+
+  const fetchOrders = useCallback(async () => {
+    await fetchOrdersInternal();
+  }, [fetchOrdersInternal]);
 
   return (
     <AuthContext.Provider

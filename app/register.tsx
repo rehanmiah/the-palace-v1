@@ -9,6 +9,8 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
@@ -83,8 +85,8 @@ const validatePassword = (password: string): { isValid: boolean; error?: string 
     return { isValid: false, error: 'Password must contain at least one lowercase letter' };
   }
   
-  // Check for at least one special character
-  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+  // Check for at least one special character - Fixed: removed unnecessary escape characters
+  if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
     return { isValid: false, error: 'Password must contain at least one special character (!@#$%^&*...)' };
   }
   
@@ -228,202 +230,216 @@ export default function RegisterScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <IconSymbol
-          ios_icon_name="person.badge.plus.fill"
-          android_material_icon_name="person-add"
-          size={80}
-          color={colors.primary}
-        />
-        <Text style={styles.title}>Create Account</Text>
-        <Text style={styles.subtitle}>Sign up to get started</Text>
-      </View>
-
-      <View style={styles.form}>
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Full Name</Text>
-          <View style={[styles.inputWrapper, nameError ? styles.inputWrapperError : null]}>
-            <IconSymbol
-              ios_icon_name="person.fill"
-              android_material_icon_name="person"
-              size={20}
-              color={nameError ? colors.error : colors.textSecondary}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Enter your full name"
-              placeholderTextColor={colors.textSecondary}
-              value={name}
-              onChangeText={(text) => {
-                setName(text);
-                if (nameError) setNameError('');
-              }}
-              onBlur={handleNameBlur}
-              autoCapitalize="words"
-              autoComplete="name"
-            />
-          </View>
-          {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
+    <KeyboardAvoidingView 
+      style={styles.container} 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+    >
+      <ScrollView 
+        style={styles.scrollView} 
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <IconSymbol
+            ios_icon_name="person.badge.plus.fill"
+            android_material_icon_name="person-add"
+            size={80}
+            color={colors.primary}
+          />
+          <Text style={styles.title}>Create Account</Text>
+          <Text style={styles.subtitle}>Sign up to get started</Text>
         </View>
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Email</Text>
-          <View style={[styles.inputWrapper, emailError ? styles.inputWrapperError : null]}>
-            <IconSymbol
-              ios_icon_name="envelope.fill"
-              android_material_icon_name="email"
-              size={20}
-              color={emailError ? colors.error : colors.textSecondary}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Enter your email"
-              placeholderTextColor={colors.textSecondary}
-              value={email}
-              onChangeText={(text) => {
-                setEmail(text);
-                if (emailError) setEmailError('');
-              }}
-              onBlur={handleEmailBlur}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoComplete="email"
-            />
-          </View>
-          {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Phone Number (UK Mobile)</Text>
-          <View style={[styles.inputWrapper, phoneError ? styles.inputWrapperError : null]}>
-            <IconSymbol
-              ios_icon_name="phone.fill"
-              android_material_icon_name="phone"
-              size={20}
-              color={phoneError ? colors.error : colors.textSecondary}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="07xxx xxxxxx or +447xxx xxxxxx"
-              placeholderTextColor={colors.textSecondary}
-              value={phone}
-              onChangeText={(text) => {
-                setPhone(text);
-                if (phoneError) setPhoneError('');
-              }}
-              onBlur={handlePhoneBlur}
-              keyboardType="phone-pad"
-              autoComplete="tel"
-            />
-          </View>
-          {phoneError ? <Text style={styles.errorText}>{phoneError}</Text> : null}
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Password</Text>
-          <View style={[styles.inputWrapper, passwordError ? styles.inputWrapperError : null]}>
-            <IconSymbol
-              ios_icon_name="lock.fill"
-              android_material_icon_name="lock"
-              size={20}
-              color={passwordError ? colors.error : colors.textSecondary}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Create a password"
-              placeholderTextColor={colors.textSecondary}
-              value={password}
-              onChangeText={(text) => {
-                setPassword(text);
-                if (passwordError) setPasswordError('');
-                if (confirmPassword && confirmPasswordError) {
-                  setConfirmPasswordError('');
-                }
-              }}
-              onBlur={handlePasswordBlur}
-              secureTextEntry={!showPassword}
-              autoCapitalize="none"
-              autoComplete="password-new"
-            />
-            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+        <View style={styles.form}>
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Full Name</Text>
+            <View style={[styles.inputWrapper, nameError ? styles.inputWrapperError : null]}>
               <IconSymbol
-                ios_icon_name={showPassword ? 'eye.slash.fill' : 'eye.fill'}
-                android_material_icon_name={showPassword ? 'visibility-off' : 'visibility'}
+                ios_icon_name="person.fill"
+                android_material_icon_name="person"
                 size={20}
-                color={colors.textSecondary}
+                color={nameError ? colors.error : colors.textSecondary}
               />
-            </TouchableOpacity>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your full name"
+                placeholderTextColor={colors.textSecondary}
+                value={name}
+                onChangeText={(text) => {
+                  setName(text);
+                  if (nameError) setNameError('');
+                }}
+                onBlur={handleNameBlur}
+                autoCapitalize="words"
+                autoComplete="name"
+              />
+            </View>
+            {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
           </View>
-          {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
-          <Text style={styles.hintText}>
-            Must be at least 8 characters with uppercase, lowercase, and special character
-          </Text>
-        </View>
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Confirm Password</Text>
-          <View style={[styles.inputWrapper, confirmPasswordError ? styles.inputWrapperError : null]}>
-            <IconSymbol
-              ios_icon_name="lock.fill"
-              android_material_icon_name="lock"
-              size={20}
-              color={confirmPasswordError ? colors.error : colors.textSecondary}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Confirm your password"
-              placeholderTextColor={colors.textSecondary}
-              value={confirmPassword}
-              onChangeText={(text) => {
-                setConfirmPassword(text);
-                if (confirmPasswordError) setConfirmPasswordError('');
-              }}
-              onBlur={handleConfirmPasswordBlur}
-              secureTextEntry={!showConfirmPassword}
-              autoCapitalize="none"
-              autoComplete="password-new"
-            />
-            <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Email</Text>
+            <View style={[styles.inputWrapper, emailError ? styles.inputWrapperError : null]}>
               <IconSymbol
-                ios_icon_name={showConfirmPassword ? 'eye.slash.fill' : 'eye.fill'}
-                android_material_icon_name={showConfirmPassword ? 'visibility-off' : 'visibility'}
+                ios_icon_name="envelope.fill"
+                android_material_icon_name="email"
                 size={20}
-                color={colors.textSecondary}
+                color={emailError ? colors.error : colors.textSecondary}
               />
-            </TouchableOpacity>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your email"
+                placeholderTextColor={colors.textSecondary}
+                value={email}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  if (emailError) setEmailError('');
+                }}
+                onBlur={handleEmailBlur}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoComplete="email"
+              />
+            </View>
+            {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
           </View>
-          {confirmPasswordError ? <Text style={styles.errorText}>{confirmPasswordError}</Text> : null}
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Phone Number (UK Mobile)</Text>
+            <View style={[styles.inputWrapper, phoneError ? styles.inputWrapperError : null]}>
+              <IconSymbol
+                ios_icon_name="phone.fill"
+                android_material_icon_name="phone"
+                size={20}
+                color={phoneError ? colors.error : colors.textSecondary}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="07xxx xxxxxx or +447xxx xxxxxx"
+                placeholderTextColor={colors.textSecondary}
+                value={phone}
+                onChangeText={(text) => {
+                  setPhone(text);
+                  if (phoneError) setPhoneError('');
+                }}
+                onBlur={handlePhoneBlur}
+                keyboardType="phone-pad"
+                autoComplete="tel"
+              />
+            </View>
+            {phoneError ? <Text style={styles.errorText}>{phoneError}</Text> : null}
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Password</Text>
+            <View style={[styles.inputWrapper, passwordError ? styles.inputWrapperError : null]}>
+              <IconSymbol
+                ios_icon_name="lock.fill"
+                android_material_icon_name="lock"
+                size={20}
+                color={passwordError ? colors.error : colors.textSecondary}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Create a password"
+                placeholderTextColor={colors.textSecondary}
+                value={password}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  if (passwordError) setPasswordError('');
+                  if (confirmPassword && confirmPasswordError) {
+                    setConfirmPasswordError('');
+                  }
+                }}
+                onBlur={handlePasswordBlur}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                autoComplete="password-new"
+              />
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                <IconSymbol
+                  ios_icon_name={showPassword ? 'eye.slash.fill' : 'eye.fill'}
+                  android_material_icon_name={showPassword ? 'visibility-off' : 'visibility'}
+                  size={20}
+                  color={colors.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
+            {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+            <Text style={styles.hintText}>
+              Must be at least 8 characters with uppercase, lowercase, and special character
+            </Text>
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Confirm Password</Text>
+            <View style={[styles.inputWrapper, confirmPasswordError ? styles.inputWrapperError : null]}>
+              <IconSymbol
+                ios_icon_name="lock.fill"
+                android_material_icon_name="lock"
+                size={20}
+                color={confirmPasswordError ? colors.error : colors.textSecondary}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Confirm your password"
+                placeholderTextColor={colors.textSecondary}
+                value={confirmPassword}
+                onChangeText={(text) => {
+                  setConfirmPassword(text);
+                  if (confirmPasswordError) setConfirmPasswordError('');
+                }}
+                onBlur={handleConfirmPasswordBlur}
+                secureTextEntry={!showConfirmPassword}
+                autoCapitalize="none"
+                autoComplete="password-new"
+              />
+              <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                <IconSymbol
+                  ios_icon_name={showConfirmPassword ? 'eye.slash.fill' : 'eye.fill'}
+                  android_material_icon_name={showConfirmPassword ? 'visibility-off' : 'visibility'}
+                  size={20}
+                  color={colors.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
+            {confirmPasswordError ? <Text style={styles.errorText}>{confirmPasswordError}</Text> : null}
+          </View>
+
+          <TouchableOpacity
+            style={[styles.registerButton, isLoading && styles.registerButtonDisabled]}
+            onPress={handleRegister}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color={colors.card} />
+            ) : (
+              <Text style={styles.registerButtonText}>Create Account</Text>
+            )}
+          </TouchableOpacity>
+
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          <TouchableOpacity
+            style={styles.loginLink}
+            onPress={() => router.back()}
+          >
+            <Text style={styles.loginLinkText}>
+              Already have an account? <Text style={styles.loginLinkBold}>Sign In</Text>
+            </Text>
+          </TouchableOpacity>
         </View>
 
-        <TouchableOpacity
-          style={[styles.registerButton, isLoading && styles.registerButtonDisabled]}
-          onPress={handleRegister}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <ActivityIndicator color={colors.card} />
-          ) : (
-            <Text style={styles.registerButtonText}>Create Account</Text>
-          )}
-        </TouchableOpacity>
-
-        <View style={styles.divider}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>or</Text>
-          <View style={styles.dividerLine} />
-        </View>
-
-        <TouchableOpacity
-          style={styles.loginLink}
-          onPress={() => router.back()}
-        >
-          <Text style={styles.loginLinkText}>
-            Already have an account? <Text style={styles.loginLinkBold}>Sign In</Text>
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+        {/* Extra padding at the bottom to prevent keyboard from covering content */}
+        <View style={styles.bottomSpacer} />
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -432,10 +448,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  scrollView: {
+    flex: 1,
+  },
   content: {
     padding: 24,
     paddingTop: 24,
-    paddingBottom: 48,
   },
   header: {
     alignItems: 'center',
@@ -540,5 +558,8 @@ const styles = StyleSheet.create({
   loginLinkBold: {
     color: colors.primary,
     fontWeight: '600',
+  },
+  bottomSpacer: {
+    height: 400,
   },
 });
