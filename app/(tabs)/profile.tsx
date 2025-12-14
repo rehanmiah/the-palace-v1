@@ -209,7 +209,6 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   scrollContent: {
     paddingBottom: 120,
@@ -218,7 +217,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 32,
     paddingHorizontal: 16,
-    backgroundColor: colors.background,
   },
   avatarContainer: {
     marginBottom: 16,
@@ -291,7 +289,6 @@ const styles = StyleSheet.create({
   },
   menuSection: {
     paddingHorizontal: 16,
-    backgroundColor: colors.background,
   },
   menuItem: {
     flexDirection: 'row',
