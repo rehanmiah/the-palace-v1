@@ -32,6 +32,7 @@ export default function ProfileScreen() {
               await logout();
               Alert.alert('Success', 'Logged out successfully');
             } catch (error) {
+              console.log('Logout error:', error);
               Alert.alert('Error', 'Failed to logout');
             }
           },
@@ -248,17 +249,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 12,
     alignItems: 'center',
-    boxShadow: '0px 4px 8px rgba(255, 127, 80, 0.3)',
+    boxShadow: '0px 4px 8px rgba(27, 127, 192, 0.3)',
     elevation: 4,
   },
   signInButtonText: {
-    color: colors.card,
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },
   registerButton: {
     flex: 1,
-    backgroundColor: colors.card,
+    backgroundColor: 'transparent',
     paddingVertical: 14,
     paddingHorizontal: 24,
     borderRadius: 12,

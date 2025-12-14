@@ -7,6 +7,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { GlassView } from 'expo-glass-effect';
 import { useTheme } from '@react-navigation/native';
 import { useAuth } from '@/contexts/AuthContext';
+import { colors } from '@/styles/commonStyles';
 
 export default function ProfileScreen() {
   const theme = useTheme();
@@ -27,6 +28,7 @@ export default function ProfileScreen() {
               await logout();
               Alert.alert('Success', 'Logged out successfully');
             } catch (error) {
+              console.log('Logout error:', error);
               Alert.alert('Error', 'Failed to logout');
             }
           },
@@ -95,7 +97,7 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
       >
         <GlassView style={styles.profileHeader} glassEffectStyle="regular">
-          <IconSymbol ios_icon_name="person.circle.fill" android_material_icon_name="account-circle" size={80} color={theme.colors.primary} />
+          <IconSymbol ios_icon_name="person.circle.fill" android_material_icon_name="account-circle" size={80} color={colors.primary} />
           {isAuthenticated && user ? (
             <React.Fragment>
               <Text style={[styles.name, { color: theme.colors.text }]}>{user.name}</Text>
@@ -120,16 +122,16 @@ export default function ProfileScreen() {
               <Text style={[styles.guestSubtitle, { color: theme.dark ? '#98989D' : '#666' }]}>Sign in to access your account</Text>
               <View style={styles.authButtonsContainer}>
                 <TouchableOpacity
-                  style={styles.signInButton}
+                  style={[styles.signInButton]}
                   onPress={() => router.push('/login')}
                 >
                   <Text style={styles.signInButtonText}>Sign In</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.registerButton, { borderColor: theme.colors.primary }]}
+                  style={[styles.registerButton]}
                   onPress={() => router.push('/register')}
                 >
-                  <Text style={[styles.registerButtonText, { color: theme.colors.primary }]}>Register</Text>
+                  <Text style={[styles.registerButtonText]}>Register</Text>
                 </TouchableOpacity>
               </View>
             </React.Fragment>
@@ -142,7 +144,7 @@ export default function ProfileScreen() {
               <TouchableOpacity onPress={item.onPress}>
                 <GlassView style={styles.menuItem} glassEffectStyle="regular">
                   <View style={[styles.menuIconContainer, { backgroundColor: theme.colors.background }]}>
-                    <IconSymbol ios_icon_name={item.icon} android_material_icon_name={item.icon} size={24} color={theme.colors.primary} />
+                    <IconSymbol ios_icon_name={item.icon} android_material_icon_name={item.icon} size={24} color={colors.primary} />
                   </View>
                   <View style={styles.menuTextContainer}>
                     <Text style={[styles.menuTitle, { color: theme.colors.text }]}>{item.title}</Text>
@@ -205,11 +207,12 @@ const styles = StyleSheet.create({
   },
   signInButton: {
     flex: 1,
-    backgroundColor: '#FF7F50',
+    backgroundColor: colors.primary,
     paddingVertical: 14,
     paddingHorizontal: 24,
     borderRadius: 12,
     alignItems: 'center',
+    boxShadow: '0px 4px 8px rgba(27, 127, 192, 0.3)',
   },
   signInButtonText: {
     color: '#FFFFFF',
@@ -224,8 +227,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     borderWidth: 2,
+    borderColor: colors.primary,
   },
   registerButtonText: {
+    color: colors.primary,
     fontSize: 16,
     fontWeight: '600',
   },
