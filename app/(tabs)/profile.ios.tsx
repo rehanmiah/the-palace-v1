@@ -35,54 +35,33 @@ export default function ProfileScreen() {
     );
   };
 
-  const menuItems = [
+  // Menu items for authenticated users
+  const authenticatedMenuItems = [
     {
       icon: 'person.fill',
       title: 'Account Settings',
       subtitle: 'Manage your account details',
-      onPress: () => {
-        if (!isAuthenticated) {
-          router.push('/login');
-        } else {
-          router.push('/account-settings');
-        }
-      },
+      onPress: () => router.push('/account-settings'),
     },
     {
       icon: 'location.fill',
       title: 'Delivery Addresses',
       subtitle: 'Manage your saved addresses',
       onPress: () => {
-        if (!isAuthenticated) {
-          router.push('/login');
-        } else {
-          Alert.alert('Coming Soon', 'Address management will be available soon');
-        }
+        Alert.alert('Coming Soon', 'Address management will be available soon');
       },
     },
     {
       icon: 'creditcard.fill',
       title: 'Payment Methods',
       subtitle: 'Manage your payment options',
-      onPress: () => {
-        if (!isAuthenticated) {
-          router.push('/login');
-        } else {
-          router.push('/payment-methods');
-        }
-      },
+      onPress: () => router.push('/payment-methods'),
     },
     {
       icon: 'clock.fill',
       title: 'Order History',
       subtitle: 'View your past orders',
-      onPress: () => {
-        if (!isAuthenticated) {
-          router.push('/login');
-        } else {
-          router.push('/order-history');
-        }
-      },
+      onPress: () => router.push('/order-history'),
     },
     {
       icon: 'info.circle.fill',
@@ -94,16 +73,31 @@ export default function ProfileScreen() {
     },
   ];
 
+  // Menu items for guest users
+  const guestMenuItems = [
+    {
+      icon: 'info.circle.fill',
+      title: 'About',
+      subtitle: 'App version and information',
+      onPress: () => {
+        Alert.alert('About', 'The Palace - Indian Takeaway\nVersion 1.0.0');
+      },
+    },
+  ];
+
+  const menuItems = isAuthenticated ? authenticatedMenuItems : guestMenuItems;
+
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]} edges={['top']}>
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
       >
         <GlassView style={styles.profileHeader} glassEffectStyle="regular">
           <IconSymbol ios_icon_name="person.circle.fill" android_material_icon_name="account-circle" size={80} color={theme.colors.primary} />
           {isAuthenticated && user ? (
-            <>
+            <React.Fragment>
               <Text style={[styles.name, { color: theme.colors.text }]}>{user.name}</Text>
               <Text style={[styles.email, { color: theme.dark ? '#98989D' : '#666' }]}>{user.email}</Text>
               {(!user.emailVerified || !user.phoneVerified) && (
@@ -119,17 +113,26 @@ export default function ProfileScreen() {
                   </Text>
                 </View>
               )}
-            </>
+            </React.Fragment>
           ) : (
-            <>
+            <React.Fragment>
               <Text style={[styles.name, { color: theme.colors.text }]}>Guest User</Text>
-              <TouchableOpacity
-                style={styles.loginButton}
-                onPress={() => router.push('/login')}
-              >
-                <Text style={styles.loginButtonText}>Sign In</Text>
-              </TouchableOpacity>
-            </>
+              <Text style={[styles.guestSubtitle, { color: theme.dark ? '#98989D' : '#666' }]}>Sign in to access your account</Text>
+              <View style={styles.authButtonsContainer}>
+                <TouchableOpacity
+                  style={styles.signInButton}
+                  onPress={() => router.push('/login')}
+                >
+                  <Text style={styles.signInButtonText}>Sign In</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.registerButton, { borderColor: theme.colors.primary }]}
+                  onPress={() => router.push('/register')}
+                >
+                  <Text style={[styles.registerButtonText, { color: theme.colors.primary }]}>Register</Text>
+                </TouchableOpacity>
+              </View>
+            </React.Fragment>
           )}
         </GlassView>
 
@@ -138,7 +141,7 @@ export default function ProfileScreen() {
             <React.Fragment key={index}>
               <TouchableOpacity onPress={item.onPress}>
                 <GlassView style={styles.menuItem} glassEffectStyle="regular">
-                  <View style={styles.menuIconContainer}>
+                  <View style={[styles.menuIconContainer, { backgroundColor: theme.colors.background }]}>
                     <IconSymbol ios_icon_name={item.icon} android_material_icon_name={item.icon} size={24} color={theme.colors.primary} />
                   </View>
                   <View style={styles.menuTextContainer}>
@@ -178,9 +181,9 @@ const styles = StyleSheet.create({
   },
   profileHeader: {
     alignItems: 'center',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 32,
-    marginBottom: 16,
+    marginBottom: 20,
     gap: 12,
   },
   name: {
@@ -189,6 +192,42 @@ const styles = StyleSheet.create({
   },
   email: {
     fontSize: 16,
+  },
+  guestSubtitle: {
+    fontSize: 16,
+    marginBottom: 16,
+  },
+  authButtonsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+    marginTop: 8,
+  },
+  signInButton: {
+    flex: 1,
+    backgroundColor: '#FF7F50',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  signInButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  registerButton: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 2,
+  },
+  registerButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
   verificationWarning: {
     flexDirection: 'row',
@@ -203,18 +242,6 @@ const styles = StyleSheet.create({
   verificationText: {
     fontSize: 14,
     color: '#FF6B6B',
-    fontWeight: '600',
-  },
-  loginButton: {
-    marginTop: 16,
-    backgroundColor: '#FF7F50',
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-    borderRadius: 12,
-  },
-  loginButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
     fontWeight: '600',
   },
   menuSection: {
