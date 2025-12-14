@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
-import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/app/integrations/supabase/client';
 import { IconSymbol } from '@/components/IconSymbol';
 
 // Validation functions
@@ -105,7 +105,7 @@ const validateConfirmPassword = (password: string, confirmPassword: string): { i
 
 export default function RegisterScreen() {
   const router = useRouter();
-  const { register, isLoading } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -216,22 +216,68 @@ export default function RegisterScreen() {
     }
 
     // All validations passed, proceed with registration
+    setIsLoading(true);
     try {
-      await register(name, email, phone, password);
-      Alert.alert(
-        'Success',
-        'Account created! Please check your email to verify your account before signing in.',
-        [
-          {
-            text: 'OK',
-            onPress: () => router.back(),
-          },
-        ]
-      );
+      console.log('Registering user:', { name, email, phone });
+      
+      // Sign up with Supabase Auth - password is automatically encrypted by Supabase
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: 'https://natively.dev/email-confirmed',
+          data: {
+            name,
+            phone
+          }
+        }
+      });
+      
+      if (error) {
+        console.error('Registration error:', error);
+        Alert.alert('Registration Error', error.message);
+        return;
+      }
+
+      if (data.user) {
+        // Create user profile in users table
+        const { error: profileError } = await supabase
+          .from('users')
+          .insert({
+            id: data.user.id,
+            name,
+            phone,
+            email_verified: false,
+            phone_verified: false,
+          });
+
+        if (profileError) {
+          console.error('Profile creation error:', profileError);
+          Alert.alert('Profile Error', 'Account created but profile setup failed. Please contact support.');
+          return;
+        }
+
+        // Show success message with verification instructions
+        Alert.alert(
+          'Registration Successful!',
+          'Your account has been created successfully!\n\n' +
+          'Please check your email (' + email + ') to verify your account. ' +
+          'You must verify your email before you can sign in.\n\n' +
+          'Check your spam folder if you don\'t see the email.',
+          [
+            {
+              text: 'OK',
+              onPress: () => router.back(),
+            },
+          ]
+        );
+      }
     } catch (error: any) {
       console.log('Registration error:', error);
       const errorMessage = error?.message || 'Failed to create account. Please try again.';
       Alert.alert('Registration Error', errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 

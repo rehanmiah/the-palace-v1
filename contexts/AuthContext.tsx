@@ -148,7 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       
       if (error) {
-        Alert.alert('Login Error', error.message);
+        console.error('Login error:', error);
         throw error;
       }
 
@@ -168,7 +168,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('Registering user:', { name, email, phone });
       
-      // Sign up with Supabase Auth
+      // Sign up with Supabase Auth - password is automatically encrypted
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -182,7 +182,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       
       if (error) {
-        Alert.alert('Registration Error', error.message);
+        console.error('Registration error:', error);
         throw error;
       }
 
@@ -200,16 +200,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (profileError) {
           console.error('Profile creation error:', profileError);
+          throw profileError;
         }
 
         // Show verification reminder
         Alert.alert(
-          'Registration Successful',
-          'Please check your email to verify your account. A verification link has been sent to ' + email,
+          'Registration Successful!',
+          'Please check your email to verify your account. A verification link has been sent to ' + email + '. You must verify your email before you can sign in.',
           [{ text: 'OK' }]
         );
-
-        await loadUserProfile(data.user.id);
       }
     } catch (error) {
       console.error('Registration error:', error);
