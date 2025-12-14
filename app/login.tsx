@@ -31,24 +31,16 @@ export default function LoginScreen() {
     try {
       await login(email, password);
       // Success - the AuthContext will handle the navigation
+      Alert.alert('Success', 'Logged in successfully!');
       router.back();
     } catch (error: any) {
       console.log('Login error:', error);
       
-      // Extract error message from Supabase error
+      // Extract error message
       let errorMessage = 'Invalid email or password';
       
       if (error?.message) {
-        // Check for specific error messages
-        if (error.message.includes('Email not confirmed')) {
-          errorMessage = 'Please verify your email address before signing in. Check your inbox for the verification link.';
-        } else if (error.message.includes('Invalid login credentials')) {
-          errorMessage = 'Invalid email or password. Please try again.';
-        } else if (error.message.includes('Email link is invalid')) {
-          errorMessage = 'The email verification link has expired. Please request a new one.';
-        } else {
-          errorMessage = error.message;
-        }
+        errorMessage = error.message;
       }
       
       Alert.alert('Login Error', errorMessage);

@@ -2,6 +2,8 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/app/integrations/supabase/client';
 import { Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { hashPassword, verifyPassword } from '@/utils/passwordUtils';
 import type { Tables } from '@/app/integrations/supabase/types';
 
 export interface User {
@@ -60,6 +62,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const SESSION_KEY = '@auth_session';
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -69,31 +73,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Check authentication status on mount
   useEffect(() => {
     checkAuth();
-    
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event);
-      
-      if (event === 'SIGNED_IN' && session?.user) {
-        await loadUserProfile(session.user.id);
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null);
-        setPaymentMethods([]);
-        setOrders([]);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
   }, []);
 
   const checkAuth = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const sessionData = await AsyncStorage.getItem(SESSION_KEY);
       
-      if (session?.user) {
-        await loadUserProfile(session.user.id);
+      if (sessionData) {
+        const session = JSON.parse(sessionData);
+        await loadUserProfile(session.userId);
       }
     } catch (error) {
       console.error('Check auth error:', error);
@@ -112,16 +100,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         console.error('Load profile error:', error);
+        await AsyncStorage.removeItem(SESSION_KEY);
         return;
       }
 
       if (profile) {
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        
         setUser({
           id: profile.id,
           name: profile.name,
-          email: authUser?.email || '',
+          email: profile.email,
           phone: profile.phone || '',
           emailVerified: profile.email_verified || false,
           phoneVerified: profile.phone_verified || false,
@@ -129,8 +116,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
 
         // Load related data
-        await fetchPaymentMethods();
-        await fetchOrders();
+        await fetchPaymentMethods(userId);
+        await fetchOrders(userId);
       }
     } catch (error) {
       console.error('Load user profile error:', error);
@@ -142,19 +129,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('Logging in with:', email);
       
-      const { data, error } = await supabase.auth.signInWithPassword({ 
-        email, 
-        password 
-      });
+      // Fetch user by email
+      const { data: users, error: fetchError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .limit(1);
       
-      if (error) {
-        console.error('Login error:', error);
-        throw error;
+      if (fetchError) {
+        console.error('Login fetch error:', fetchError);
+        throw new Error('Invalid email or password');
       }
 
-      if (data.user) {
-        await loadUserProfile(data.user.id);
+      if (!users || users.length === 0) {
+        throw new Error('Invalid email or password');
       }
+
+      const userRecord = users[0];
+
+      // Verify password using bcrypt
+      if (!userRecord.password_hash) {
+        throw new Error('Account not properly configured. Please contact support.');
+      }
+
+      const isPasswordValid = await verifyPassword(password, userRecord.password_hash);
+      
+      if (!isPasswordValid) {
+        throw new Error('Invalid email or password');
+      }
+
+      // Check email verification (optional - can be disabled for testing)
+      // Uncomment the following lines to enforce email verification
+      /*
+      if (!userRecord.email_verified) {
+        throw new Error('Please verify your email address before signing in. Check your inbox for the verification link.');
+      }
+      */
+
+      // Create session
+      const session = {
+        userId: userRecord.id,
+        email: userRecord.email,
+        timestamp: new Date().toISOString(),
+      };
+
+      await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(session));
+      await loadUserProfile(userRecord.id);
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -168,48 +188,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('Registering user:', { name, email, phone });
       
-      // Sign up with Supabase Auth - password is automatically encrypted
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: 'https://natively.dev/email-confirmed',
-          data: {
-            name,
-            phone
-          }
-        }
-      });
-      
-      if (error) {
-        console.error('Registration error:', error);
-        throw error;
+      // Check if email already exists
+      const { data: existingUsers, error: checkError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', email)
+        .limit(1);
+
+      if (checkError) {
+        console.error('Email check error:', checkError);
+        throw new Error('Failed to check email availability');
       }
 
-      if (data.user) {
-        // Create user profile in users table
-        const { error: profileError } = await supabase
-          .from('users')
-          .insert({
-            id: data.user.id,
-            name,
-            phone,
-            email_verified: false,
-            phone_verified: false,
-          });
-
-        if (profileError) {
-          console.error('Profile creation error:', profileError);
-          throw profileError;
-        }
-
-        // Show verification reminder
-        Alert.alert(
-          'Registration Successful!',
-          'Please check your email to verify your account. A verification link has been sent to ' + email + '. You must verify your email before you can sign in.',
-          [{ text: 'OK' }]
-        );
+      if (existingUsers && existingUsers.length > 0) {
+        throw new Error('An account with this email already exists');
       }
+
+      // Hash password using bcrypt
+      const passwordHash = await hashPassword(password);
+
+      // Create user profile in users table
+      const { data: newUser, error: insertError } = await supabase
+        .from('users')
+        .insert({
+          name,
+          email,
+          phone,
+          password_hash: passwordHash,
+          email_verified: false,
+          phone_verified: false,
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('Registration error:', insertError);
+        throw new Error(insertError.message || 'Failed to create account');
+      }
+
+      // Show success message
+      Alert.alert(
+        'Registration Successful!',
+        'Your account has been created successfully!\n\n' +
+        'You can now sign in with your email and password.',
+        [{ text: 'OK' }]
+      );
     } catch (error) {
       console.error('Registration error:', error);
       throw error;
@@ -223,12 +246,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('Logging out...');
       
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        Alert.alert('Logout Error', error.message);
-        throw error;
-      }
+      await AsyncStorage.removeItem(SESSION_KEY);
       
       setUser(null);
       setPaymentMethods([]);
@@ -248,30 +266,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('Updating profile:', updates);
       
-      // Update auth user if email changed
-      if (updates.email && updates.email !== user.email) {
-        const { error: emailError } = await supabase.auth.updateUser({ 
-          email: updates.email 
-        });
-        
-        if (emailError) {
-          Alert.alert('Update Error', emailError.message);
-          throw emailError;
-        }
-        
-        Alert.alert(
-          'Email Update',
-          'A verification email has been sent to ' + updates.email
-        );
-      }
-      
       // Update user profile in database
       const { error } = await supabase
         .from('users')
         .update({
           name: updates.name || user.name,
+          email: updates.email || user.email,
           phone: updates.phone || user.phone,
-          email_verified: updates.email ? false : user.emailVerified,
+          email_verified: updates.email && updates.email !== user.email ? false : user.emailVerified,
           phone_verified: updates.phone && updates.phone !== user.phone ? false : user.phoneVerified,
         })
         .eq('id', user.id);
@@ -300,20 +302,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('Resending email verification to:', user.email);
       
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: user.email,
-        options: {
-          emailRedirectTo: 'https://natively.dev/email-confirmed'
-        }
-      });
+      // Note: Email verification requires additional setup
+      Alert.alert('Info', 'Email verification is currently disabled. Your account is active.');
       
-      if (error) {
-        Alert.alert('Error', error.message);
-        throw error;
-      }
-      
-      Alert.alert('Success', 'Verification email sent!');
     } catch (error) {
       console.error('Resend email verification error:', error);
       throw error;
@@ -329,7 +320,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('Resending phone verification to:', user.phone);
       
-      // Note: Phone verification requires additional setup in Supabase
+      // Note: Phone verification requires additional setup
       Alert.alert('Info', 'Phone verification is not yet configured. Please contact support.');
       
     } catch (error) {
@@ -340,8 +331,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user]);
 
-  const fetchPaymentMethods = useCallback(async () => {
-    if (!user) return;
+  const fetchPaymentMethods = useCallback(async (userId?: string) => {
+    const targetUserId = userId || user?.id;
+    if (!targetUserId) return;
     
     try {
       console.log('Fetching payment methods...');
@@ -349,7 +341,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data, error } = await supabase
         .from('payment_methods')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', targetUserId)
         .order('created_at', { ascending: false });
       
       if (error) {
@@ -482,8 +474,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, fetchPaymentMethods]);
 
-  const fetchOrders = useCallback(async () => {
-    if (!user) return;
+  const fetchOrders = useCallback(async (userId?: string) => {
+    const targetUserId = userId || user?.id;
+    if (!targetUserId) return;
     
     try {
       console.log('Fetching orders...');
@@ -494,7 +487,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           *,
           order_items (*)
         `)
-        .eq('user_id', user.id)
+        .eq('user_id', targetUserId)
         .order('created_at', { ascending: false });
       
       if (ordersError) {

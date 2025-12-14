@@ -324,27 +324,33 @@ export type Database = {
       users: {
         Row: {
           created_at: string | null
+          email: string
           email_verified: boolean | null
           id: string
           name: string
+          password_hash: string
           phone: string | null
           phone_verified: boolean | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
+          email: string
           email_verified?: boolean | null
-          id: string
+          id?: string
           name: string
+          password_hash: string
           phone?: string | null
           phone_verified?: boolean | null
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
+          email?: string
           email_verified?: boolean | null
           id?: string
           name?: string
+          password_hash?: string
           phone?: string | null
           phone_verified?: boolean | null
           updated_at?: string | null
