@@ -330,11 +330,10 @@ export default function HomeScreen() {
             <TouchableOpacity
               style={[
                 styles.categoryChip,
-                styles.allItemsChip,
               ]}
               onPress={() => handleCategorySelect('All Items')}
             >
-              <Text style={[styles.categoryChipText, styles.allItemsChipText]}>
+              <Text style={styles.categoryChipText}>
                 All Items
               </Text>
             </TouchableOpacity>
@@ -836,13 +835,6 @@ const styles = StyleSheet.create({
     color: '#000000',
   },
   categoryChipTextActive: {
-    color: '#FFFFFF',
-  },
-  allItemsChip: {
-    backgroundColor: '#000000',
-    borderColor: '#000000',
-  },
-  allItemsChipText: {
     color: '#FFFFFF',
   },
   section: {
