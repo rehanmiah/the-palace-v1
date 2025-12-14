@@ -2,27 +2,15 @@
 import { Stack } from 'expo-router';
 import { CartProvider } from '@/contexts/CartContext';
 import { AuthProvider } from '@/contexts/AuthContext';
-import { useColorScheme, Platform } from 'react-native';
+import { useColorScheme } from 'react-native';
 import { colors } from '@/styles/commonStyles';
-import { StatusBar } from 'expo-status-bar';
-import * as SystemUI from 'expo-system-ui';
-import { useEffect } from 'react';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   
-  // Set status bar style to dark (black text) on iOS
-  useEffect(() => {
-    if (Platform.OS === 'ios') {
-      SystemUI.setBackgroundColorAsync('#FFFFFF');
-    }
-  }, []);
-  
   return (
     <AuthProvider>
       <CartProvider>
-        {/* iOS Status Bar - Set to dark content (black icons/text) */}
-        <StatusBar style="dark" />
         <Stack
           screenOptions={{
             headerShown: false,
