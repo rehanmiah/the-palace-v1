@@ -90,92 +90,100 @@ export default function ProfileScreen() {
   const menuItems = isAuthenticated ? authenticatedMenuItems : guestMenuItems;
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]} edges={['top']}>
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.contentContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        <GlassView style={styles.profileHeader} glassEffectStyle="regular">
-          <IconSymbol ios_icon_name="person.circle.fill" android_material_icon_name="account-circle" size={80} color={colors.primary} />
-          {isAuthenticated && user ? (
-            <React.Fragment>
-              <Text style={[styles.name, { color: theme.colors.text }]}>{user.name}</Text>
-              <Text style={[styles.email, { color: theme.dark ? '#98989D' : '#666' }]}>{user.email}</Text>
-              {(!user.emailVerified || !user.phoneVerified) && (
-                <View style={styles.verificationWarning}>
-                  <IconSymbol
-                    ios_icon_name="exclamationmark.triangle.fill"
-                    android_material_icon_name="warning"
-                    size={16}
-                    color="#FF6B6B"
-                  />
-                  <Text style={styles.verificationText}>
-                    Please verify your {!user.emailVerified ? 'email' : ''}{!user.emailVerified && !user.phoneVerified ? ' and ' : ''}{!user.phoneVerified ? 'phone' : ''}
-                  </Text>
+    <View style={styles.wrapper}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={styles.contentContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          <GlassView style={styles.profileHeader} glassEffectStyle="regular">
+            <IconSymbol ios_icon_name="person.circle.fill" android_material_icon_name="account-circle" size={80} color={colors.primary} />
+            {isAuthenticated && user ? (
+              <React.Fragment>
+                <Text style={[styles.name, { color: theme.colors.text }]}>{user.name}</Text>
+                <Text style={[styles.email, { color: theme.dark ? '#98989D' : '#666' }]}>{user.email}</Text>
+                {(!user.emailVerified || !user.phoneVerified) && (
+                  <View style={styles.verificationWarning}>
+                    <IconSymbol
+                      ios_icon_name="exclamationmark.triangle.fill"
+                      android_material_icon_name="warning"
+                      size={16}
+                      color="#FF6B6B"
+                    />
+                    <Text style={styles.verificationText}>
+                      Please verify your {!user.emailVerified ? 'email' : ''}{!user.emailVerified && !user.phoneVerified ? ' and ' : ''}{!user.phoneVerified ? 'phone' : ''}
+                    </Text>
+                  </View>
+                )}
+              </React.Fragment>
+            ) : (
+              <React.Fragment>
+                <Text style={[styles.name, { color: theme.colors.text }]}>Guest User</Text>
+                <Text style={[styles.guestSubtitle, { color: theme.dark ? '#98989D' : '#666' }]}>Sign in to access your account</Text>
+                <View style={styles.authButtonsContainer}>
+                  <TouchableOpacity
+                    style={[styles.signInButton]}
+                    onPress={() => router.push('/login')}
+                  >
+                    <Text style={styles.signInButtonText}>Sign In</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.registerButton]}
+                    onPress={() => router.push('/register')}
+                  >
+                    <Text style={[styles.registerButtonText]}>Register</Text>
+                  </TouchableOpacity>
                 </View>
-              )}
-            </React.Fragment>
-          ) : (
-            <React.Fragment>
-              <Text style={[styles.name, { color: theme.colors.text }]}>Guest User</Text>
-              <Text style={[styles.guestSubtitle, { color: theme.dark ? '#98989D' : '#666' }]}>Sign in to access your account</Text>
-              <View style={styles.authButtonsContainer}>
-                <TouchableOpacity
-                  style={[styles.signInButton]}
-                  onPress={() => router.push('/login')}
-                >
-                  <Text style={styles.signInButtonText}>Sign In</Text>
+              </React.Fragment>
+            )}
+          </GlassView>
+
+          <View style={styles.menuSection}>
+            {menuItems.map((item, index) => (
+              <React.Fragment key={index}>
+                <TouchableOpacity onPress={item.onPress}>
+                  <GlassView style={styles.menuItem} glassEffectStyle="regular">
+                    <View style={[styles.menuIconContainer, { backgroundColor: theme.colors.background }]}>
+                      <IconSymbol ios_icon_name={item.icon} android_material_icon_name={item.icon} size={24} color={colors.primary} />
+                    </View>
+                    <View style={styles.menuTextContainer}>
+                      <Text style={[styles.menuTitle, { color: theme.colors.text }]}>{item.title}</Text>
+                      <Text style={[styles.menuSubtitle, { color: theme.dark ? '#98989D' : '#666' }]}>{item.subtitle}</Text>
+                    </View>
+                    <IconSymbol ios_icon_name="chevron.right" android_material_icon_name="chevron-right" size={20} color={theme.dark ? '#98989D' : '#666'} />
+                  </GlassView>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.registerButton]}
-                  onPress={() => router.push('/register')}
-                >
-                  <Text style={[styles.registerButtonText]}>Register</Text>
-                </TouchableOpacity>
-              </View>
-            </React.Fragment>
+              </React.Fragment>
+            ))}
+          </View>
+
+          {isAuthenticated && (
+            <TouchableOpacity onPress={handleLogout}>
+              <GlassView style={styles.logoutButton} glassEffectStyle="regular">
+                <IconSymbol ios_icon_name="arrow.right.square" android_material_icon_name="logout" size={20} color="#FF6B6B" />
+                <Text style={styles.logoutText}>Logout</Text>
+              </GlassView>
+            </TouchableOpacity>
           )}
-        </GlassView>
-
-        <View style={styles.menuSection}>
-          {menuItems.map((item, index) => (
-            <React.Fragment key={index}>
-              <TouchableOpacity onPress={item.onPress}>
-                <GlassView style={styles.menuItem} glassEffectStyle="regular">
-                  <View style={[styles.menuIconContainer, { backgroundColor: theme.colors.background }]}>
-                    <IconSymbol ios_icon_name={item.icon} android_material_icon_name={item.icon} size={24} color={colors.primary} />
-                  </View>
-                  <View style={styles.menuTextContainer}>
-                    <Text style={[styles.menuTitle, { color: theme.colors.text }]}>{item.title}</Text>
-                    <Text style={[styles.menuSubtitle, { color: theme.dark ? '#98989D' : '#666' }]}>{item.subtitle}</Text>
-                  </View>
-                  <IconSymbol ios_icon_name="chevron.right" android_material_icon_name="chevron-right" size={20} color={theme.dark ? '#98989D' : '#666'} />
-                </GlassView>
-              </TouchableOpacity>
-            </React.Fragment>
-          ))}
-        </View>
-
-        {isAuthenticated && (
-          <TouchableOpacity onPress={handleLogout}>
-            <GlassView style={styles.logoutButton} glassEffectStyle="regular">
-              <IconSymbol ios_icon_name="arrow.right.square" android_material_icon_name="logout" size={20} color="#FF6B6B" />
-              <Text style={styles.logoutText}>Logout</Text>
-            </GlassView>
-          </TouchableOpacity>
-        )}
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  wrapper: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
   safeArea: {
     flex: 1,
+    backgroundColor: colors.background,
   },
   container: {
     flex: 1,
+    backgroundColor: colors.background,
   },
   contentContainer: {
     padding: 20,
