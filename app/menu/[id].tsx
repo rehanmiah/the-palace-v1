@@ -375,7 +375,7 @@ function MenuItemRow({ item, onAdd, onUpdateQuantity, getItemQuantityInCart }: a
       <View style={styles.menuImageContainer}>
         <Image source={{ uri: item.image_id || '' }} style={styles.menuImage} />
         
-        {/* Spice Button - Positioned at top-left of image */}
+        {/* Spice Button - Positioned at top-right of image */}
         <TouchableOpacity
           style={styles.spiceButton}
           onPress={handleSpiceClick}
@@ -691,7 +691,7 @@ const styles = StyleSheet.create({
   spiceButton: {
     position: 'absolute',
     top: 6,
-    left: 6,
+    right: 6,
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 20,
     padding: 6,
