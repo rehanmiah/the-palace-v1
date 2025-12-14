@@ -97,6 +97,9 @@ export default function MenuScreen() {
     return parts[parts.length - 1] || '';
   };
 
+  // Check if "Picked for you" is selected
+  const isPickedForYouSelected = selectedCategory === 'Picked for you';
+
   if (isLoading) {
     return (
       <View style={[styles.container, styles.loadingContainer]}>
@@ -232,6 +235,7 @@ export default function MenuScreen() {
               style={[
                 styles.categoryChip,
                 !selectedCategory && styles.categoryChipActive,
+                isPickedForYouSelected && styles.categoryChipWhite,
               ]}
               onPress={() => setSelectedCategory(null)}
             >
@@ -239,6 +243,7 @@ export default function MenuScreen() {
                 style={[
                   styles.categoryChipText,
                   !selectedCategory && styles.categoryChipTextActive,
+                  isPickedForYouSelected && styles.categoryChipTextWhite,
                 ]}
               >
                 All Items
@@ -588,6 +593,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
     borderColor: '#000000',
   },
+  categoryChipWhite: {
+    backgroundColor: '#FFFFFF',
+    borderColor: colors.border,
+  },
   categoryChipText: {
     fontSize: 14,
     fontWeight: '600',
@@ -595,6 +604,9 @@ const styles = StyleSheet.create({
   },
   categoryChipTextActive: {
     color: '#FFFFFF',
+  },
+  categoryChipTextWhite: {
+    color: colors.text,
   },
   menuSection: {
     paddingHorizontal: 16,
