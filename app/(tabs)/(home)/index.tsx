@@ -202,13 +202,9 @@ export default function HomeScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header with Restaurant Image */}
+        {/* Header with Restaurant Image - Title Overlay Removed */}
         <View style={styles.headerImageContainer}>
           <Image source={restaurant.image} style={styles.headerImage} />
-          <View style={styles.headerOverlay}>
-            <Text style={styles.restaurantName}>{restaurant.name}</Text>
-            <Text style={styles.restaurantAddress}>{restaurant.address}</Text>
-          </View>
           <TouchableOpacity
             style={styles.cartButton}
             onPress={() => router.push('/cart')}
@@ -726,32 +722,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     backgroundColor: colors.border,
-  },
-  headerOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    padding: 20,
-    paddingTop: 40,
-  },
-  restaurantName: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    marginBottom: 8,
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
-  },
-  restaurantAddress: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    fontWeight: '500',
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
   },
   cartButton: {
     position: 'absolute',
