@@ -225,7 +225,23 @@ export default function RegisterScreen() {
     } catch (error: any) {
       console.log('Registration error:', error);
       const errorMessage = error?.message || 'Failed to create account. Please try again.';
-      Alert.alert('Registration Error', errorMessage);
+      
+      // Show more user-friendly error messages
+      if (errorMessage.includes('network') || errorMessage.includes('connection') || errorMessage.includes('internet')) {
+        Alert.alert(
+          'Connection Error',
+          'Unable to connect to the server. Please check your internet connection and try again.',
+          [{ text: 'OK' }]
+        );
+      } else if (errorMessage.includes('email already exists')) {
+        Alert.alert(
+          'Email Already Registered',
+          'An account with this email already exists. Please use a different email or try logging in.',
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert('Registration Error', errorMessage);
+      }
     }
   };
 
@@ -414,7 +430,10 @@ export default function RegisterScreen() {
             disabled={isLoading}
           >
             {isLoading ? (
-              <ActivityIndicator color={colors.card} />
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator color={colors.card} />
+                <Text style={styles.loadingText}>Creating account...</Text>
+              </View>
             ) : (
               <Text style={styles.registerButtonText}>Create Account</Text>
             )}
@@ -529,6 +548,16 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   registerButtonText: {
+    color: colors.card,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  loadingText: {
     color: colors.card,
     fontSize: 16,
     fontWeight: '600',

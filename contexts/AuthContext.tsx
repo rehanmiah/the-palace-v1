@@ -4,6 +4,7 @@ import { supabase } from '@/app/integrations/supabase/client';
 import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { hashPassword, verifyPassword } from '@/utils/passwordUtils';
+import * as Network from 'expo-network';
 import type { Tables } from '@/app/integrations/supabase/types';
 
 export interface User {
@@ -70,6 +71,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
 
+  const checkNetworkConnection = async (): Promise<boolean> => {
+    try {
+      const networkState = await Network.getNetworkStateAsync();
+      return networkState.isConnected === true && networkState.isInternetReachable === true;
+    } catch (error) {
+      console.error('Network check error:', error);
+      return true; // Assume connected if check fails
+    }
+  };
+
   const loadUserProfile = useCallback(async (userId: string) => {
     try {
       const { data: profile, error } = await supabase
@@ -128,6 +139,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     try {
       console.log('Logging in with:', email);
+      
+      // Check network connectivity
+      const isConnected = await checkNetworkConnection();
+      if (!isConnected) {
+        throw new Error('No internet connection. Please check your network and try again.');
+      }
       
       // Fetch user by email
       const { data: users, error: fetchError } = await supabase
@@ -188,17 +205,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('Registering user:', { name, email, phone });
       
+      // Check network connectivity first
+      const isConnected = await checkNetworkConnection();
+      if (!isConnected) {
+        throw new Error('No internet connection. Please check your network and try again.');
+      }
+      
       // Check if email already exists with better error handling
-      const { data: existingUsers, error: checkError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('email', email)
-        .limit(1);
+      let existingUsers;
+      let checkError;
+      
+      try {
+        const result = await supabase
+          .from('users')
+          .select('id')
+          .eq('email', email)
+          .limit(1);
+        
+        existingUsers = result.data;
+        checkError = result.error;
+      } catch (dbError: any) {
+        console.error('Database connection error:', dbError);
+        
+        // Check if it's a network/connection error
+        if (dbError.message?.includes('fetch') || 
+            dbError.message?.includes('network') || 
+            dbError.message?.includes('Failed to fetch') ||
+            dbError.code === 'PGRST301') {
+          throw new Error('Unable to connect to the server. Please check your internet connection and try again.');
+        }
+        
+        throw new Error('Database error: ' + (dbError.message || 'Unknown error occurred'));
+      }
 
-      // Handle database connection errors
+      // Handle database query errors
       if (checkError) {
         console.error('Email check error details:', checkError);
-        throw new Error('Unable to verify email availability. Please check your connection and try again.');
+        
+        // Check for specific error types
+        if (checkError.code === 'PGRST116') {
+          // Table doesn't exist or permission denied
+          throw new Error('Database configuration error. Please contact support.');
+        } else if (checkError.message?.includes('JWT')) {
+          // Authentication/authorization error
+          throw new Error('Authentication error. Please try again.');
+        } else if (checkError.message?.includes('network') || checkError.message?.includes('fetch')) {
+          // Network error
+          throw new Error('Network error. Please check your connection and try again.');
+        }
+        
+        // Generic database error
+        throw new Error('Unable to verify email availability: ' + checkError.message);
       }
 
       // Check if email is already taken
@@ -225,6 +282,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (insertError) {
         console.error('Registration error:', insertError);
+        
+        // Handle specific insert errors
+        if (insertError.code === '23505') {
+          // Unique constraint violation
+          throw new Error('An account with this email already exists');
+        } else if (insertError.message?.includes('network') || insertError.message?.includes('fetch')) {
+          throw new Error('Network error during registration. Please try again.');
+        }
+        
         throw new Error(insertError.message || 'Failed to create account');
       }
 
