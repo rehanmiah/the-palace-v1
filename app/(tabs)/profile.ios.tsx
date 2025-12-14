@@ -1,21 +1,16 @@
 
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, useColorScheme } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import { GlassView } from 'expo-glass-effect';
-import { useTheme } from '@react-navigation/native';
 import { useAuth } from '@/contexts/AuthContext';
 import { colors } from '@/styles/commonStyles';
 
 export default function ProfileScreen() {
-  const theme = useTheme();
   const router = useRouter();
-  const colorScheme = useColorScheme();
   const { user, isAuthenticated, logout } = useAuth();
-  
-  const backgroundColor = colorScheme === 'dark' ? '#000' : colors.background;
 
   const handleLogout = async () => {
     Alert.alert(
@@ -93,10 +88,10 @@ export default function ProfileScreen() {
   const menuItems = isAuthenticated ? authenticatedMenuItems : guestMenuItems;
 
   return (
-    <View style={[styles.wrapper, { backgroundColor }]}>
-      <SafeAreaView style={[styles.safeArea, { backgroundColor }]} edges={['top']}>
+    <View style={styles.wrapper}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <ScrollView
-          style={[styles.container, { backgroundColor }]}
+          style={styles.container}
           contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={false}
         >
@@ -104,8 +99,8 @@ export default function ProfileScreen() {
             <IconSymbol ios_icon_name="person.circle.fill" android_material_icon_name="account-circle" size={80} color={colors.primary} />
             {isAuthenticated && user ? (
               <React.Fragment>
-                <Text style={[styles.name, { color: theme.colors.text }]}>{user.name}</Text>
-                <Text style={[styles.email, { color: theme.dark ? '#98989D' : '#666' }]}>{user.email}</Text>
+                <Text style={styles.name}>{user.name}</Text>
+                <Text style={styles.email}>{user.email}</Text>
                 {(!user.emailVerified || !user.phoneVerified) && (
                   <View style={styles.verificationWarning}>
                     <IconSymbol
@@ -122,20 +117,20 @@ export default function ProfileScreen() {
               </React.Fragment>
             ) : (
               <React.Fragment>
-                <Text style={[styles.name, { color: theme.colors.text }]}>Guest User</Text>
-                <Text style={[styles.guestSubtitle, { color: theme.dark ? '#98989D' : '#666' }]}>Sign in to access your account</Text>
+                <Text style={styles.name}>Guest User</Text>
+                <Text style={styles.guestSubtitle}>Sign in to access your account</Text>
                 <View style={styles.authButtonsContainer}>
                   <TouchableOpacity
-                    style={[styles.signInButton]}
+                    style={styles.signInButton}
                     onPress={() => router.push('/login')}
                   >
                     <Text style={styles.signInButtonText}>Sign In</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.registerButton]}
+                    style={styles.registerButton}
                     onPress={() => router.push('/register')}
                   >
-                    <Text style={[styles.registerButtonText]}>Register</Text>
+                    <Text style={styles.registerButtonText}>Register</Text>
                   </TouchableOpacity>
                 </View>
               </React.Fragment>
@@ -147,14 +142,14 @@ export default function ProfileScreen() {
               <React.Fragment key={index}>
                 <TouchableOpacity onPress={item.onPress}>
                   <GlassView style={styles.menuItem} glassEffectStyle="regular">
-                    <View style={[styles.menuIconContainer, { backgroundColor: theme.colors.background }]}>
+                    <View style={styles.menuIconContainer}>
                       <IconSymbol ios_icon_name={item.icon} android_material_icon_name={item.icon} size={24} color={colors.primary} />
                     </View>
                     <View style={styles.menuTextContainer}>
-                      <Text style={[styles.menuTitle, { color: theme.colors.text }]}>{item.title}</Text>
-                      <Text style={[styles.menuSubtitle, { color: theme.dark ? '#98989D' : '#666' }]}>{item.subtitle}</Text>
+                      <Text style={styles.menuTitle}>{item.title}</Text>
+                      <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
                     </View>
-                    <IconSymbol ios_icon_name="chevron.right" android_material_icon_name="chevron-right" size={20} color={theme.dark ? '#98989D' : '#666'} />
+                    <IconSymbol ios_icon_name="chevron.right" android_material_icon_name="chevron-right" size={20} color={colors.textSecondary} />
                   </GlassView>
                 </TouchableOpacity>
               </React.Fragment>
@@ -178,12 +173,15 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
+    backgroundColor: colors.background,
   },
   safeArea: {
     flex: 1,
+    backgroundColor: colors.background,
   },
   container: {
     flex: 1,
+    backgroundColor: colors.background,
   },
   contentContainer: {
     padding: 20,
@@ -199,12 +197,15 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 24,
     fontWeight: 'bold',
+    color: colors.text,
   },
   email: {
     fontSize: 16,
+    color: colors.textSecondary,
   },
   guestSubtitle: {
     fontSize: 16,
+    color: colors.textSecondary,
     marginBottom: 16,
   },
   authButtonsContainer: {
@@ -270,6 +271,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
+    backgroundColor: colors.background,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -279,10 +281,12 @@ const styles = StyleSheet.create({
   menuTitle: {
     fontSize: 16,
     fontWeight: '600',
+    color: colors.text,
     marginBottom: 2,
   },
   menuSubtitle: {
     fontSize: 14,
+    color: colors.textSecondary,
   },
   logoutButton: {
     flexDirection: 'row',
