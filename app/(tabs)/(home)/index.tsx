@@ -126,77 +126,6 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Sticky Header with Delivery/Collection Toggle and Address */}
-      <View style={styles.stickyHeader}>
-        {/* Delivery/Collection Toggle */}
-        <View style={styles.toggleContainer}>
-          <TouchableOpacity
-            style={[
-              styles.toggleButton,
-              isDelivery && styles.toggleButtonActive,
-            ]}
-            onPress={() => setIsDelivery(true)}
-          >
-            <Text
-              style={[
-                styles.toggleButtonText,
-                isDelivery && styles.toggleButtonTextActive,
-              ]}
-            >
-              Delivery
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.toggleButton,
-              !isDelivery && styles.toggleButtonActive,
-            ]}
-            onPress={() => setIsDelivery(false)}
-          >
-            <Text
-              style={[
-                styles.toggleButtonText,
-                !isDelivery && styles.toggleButtonTextActive,
-              ]}
-            >
-              Collection
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Address/Collection Dropdown */}
-        <TouchableOpacity
-          style={styles.addressDropdown}
-          onPress={() => setShowAddressModal(true)}
-        >
-          <View style={styles.addressContent}>
-            <IconSymbol
-              ios_icon_name={isDelivery ? "location.fill" : "person.fill"}
-              android_material_icon_name={isDelivery ? "location-on" : "person"}
-              size={20}
-              color={colors.text}
-            />
-            <View style={styles.addressTextContainer}>
-              {isDelivery ? (
-                <Text style={styles.addressLabel}>
-                  {selectedAddress.label} - {getPostcode(selectedAddress.address)}
-                </Text>
-              ) : (
-                <Text style={styles.addressLabel}>
-                  {collectionName || 'Person collecting'}
-                </Text>
-              )}
-            </View>
-          </View>
-          <IconSymbol
-            ios_icon_name="chevron.down"
-            android_material_icon_name="keyboard-arrow-down"
-            size={20}
-            color={colors.textSecondary}
-          />
-        </TouchableOpacity>
-      </View>
-
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -220,6 +149,77 @@ export default function HomeScreen() {
                 <Text style={styles.cartBadgeText}>{cartItemCount}</Text>
               </View>
             )}
+          </TouchableOpacity>
+        </View>
+
+        {/* Sticky Header with Delivery/Collection Toggle and Address - Moved Below Image */}
+        <View style={styles.stickyHeader}>
+          {/* Delivery/Collection Toggle */}
+          <View style={styles.toggleContainer}>
+            <TouchableOpacity
+              style={[
+                styles.toggleButton,
+                isDelivery && styles.toggleButtonActive,
+              ]}
+              onPress={() => setIsDelivery(true)}
+            >
+              <Text
+                style={[
+                  styles.toggleButtonText,
+                  isDelivery && styles.toggleButtonTextActive,
+                ]}
+              >
+                Delivery
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.toggleButton,
+                !isDelivery && styles.toggleButtonActive,
+              ]}
+              onPress={() => setIsDelivery(false)}
+            >
+              <Text
+                style={[
+                  styles.toggleButtonText,
+                  !isDelivery && styles.toggleButtonTextActive,
+                ]}
+              >
+                Collection
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Address/Collection Dropdown */}
+          <TouchableOpacity
+            style={styles.addressDropdown}
+            onPress={() => setShowAddressModal(true)}
+          >
+            <View style={styles.addressContent}>
+              <IconSymbol
+                ios_icon_name={isDelivery ? "location.fill" : "person.fill"}
+                android_material_icon_name={isDelivery ? "location-on" : "person"}
+                size={20}
+                color={colors.text}
+              />
+              <View style={styles.addressTextContainer}>
+                {isDelivery ? (
+                  <Text style={styles.addressLabel}>
+                    {selectedAddress.label} - {getPostcode(selectedAddress.address)}
+                  </Text>
+                ) : (
+                  <Text style={styles.addressLabel}>
+                    {collectionName || 'Person collecting'}
+                  </Text>
+                )}
+              </View>
+            </View>
+            <IconSymbol
+              ios_icon_name="chevron.down"
+              android_material_icon_name="keyboard-arrow-down"
+              size={20}
+              color={colors.textSecondary}
+            />
           </TouchableOpacity>
         </View>
 
@@ -648,8 +648,8 @@ const styles = StyleSheet.create({
   },
   stickyHeader: {
     backgroundColor: colors.background,
-    paddingTop: Platform.OS === 'android' ? 48 : 8,
     paddingHorizontal: 16,
+    paddingTop: 12,
     paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
@@ -715,8 +715,9 @@ const styles = StyleSheet.create({
   },
   headerImageContainer: {
     width: '100%',
-    height: 280,
+    height: 180,
     position: 'relative',
+    marginTop: Platform.OS === 'android' ? 48 : 48,
   },
   headerImage: {
     width: '100%',
@@ -725,7 +726,7 @@ const styles = StyleSheet.create({
   },
   cartButton: {
     position: 'absolute',
-    top: Platform.OS === 'android' ? 56 : 48,
+    top: Platform.OS === 'android' ? 16 : 8,
     right: 16,
     width: 48,
     height: 48,
