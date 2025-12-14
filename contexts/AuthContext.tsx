@@ -212,7 +212,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = useCallback(async (name: string, email: string, phone: string, password: string) => {
     setIsLoading(true);
     try {
-      console.log('Registering user:', { name, email, phone });
+      console.log('[AuthContext] Starting registration process...');
+      console.log('[AuthContext] User data:', { name, email, phone });
       
       // Validate inputs before proceeding
       if (!name || typeof name !== 'string' || name.trim().length === 0) {
@@ -231,22 +232,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error('Password is required');
       }
       
+      console.log('[AuthContext] Input validation passed');
+      
       // Check network connectivity first
       const isConnected = await checkNetworkConnection();
       if (!isConnected) {
         throw new Error('No internet connection. Please check your network and try again.');
       }
       
+      console.log('[AuthContext] Network check passed');
+      
       // Sanitize inputs
       const sanitizedName = name.trim();
       const sanitizedEmail = email.trim().toLowerCase();
       const sanitizedPhone = phone.trim();
+      
+      console.log('[AuthContext] Inputs sanitized');
       
       // Check if email already exists with better error handling
       let existingUsers;
       let checkError;
       
       try {
+        console.log('[AuthContext] Checking if email exists...');
         const result = await supabase
           .from('users')
           .select('id')
@@ -255,8 +263,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         existingUsers = result.data;
         checkError = result.error;
+        console.log('[AuthContext] Email check completed');
       } catch (dbError: any) {
-        console.error('Database connection error:', dbError);
+        console.error('[AuthContext] Database connection error:', dbError);
         
         // Check if it's a network/connection error
         if (dbError.message?.includes('fetch') || 
@@ -271,7 +280,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Handle database query errors
       if (checkError) {
-        console.error('Email check error details:', checkError);
+        console.error('[AuthContext] Email check error details:', checkError);
         
         // Check for specific error types
         if (checkError.code === 'PGRST116') {
@@ -294,28 +303,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error('An account with this email already exists');
       }
 
+      console.log('[AuthContext] Email is available');
+
       // Hash password using bcrypt - with explicit error handling
-      console.log('Hashing password...');
+      console.log('[AuthContext] Starting password hashing...');
       let passwordHash: string;
       try {
+        // Test if hashPassword function is available
+        if (typeof hashPassword !== 'function') {
+          console.error('[AuthContext] hashPassword is not a function!');
+          throw new Error('Password hashing function not available');
+        }
+        
+        console.log('[AuthContext] Calling hashPassword function...');
         passwordHash = await hashPassword(password);
-        console.log('Password hashed successfully');
+        console.log('[AuthContext] Password hashed successfully, hash length:', passwordHash?.length);
         
         // Verify the hash was created properly
         if (!passwordHash || typeof passwordHash !== 'string' || passwordHash.length === 0) {
+          console.error('[AuthContext] Invalid password hash generated');
           throw new Error('Invalid password hash generated');
         }
+        
+        console.log('[AuthContext] Password hash validated');
       } catch (hashError: any) {
-        console.error('Password hashing error:', hashError);
+        console.error('[AuthContext] Password hashing error:', hashError);
+        console.error('[AuthContext] Error type:', typeof hashError);
+        console.error('[AuthContext] Error name:', hashError?.name);
+        console.error('[AuthContext] Error message:', hashError?.message);
+        console.error('[AuthContext] Error stack:', hashError?.stack);
+        
+        // Provide more specific error message
+        if (hashError.message?.includes('not available') || hashError.message?.includes('not a function')) {
+          throw new Error('Password encryption service is not available. Please restart the app and try again.');
+        }
+        
         throw new Error('Failed to process password. Please try again.');
       }
 
       // Generate a UUID for the new user
       const userId = generateUUID();
-      console.log('Generated user ID:', userId);
+      console.log('[AuthContext] Generated user ID:', userId);
 
       // Create user profile in users table
-      console.log('Creating user in database...');
+      console.log('[AuthContext] Creating user in database...');
       
       const newUserData = {
         id: userId,
@@ -329,28 +360,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         updated_at: new Date().toISOString(),
       };
       
-      console.log('Inserting user data:', { ...newUserData, password_hash: '[REDACTED]' });
+      console.log('[AuthContext] User data prepared (password_hash redacted)');
       
       let insertResult;
       try {
+        console.log('[AuthContext] Inserting user into database...');
         insertResult = await supabase
           .from('users')
           .insert(newUserData)
           .select()
           .single();
+        console.log('[AuthContext] Database insert completed');
       } catch (insertException: any) {
-        console.error('Insert exception:', insertException);
+        console.error('[AuthContext] Insert exception:', insertException);
         throw new Error('Database insert failed: ' + (insertException.message || 'Unknown error'));
       }
 
       const { data: newUser, error: insertError } = insertResult;
 
       if (insertError) {
-        console.error('Registration error:', insertError);
-        console.error('Error code:', insertError.code);
-        console.error('Error details:', insertError.details);
-        console.error('Error hint:', insertError.hint);
-        console.error('Error message:', insertError.message);
+        console.error('[AuthContext] Registration error:', insertError);
+        console.error('[AuthContext] Error code:', insertError.code);
+        console.error('[AuthContext] Error details:', insertError.details);
+        console.error('[AuthContext] Error hint:', insertError.hint);
+        console.error('[AuthContext] Error message:', insertError.message);
         
         // Handle specific insert errors
         if (insertError.code === '23505') {
@@ -375,7 +408,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error('Failed to create user account. Please try again.');
       }
 
-      console.log('User created successfully:', newUser.id);
+      console.log('[AuthContext] User created successfully:', newUser.id);
 
       // Show success message
       Alert.alert(
@@ -385,7 +418,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         [{ text: 'OK' }]
       );
     } catch (error: any) {
-      console.error('Registration error:', error);
+      console.error('[AuthContext] Registration error:', error);
       // Re-throw the error so it can be caught in the UI
       throw error;
     } finally {

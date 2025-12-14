@@ -27,10 +27,15 @@ export async function hashPassword(password: string): Promise<string> {
 
   try {
     const saltRounds = 10;
-    console.log('[passwordUtils] Generating hash with salt rounds:', saltRounds);
+    console.log('[passwordUtils] Generating salt first...');
     
-    // Generate salt and hash in one step
-    const hash = await bcrypt.hash(trimmedPassword, saltRounds);
+    // Generate salt first
+    const salt = await bcrypt.genSalt(saltRounds);
+    console.log('[passwordUtils] Salt generated successfully');
+    
+    // Then hash the password with the salt
+    console.log('[passwordUtils] Hashing password with salt...');
+    const hash = await bcrypt.hash(trimmedPassword, salt);
     
     console.log('[passwordUtils] Hash generated successfully');
     console.log('[passwordUtils] Hash length:', hash?.length);
@@ -61,10 +66,17 @@ export async function hashPassword(password: string): Promise<string> {
     console.error('[passwordUtils] Error message:', error?.message);
     console.error('[passwordUtils] Error stack:', error?.stack);
     
+    // Check if bcrypt is properly loaded
+    if (!bcrypt || !bcrypt.genSalt || !bcrypt.hash) {
+      console.error('[passwordUtils] bcrypt module not properly loaded');
+      throw new Error('Password hashing library not available. Please restart the app.');
+    }
+    
     // If it's already our custom error, re-throw it
     if (error.message?.includes('Failed to generate') || 
         error.message?.includes('invalid format') ||
-        error.message?.includes('too short')) {
+        error.message?.includes('too short') ||
+        error.message?.includes('not available')) {
       throw error;
     }
     
