@@ -205,6 +205,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('Registering user:', { name, email, phone });
       
+      // Validate inputs before proceeding
+      if (!name || typeof name !== 'string' || name.trim().length === 0) {
+        throw new Error('Name is required');
+      }
+      
+      if (!email || typeof email !== 'string' || email.trim().length === 0) {
+        throw new Error('Email is required');
+      }
+      
+      if (!phone || typeof phone !== 'string' || phone.trim().length === 0) {
+        throw new Error('Phone number is required');
+      }
+      
+      if (!password || typeof password !== 'string' || password.trim().length === 0) {
+        throw new Error('Password is required');
+      }
+      
       // Check network connectivity first
       const isConnected = await checkNetworkConnection();
       if (!isConnected) {
@@ -219,7 +236,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const result = await supabase
           .from('users')
           .select('id')
-          .eq('email', email)
+          .eq('email', email.trim().toLowerCase())
           .limit(1);
         
         existingUsers = result.data;
@@ -263,16 +280,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error('An account with this email already exists');
       }
 
-      // Hash password using bcrypt
-      const passwordHash = await hashPassword(password);
+      // Hash password using bcrypt - with explicit error handling
+      console.log('Hashing password...');
+      let passwordHash: string;
+      try {
+        passwordHash = await hashPassword(password);
+        console.log('Password hashed successfully');
+      } catch (hashError: any) {
+        console.error('Password hashing error:', hashError);
+        throw new Error('Failed to process password. Please try again.');
+      }
 
       // Create user profile in users table
+      console.log('Creating user in database...');
       const { data: newUser, error: insertError } = await supabase
         .from('users')
         .insert({
-          name,
-          email,
-          phone,
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          phone: phone.trim(),
           password_hash: passwordHash,
           email_verified: false,
           phone_verified: false,
@@ -293,6 +319,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         throw new Error(insertError.message || 'Failed to create account');
       }
+
+      console.log('User created successfully:', newUser?.id);
 
       // Show success message
       Alert.alert(
