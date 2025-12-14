@@ -108,7 +108,7 @@ export default function MenuScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Sticky Delivery/Collection Header */}
+      {/* Sticky Delivery/Collection Header - At the Top */}
       <View style={styles.stickyHeader}>
         {/* Delivery/Collection Toggle */}
         <View style={styles.toggleContainer}>
@@ -527,7 +527,7 @@ const styles = StyleSheet.create({
   },
   backButton: {
     position: 'absolute',
-    top: Platform.OS === 'android' ? 16 : 8,
+    top: 8,
     left: 16,
     width: 40,
     height: 40,
@@ -540,7 +540,7 @@ const styles = StyleSheet.create({
   },
   cartButton: {
     position: 'absolute',
-    top: Platform.OS === 'android' ? 16 : 8,
+    top: 8,
     right: 16,
     width: 48,
     height: 48,
