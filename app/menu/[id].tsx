@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -29,7 +29,7 @@ interface Address {
 
 export default function MenuScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, category: categoryParam } = useLocalSearchParams<{ id: string; category?: string }>();
   const { addToCart, updateQuantity, getCartItemCount, getItemQuantityInCart, cart } = useCart();
   const { menuItems, categories, isLoading } = useMenu();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -47,6 +47,13 @@ export default function MenuScreen() {
     { id: '2', label: 'Work', address: '456 Office Road, London, EC1A 1BB' },
     { id: '3', label: 'Other', address: '789 Park Avenue, London, W1A 1CC' },
   ]);
+
+  // Set initial category from URL params
+  useEffect(() => {
+    if (categoryParam) {
+      setSelectedCategory(categoryParam);
+    }
+  }, [categoryParam]);
 
   const restaurant = restaurants.find((r) => r.id === id);
 
@@ -97,8 +104,8 @@ export default function MenuScreen() {
     return parts[parts.length - 1] || '';
   };
 
-  // Check if "Picked for you" is selected
-  const isPickedForYouSelected = selectedCategory === 'Picked for you';
+  // Check if "Picked for you" is selected (no category selected)
+  const isPickedForYouSelected = !selectedCategory;
 
   if (isLoading) {
     return (

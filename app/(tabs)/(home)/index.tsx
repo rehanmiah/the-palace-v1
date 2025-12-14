@@ -96,9 +96,15 @@ export default function HomeScreen() {
         pathname: '/menu/[id]',
         params: { id: restaurant.id },
       });
+    } else if (category) {
+      // Navigate to menu page with category filter
+      router.push({
+        pathname: '/menu/[id]',
+        params: { id: restaurant.id, category: category },
+      });
     } else {
-      // Stay on home page and filter
-      setSelectedCategory(category);
+      // Stay on home page for "Picked for you"
+      setSelectedCategory(null);
     }
   };
 
@@ -310,7 +316,7 @@ export default function HomeScreen() {
                 styles.categoryChip,
                 !selectedCategory && styles.categoryChipActive,
               ]}
-              onPress={() => setSelectedCategory(null)}
+              onPress={() => handleCategorySelect(null)}
             >
               <Text
                 style={[
