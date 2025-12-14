@@ -322,10 +322,13 @@ export default function HomeScreen() {
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.categoryChip}
+              style={[
+                styles.categoryChip,
+                styles.allItemsChip,
+              ]}
               onPress={() => handleCategorySelect('All Items')}
             >
-              <Text style={styles.categoryChipText}>
+              <Text style={[styles.categoryChipText, styles.allItemsChipText]}>
                 All Items
               </Text>
             </TouchableOpacity>
@@ -575,7 +578,7 @@ function MenuItemRow({ item, onAdd, onUpdateQuantity, getItemQuantityInCart }: a
       <View style={styles.menuImageContainer}>
         <Image source={{ uri: item.image_id || '' }} style={styles.menuImage} />
         
-        {/* Spice Button - Show for all items so users can add spiciness */}
+        {/* Spice Button - Positioned at top-left of image */}
         <TouchableOpacity
           style={styles.spiceButton}
           onPress={handleSpiceClick}
@@ -829,6 +832,13 @@ const styles = StyleSheet.create({
   categoryChipTextActive: {
     color: '#FFFFFF',
   },
+  allItemsChip: {
+    backgroundColor: '#000000',
+    borderColor: '#000000',
+  },
+  allItemsChipText: {
+    color: '#FFFFFF',
+  },
   section: {
     marginBottom: 24,
   },
@@ -983,11 +993,11 @@ const styles = StyleSheet.create({
   menuItem: {
     flexDirection: 'row',
     backgroundColor: colors.card,
-    borderRadius: 0,
-    marginBottom: 24,
-    padding: 0,
-    boxShadow: '0px 6px 16px rgba(0, 0, 0, 0.12)',
-    elevation: 6,
+    borderRadius: 12,
+    marginBottom: 16,
+    overflow: 'hidden',
+    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
+    elevation: 4,
   },
   menuInfo: {
     flex: 1,
@@ -1048,8 +1058,6 @@ const styles = StyleSheet.create({
     position: 'relative',
     width: 120,
     height: 120,
-    borderRadius: 0,
-    overflow: 'hidden',
   },
   menuImage: {
     width: '100%',
@@ -1058,8 +1066,8 @@ const styles = StyleSheet.create({
   },
   spiceButton: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: 6,
+    left: 6,
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 20,
     padding: 6,
@@ -1077,7 +1085,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -6,
     right: -6,
-    backgroundColor: colors.error,
+    backgroundColor: '#C41E3A',
     borderRadius: 10,
     minWidth: 18,
     height: 18,

@@ -372,63 +372,62 @@ function MenuItemRow({ item, onAdd, onUpdateQuantity, getItemQuantityInCart }: a
         </View>
       </View>
       
-      <Image source={{ uri: item.image_id || '' }} style={styles.menuImage} />
-      
-      {/* Spice Button - Show for all items so users can add spiciness */}
-      <TouchableOpacity
-        style={styles.spiceButton}
-        onPress={handleSpiceClick}
-        activeOpacity={0.8}
-      >
-        <View style={styles.spiceButtonContent}>
-          <Text style={styles.spiceEmoji}>🌶️</Text>
-          {spiceLevel > 0 && (
-            <View style={[
-              styles.spiceBadge,
-              Platform.OS === 'ios' && styles.spiceBadgeIOS
-            ]}>
-              <Text style={styles.spiceBadgeText}>{spiceLevel}</Text>
-            </View>
-          )}
-        </View>
-      </TouchableOpacity>
-
-      {/* Show Add button if no items with this spice level in cart */}
-      {/* Show quantity controls if items with this spice level exist in cart */}
-      {quantity === 0 ? (
+      <View style={styles.menuImageContainer}>
+        <Image source={{ uri: item.image_id || '' }} style={styles.menuImage} />
+        
+        {/* Spice Button - Positioned at top-left of image */}
         <TouchableOpacity
-          style={styles.addButtonUber}
-          onPress={handleAddToCart}
+          style={styles.spiceButton}
+          onPress={handleSpiceClick}
+          activeOpacity={0.8}
         >
-          <Text style={styles.addButtonTextUber}>Add</Text>
+          <View style={styles.spiceButtonContent}>
+            <Text style={styles.spiceEmoji}>🌶️</Text>
+            {spiceLevel > 0 && (
+              <View style={styles.spiceBadge}>
+                <Text style={styles.spiceBadgeText}>{spiceLevel}</Text>
+              </View>
+            )}
+          </View>
         </TouchableOpacity>
-      ) : (
-        <View style={styles.quantityControlUber}>
+
+        {/* Show Add button if no items with this spice level in cart */}
+        {/* Show quantity controls if items with this spice level exist in cart */}
+        {quantity === 0 ? (
           <TouchableOpacity
-            style={styles.quantityButtonUber}
-            onPress={() => handleUpdateQuantity(quantity - 1)}
-          >
-            <IconSymbol
-              ios_icon_name={quantity === 1 ? "trash.fill" : "minus"}
-              android_material_icon_name={quantity === 1 ? "delete" : "remove"}
-              size={16}
-              color="#FFFFFF"
-            />
-          </TouchableOpacity>
-          <Text style={styles.quantityTextUber}>{quantity}</Text>
-          <TouchableOpacity
-            style={styles.quantityButtonUber}
+            style={styles.addButtonUber}
             onPress={handleAddToCart}
           >
-            <IconSymbol
-              ios_icon_name="plus"
-              android_material_icon_name="add"
-              size={16}
-              color="#FFFFFF"
-            />
+            <Text style={styles.addButtonTextUber}>Add</Text>
           </TouchableOpacity>
-        </View>
-      )}
+        ) : (
+          <View style={styles.quantityControlUber}>
+            <TouchableOpacity
+              style={styles.quantityButtonUber}
+              onPress={() => handleUpdateQuantity(quantity - 1)}
+            >
+              <IconSymbol
+                ios_icon_name={quantity === 1 ? "trash.fill" : "minus"}
+                android_material_icon_name={quantity === 1 ? "delete" : "remove"}
+                size={16}
+                color="#FFFFFF"
+              />
+            </TouchableOpacity>
+            <Text style={styles.quantityTextUber}>{quantity}</Text>
+            <TouchableOpacity
+              style={styles.quantityButtonUber}
+              onPress={handleAddToCart}
+            >
+              <IconSymbol
+                ios_icon_name="plus"
+                android_material_icon_name="add"
+                size={16}
+                color="#FFFFFF"
+              />
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
     </View>
   );
 }
@@ -604,18 +603,15 @@ const styles = StyleSheet.create({
   menuItem: {
     flexDirection: 'row',
     backgroundColor: colors.card,
-    borderRadius: 0,
-    marginBottom: 24,
-    padding: 0,
-    boxShadow: '0px 6px 16px rgba(0, 0, 0, 0.12)',
-    elevation: 6,
-    position: 'relative',
+    borderRadius: 12,
+    marginBottom: 16,
+    overflow: 'hidden',
+    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
+    elevation: 4,
   },
   menuInfo: {
     flex: 1,
-    padding: 0,
-    paddingLeft: 16,
-    paddingVertical: 16,
+    padding: 16,
     justifyContent: 'space-between',
   },
   menuHeader: {
@@ -682,16 +678,20 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontWeight: '500',
   },
-  menuImage: {
+  menuImageContainer: {
+    position: 'relative',
     width: 120,
     height: 120,
-    borderRadius: 0,
+  },
+  menuImage: {
+    width: '100%',
+    height: '100%',
     backgroundColor: colors.border,
   },
   spiceButton: {
     position: 'absolute',
-    top: 24,
-    right: 24,
+    top: 6,
+    left: 6,
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 20,
     padding: 6,
@@ -716,15 +716,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 4,
-    borderWidth: Platform.OS === 'ios' ? 1.5 : 0,
-    borderColor: Platform.OS === 'ios' ? '#C41E3A' : 'transparent',
-  },
-  spiceBadgeIOS: {
-    shadowColor: '#C41E3A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.8,
-    shadowRadius: 3,
-    elevation: 4,
   },
   spiceBadgeText: {
     color: '#FFFFFF',
@@ -733,8 +724,8 @@ const styles = StyleSheet.create({
   },
   addButtonUber: {
     position: 'absolute',
-    bottom: 24,
-    right: 24,
+    bottom: 8,
+    right: 8,
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -751,8 +742,8 @@ const styles = StyleSheet.create({
   },
   quantityControlUber: {
     position: 'absolute',
-    bottom: 24,
-    right: 24,
+    bottom: 8,
+    right: 8,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
