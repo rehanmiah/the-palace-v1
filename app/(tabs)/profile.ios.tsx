@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, useColorScheme } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -12,7 +12,10 @@ import { colors } from '@/styles/commonStyles';
 export default function ProfileScreen() {
   const theme = useTheme();
   const router = useRouter();
+  const colorScheme = useColorScheme();
   const { user, isAuthenticated, logout } = useAuth();
+  
+  const backgroundColor = colorScheme === 'dark' ? '#000' : colors.background;
 
   const handleLogout = async () => {
     Alert.alert(
@@ -90,10 +93,10 @@ export default function ProfileScreen() {
   const menuItems = isAuthenticated ? authenticatedMenuItems : guestMenuItems;
 
   return (
-    <View style={styles.wrapper}>
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <View style={[styles.wrapper, { backgroundColor }]}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor }]} edges={['top']}>
         <ScrollView
-          style={styles.container}
+          style={[styles.container, { backgroundColor }]}
           contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={false}
         >
@@ -175,15 +178,12 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   safeArea: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   contentContainer: {
     padding: 20,

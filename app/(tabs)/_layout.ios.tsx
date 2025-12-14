@@ -1,9 +1,21 @@
+
 import React from 'react';
 import { NativeTabs, Icon, Label } from 'expo-router/unstable-native-tabs';
+import { useColorScheme } from 'react-native';
+import { colors } from '@/styles/commonStyles';
 
 export default function TabLayout() {
+  const colorScheme = useColorScheme();
+  const backgroundColor = colorScheme === 'dark' ? '#000' : colors.background;
+  
   return (
-    <NativeTabs>
+    <NativeTabs
+      screenOptions={{
+        contentStyle: {
+          backgroundColor,
+        },
+      }}
+    >
       <NativeTabs.Trigger key="home" name="(home)">
         <Icon sf="house.fill" />
         <Label>Home</Label>

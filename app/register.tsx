@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  useColorScheme,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
@@ -107,6 +108,7 @@ const validateConfirmPassword = (password: string, confirmPassword: string): { i
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const colorScheme = useColorScheme();
   const { register, isLoading } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -115,6 +117,8 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+  const backgroundColor = colorScheme === 'dark' ? '#000' : colors.background;
   
   // Error states for real-time validation feedback
   const [nameError, setNameError] = useState('');
@@ -247,12 +251,12 @@ export default function RegisterScreen() {
 
   return (
     <KeyboardAvoidingView 
-      style={styles.container} 
+      style={[styles.wrapper, { backgroundColor }]} 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
     >
       <ScrollView 
-        style={styles.scrollView} 
+        style={[styles.scrollView, { backgroundColor }]} 
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -463,9 +467,8 @@ export default function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  wrapper: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   scrollView: {
     flex: 1,
