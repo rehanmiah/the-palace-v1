@@ -56,6 +56,7 @@ export default function MenuScreen() {
 
   // Scroll position state
   const [scrollY, setScrollY] = useState(0);
+  const [filterSectionHeight, setFilterSectionHeight] = useState(0);
   const filterSectionRef = useRef<View>(null);
 
   // Set initial category from URL params
@@ -134,7 +135,13 @@ export default function MenuScreen() {
   };
 
   // Determine if filter section should be sticky
-  const isFilterSectionSticky = scrollY >= 180;
+  // The sticky header is 156px tall, and the image is 180px
+  // So we want to stick when we've scrolled past the image
+  const STICKY_THRESHOLD = 180;
+  const isFilterSectionSticky = scrollY >= STICKY_THRESHOLD;
+
+  // Calculate the top position for the sticky filter section
+  const HEADER_HEIGHT = Platform.OS === 'android' ? 156 : 156;
 
   if (isLoading) {
     return (
@@ -220,81 +227,80 @@ export default function MenuScreen() {
 
       {/* Sticky Combined Filter Section - Positioned absolutely when sticky */}
       {isFilterSectionSticky && (
-        <View style={styles.stickyFilterSection} pointerEvents="box-none">
-          <View pointerEvents="auto">
-            {/* Search Bar */}
-            <View style={styles.searchContainer}>
-              <IconSymbol
-                ios_icon_name="magnifyingglass"
-                android_material_icon_name="search"
-                size={20}
-                color={colors.textSecondary}
-              />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search menu items..."
-                placeholderTextColor={colors.textSecondary}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-              {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
-                  <IconSymbol
-                    ios_icon_name="xmark.circle.fill"
-                    android_material_icon_name="cancel"
-                    size={20}
-                    color={colors.textSecondary}
-                  />
-                </TouchableOpacity>
-              )}
-            </View>
+        <View style={styles.stickyFilterSection}>
+          {/* Search Bar */}
+          <View style={styles.searchContainer}>
+            <IconSymbol
+              ios_icon_name="magnifyingglass"
+              android_material_icon_name="search"
+              size={20}
+              color={colors.textSecondary}
+            />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search menu items..."
+              placeholderTextColor={colors.textSecondary}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
+                <IconSymbol
+                  ios_icon_name="xmark.circle.fill"
+                  android_material_icon_name="cancel"
+                  size={20}
+                  color={colors.textSecondary}
+                />
+              </TouchableOpacity>
+            )}
+          </View>
 
-            {/* Category Chips */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.categoryScroll}
+          {/* Category Chips */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoryScroll}
+            bounces={false}
+          >
+            <TouchableOpacity
+              style={[
+                styles.categoryChip,
+                !selectedCategory && styles.categoryChipActive,
+              ]}
+              onPress={() => setSelectedCategory(null)}
             >
+              <Text
+                style={[
+                  styles.categoryChipText,
+                  !selectedCategory && styles.categoryChipTextActive,
+                ]}
+              >
+                All Items
+              </Text>
+            </TouchableOpacity>
+            {categories.map((category, index) => (
               <TouchableOpacity
+                key={index}
                 style={[
                   styles.categoryChip,
-                  !selectedCategory && styles.categoryChipActive,
+                  selectedCategory === category.name && styles.categoryChipActive,
                 ]}
-                onPress={() => setSelectedCategory(null)}
+                onPress={() => setSelectedCategory(category.name)}
               >
                 <Text
                   style={[
                     styles.categoryChipText,
-                    !selectedCategory && styles.categoryChipTextActive,
+                    selectedCategory === category.name &&
+                      styles.categoryChipTextActive,
                   ]}
                 >
-                  All Items
+                  {category.name}
                 </Text>
               </TouchableOpacity>
-              {categories.map((category, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={[
-                    styles.categoryChip,
-                    selectedCategory === category.name && styles.categoryChipActive,
-                  ]}
-                  onPress={() => setSelectedCategory(category.name)}
-                >
-                  <Text
-                    style={[
-                      styles.categoryChipText,
-                      selectedCategory === category.name &&
-                        styles.categoryChipTextActive,
-                    ]}
-                  >
-                    {category.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
+            ))}
+          </ScrollView>
         </View>
       )}
 
@@ -304,6 +310,8 @@ export default function MenuScreen() {
         showsVerticalScrollIndicator={false}
         onScroll={handleScroll}
         scrollEventThrottle={16}
+        bounces={true}
+        overScrollMode="auto"
       >
         {/* Background Image with Cart Button */}
         <View style={styles.restaurantImageContainer}>
@@ -349,6 +357,10 @@ export default function MenuScreen() {
             styles.filterSection,
             isFilterSectionSticky && styles.filterSectionPlaceholder
           ]}
+          onLayout={(event) => {
+            const { height } = event.nativeEvent.layout;
+            setFilterSectionHeight(height);
+          }}
         >
           {!isFilterSectionSticky && (
             <>
@@ -386,6 +398,7 @@ export default function MenuScreen() {
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.categoryScroll}
+                bounces={false}
               >
                 <TouchableOpacity
                   style={[
@@ -755,7 +768,8 @@ const styles = StyleSheet.create({
   },
   // Placeholder to maintain layout when sticky
   filterSectionPlaceholder: {
-    height: 140, // Approximate height of the filter section
+    // Height will be set dynamically via onLayout
+    minHeight: 140,
   },
   // Sticky Combined Filter Section
   stickyFilterSection: {
