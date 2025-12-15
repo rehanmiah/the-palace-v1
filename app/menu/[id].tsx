@@ -13,6 +13,7 @@ import {
   NativeScrollEvent,
   NativeSyntheticEvent,
   TextInput,
+  Dimensions,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { colors, buttonStyles } from '@/styles/commonStyles';
@@ -29,6 +30,8 @@ interface Address {
   label: string;
   address: string;
 }
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
 
 export default function MenuScreen() {
   const router = useRouter();
@@ -58,6 +61,12 @@ export default function MenuScreen() {
   const [scrollY, setScrollY] = useState(0);
   const [filterSectionHeight, setFilterSectionHeight] = useState(0);
   const filterSectionRef = useRef<View>(null);
+
+  // Category scroll refs for centering
+  const categoryScrollRef = useRef<ScrollView>(null);
+  const stickyCategoryScrollRef = useRef<ScrollView>(null);
+  const categoryButtonRefs = useRef<{ [key: string]: { x: number; width: number } }>({});
+  const [categoryScrollWidth, setCategoryScrollWidth] = useState(0);
 
   // Set initial category from URL params
   useEffect(() => {
@@ -142,6 +151,89 @@ export default function MenuScreen() {
 
   // Calculate the top position for the sticky filter section
   const HEADER_HEIGHT = Platform.OS === 'android' ? 156 : 156;
+
+  // Function to center the selected category in the horizontal scroll
+  const centerSelectedCategory = (categoryKey: string, scrollViewRef: React.RefObject<ScrollView>) => {
+    const categoryInfo = categoryButtonRefs.current[categoryKey];
+    if (!categoryInfo || !scrollViewRef.current) {
+      console.log('Cannot center - missing refs:', { categoryInfo, scrollViewRef: scrollViewRef.current });
+      return;
+    }
+
+    const { x, width } = categoryInfo;
+    
+    // Calculate the center position of the category button
+    const categoryCenter = x + (width / 2);
+    
+    // Calculate where to scroll to center the button on screen
+    // We want the center of the button to align with the center of the screen
+    const targetScrollX = categoryCenter - (SCREEN_WIDTH / 2);
+    
+    // Clamp the scroll position to valid range
+    // Minimum is 0 (start of scroll)
+    // Maximum is total content width minus screen width
+    const maxScrollX = Math.max(0, categoryScrollWidth - SCREEN_WIDTH);
+    const finalScrollX = Math.max(0, Math.min(targetScrollX, maxScrollX));
+    
+    console.log('Centering category:', {
+      categoryKey,
+      x,
+      width,
+      categoryCenter,
+      targetScrollX,
+      finalScrollX,
+      screenWidth: SCREEN_WIDTH,
+      contentWidth: categoryScrollWidth,
+    });
+    
+    scrollViewRef.current.scrollTo({
+      x: finalScrollX,
+      animated: true,
+    });
+  };
+
+  // Handle category selection with centering
+  const handleCategorySelect = (categoryName: string | null) => {
+    setSelectedCategory(categoryName);
+    
+    // Center the selected category in both scroll views
+    const categoryKey = categoryName || 'all';
+    
+    // Small delay to ensure the button is rendered and measured
+    setTimeout(() => {
+      if (isFilterSectionSticky) {
+        centerSelectedCategory(categoryKey, stickyCategoryScrollRef);
+      } else {
+        centerSelectedCategory(categoryKey, categoryScrollRef);
+      }
+    }, 50);
+  };
+
+  // Effect to center selected category when sticky state changes
+  useEffect(() => {
+    if (selectedCategory !== null) {
+      const categoryKey = selectedCategory || 'all';
+      // When transitioning to sticky, center in the sticky scroll view
+      if (isFilterSectionSticky) {
+        setTimeout(() => {
+          centerSelectedCategory(categoryKey, stickyCategoryScrollRef);
+        }, 100);
+      }
+    }
+  }, [isFilterSectionSticky]);
+
+  // Store category button positions
+  const handleCategoryLayout = (categoryKey: string, event: any) => {
+    const { x, width } = event.nativeEvent.layout;
+    categoryButtonRefs.current[categoryKey] = { x, width };
+    console.log('Category layout:', categoryKey, { x, width });
+  };
+
+  // Track the total content width of the category scroll
+  const handleCategoryContentSizeChange = (width: number, height: number) => {
+    setCategoryScrollWidth(width);
+    console.log('Category scroll content width:', width);
+  };
 
   if (isLoading) {
     return (
@@ -257,19 +349,22 @@ export default function MenuScreen() {
             )}
           </View>
 
-          {/* Category Chips */}
+          {/* Category Chips - Sticky Version */}
           <ScrollView
+            ref={stickyCategoryScrollRef}
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.categoryScroll}
             bounces={false}
+            onContentSizeChange={handleCategoryContentSizeChange}
           >
             <TouchableOpacity
               style={[
                 styles.categoryChip,
                 !selectedCategory && styles.categoryChipActive,
               ]}
-              onPress={() => setSelectedCategory(null)}
+              onPress={() => handleCategorySelect(null)}
+              onLayout={(event) => handleCategoryLayout('all', event)}
             >
               <Text
                 style={[
@@ -287,7 +382,8 @@ export default function MenuScreen() {
                   styles.categoryChip,
                   selectedCategory === category.name && styles.categoryChipActive,
                 ]}
-                onPress={() => setSelectedCategory(category.name)}
+                onPress={() => handleCategorySelect(category.name)}
+                onLayout={(event) => handleCategoryLayout(category.name, event)}
               >
                 <Text
                   style={[
@@ -393,19 +489,22 @@ export default function MenuScreen() {
                 )}
               </View>
 
-              {/* Category Chips */}
+              {/* Category Chips - Normal Version */}
               <ScrollView
+                ref={categoryScrollRef}
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.categoryScroll}
                 bounces={false}
+                onContentSizeChange={handleCategoryContentSizeChange}
               >
                 <TouchableOpacity
                   style={[
                     styles.categoryChip,
                     !selectedCategory && styles.categoryChipActive,
                   ]}
-                  onPress={() => setSelectedCategory(null)}
+                  onPress={() => handleCategorySelect(null)}
+                  onLayout={(event) => handleCategoryLayout('all', event)}
                 >
                   <Text
                     style={[
@@ -423,7 +522,8 @@ export default function MenuScreen() {
                       styles.categoryChip,
                       selectedCategory === category.name && styles.categoryChipActive,
                     ]}
-                    onPress={() => setSelectedCategory(category.name)}
+                    onPress={() => handleCategorySelect(category.name)}
+                    onLayout={(event) => handleCategoryLayout(category.name, event)}
                   >
                     <Text
                       style={[
