@@ -2,9 +2,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/app/integrations/supabase/client';
 import { Alert } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { hashPassword, verifyPassword } from '@/utils/passwordUtils';
-import * as Network from 'expo-network';
+import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import type { Tables } from '@/app/integrations/supabase/types';
 
 export interface User {
@@ -63,35 +61,17 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const SESSION_KEY = '@auth_session';
-
-// Generate a UUID v4
-function generateUUID(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
 
-  const checkNetworkConnection = async (): Promise<boolean> => {
-    try {
-      const networkState = await Network.getNetworkStateAsync();
-      return networkState.isConnected === true && networkState.isInternetReachable === true;
-    } catch (error) {
-      console.error('Network check error:', error);
-      return true; // Assume connected if check fails
-    }
-  };
-
   const loadUserProfile = useCallback(async (userId: string) => {
     try {
+      console.log('[AuthContext] Loading user profile for:', userId);
+      
       const { data: profile, error } = await supabase
         .from('users')
         .select('*')
@@ -99,16 +79,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       if (error) {
-        console.error('Load profile error:', error);
-        await AsyncStorage.removeItem(SESSION_KEY);
+        console.error('[AuthContext] Load profile error:', error);
         return;
       }
 
       if (profile) {
+        console.log('[AuthContext] Profile loaded successfully');
         setUser({
           id: profile.id,
-          name: profile.name,
-          email: profile.email,
+          name: profile.name || '',
+          email: profile.email || '',
           phone: profile.phone || '',
           emailVerified: profile.email_verified || false,
           phoneVerified: profile.phone_verified || false,
@@ -120,94 +100,79 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await fetchOrdersInternal(userId);
       }
     } catch (error) {
-      console.error('Load user profile error:', error);
+      console.error('[AuthContext] Load user profile error:', error);
     }
   }, []);
 
-  const checkAuth = useCallback(async () => {
-    try {
-      const sessionData = await AsyncStorage.getItem(SESSION_KEY);
-      
-      if (sessionData) {
-        const session = JSON.parse(sessionData);
-        await loadUserProfile(session.userId);
-      }
-    } catch (error) {
-      console.error('Check auth error:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [loadUserProfile]);
-
-  // Check authentication status on mount
+  // Set up auth state listener
   useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
+    console.log('[AuthContext] Setting up auth state listener');
+    
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('[AuthContext] Initial session:', session ? 'exists' : 'none');
+      setSession(session);
+      if (session?.user) {
+        loadUserProfile(session.user.id);
+      }
+      setIsLoading(false);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log('[AuthContext] Auth state changed:', _event, session ? 'session exists' : 'no session');
+      setSession(session);
+      
+      if (session?.user) {
+        loadUserProfile(session.user.id);
+      } else {
+        setUser(null);
+        setPaymentMethods([]);
+        setOrders([]);
+      }
+    });
+
+    return () => {
+      console.log('[AuthContext] Cleaning up auth listener');
+      subscription.unsubscribe();
+    };
+  }, [loadUserProfile]);
 
   const login = useCallback(async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      console.log('Logging in with:', email);
+      console.log('[AuthContext] Logging in with:', email);
       
-      // Check network connectivity
-      const isConnected = await checkNetworkConnection();
-      if (!isConnected) {
-        throw new Error('No internet connection. Please check your network and try again.');
-      }
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
       
-      // Fetch user by email
-      const { data: users, error: fetchError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('email', email)
-        .limit(1);
+      if (error) {
+        console.error('[AuthContext] Login error:', error);
+        throw error;
+      }
+
+      console.log('[AuthContext] Login successful');
       
-      if (fetchError) {
-        console.error('Login fetch error:', fetchError);
-        throw new Error('Invalid email or password');
+      // Check if email is verified
+      if (data.user && !data.user.email_confirmed_at) {
+        Alert.alert(
+          'Email Not Verified',
+          'Please verify your email address before signing in. Check your inbox for the verification link.',
+          [{ text: 'OK' }]
+        );
+        // Sign out the user since email is not verified
+        await supabase.auth.signOut();
+        throw new Error('Email not verified');
       }
-
-      if (!users || users.length === 0) {
-        throw new Error('Invalid email or password');
-      }
-
-      const userRecord = users[0];
-
-      // Verify password using bcrypt
-      if (!userRecord.password_hash) {
-        throw new Error('Account not properly configured. Please contact support.');
-      }
-
-      const isPasswordValid = await verifyPassword(password, userRecord.password_hash);
-      
-      if (!isPasswordValid) {
-        throw new Error('Invalid email or password');
-      }
-
-      // Check email verification (optional - can be disabled for testing)
-      // Uncomment the following lines to enforce email verification
-      /*
-      if (!userRecord.email_verified) {
-        throw new Error('Please verify your email address before signing in. Check your inbox for the verification link.');
-      }
-      */
-
-      // Create session
-      const session = {
-        userId: userRecord.id,
-        email: userRecord.email,
-        timestamp: new Date().toISOString(),
-      };
-
-      await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(session));
-      await loadUserProfile(userRecord.id);
-    } catch (error) {
-      console.error('Login error:', error);
+    } catch (error: any) {
+      console.error('[AuthContext] Login error:', error);
       throw error;
     } finally {
       setIsLoading(false);
     }
-  }, [loadUserProfile]);
+  }, []);
 
   const register = useCallback(async (name: string, email: string, phone: string, password: string) => {
     setIsLoading(true);
@@ -215,7 +180,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('[AuthContext] Starting registration process...');
       console.log('[AuthContext] User data:', { name, email, phone });
       
-      // Validate inputs before proceeding
+      // Validate inputs
       if (!name || typeof name !== 'string' || name.trim().length === 0) {
         throw new Error('Name is required');
       }
@@ -234,192 +199,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       console.log('[AuthContext] Input validation passed');
       
-      // Check network connectivity first
-      const isConnected = await checkNetworkConnection();
-      if (!isConnected) {
-        throw new Error('No internet connection. Please check your network and try again.');
-      }
-      
-      console.log('[AuthContext] Network check passed');
-      
       // Sanitize inputs
       const sanitizedName = name.trim();
       const sanitizedEmail = email.trim().toLowerCase();
       const sanitizedPhone = phone.trim();
       
-      console.log('[AuthContext] Inputs sanitized');
+      console.log('[AuthContext] Registering with Supabase Auth...');
       
-      // Check if email already exists with better error handling
-      let existingUsers;
-      let checkError;
-      
-      try {
-        console.log('[AuthContext] Checking if email exists...');
-        const result = await supabase
-          .from('users')
-          .select('id')
-          .eq('email', sanitizedEmail)
-          .limit(1);
-        
-        existingUsers = result.data;
-        checkError = result.error;
-        console.log('[AuthContext] Email check completed');
-      } catch (dbError: any) {
-        console.error('[AuthContext] Database connection error:', dbError);
-        
-        // Check if it's a network/connection error
-        if (dbError.message?.includes('fetch') || 
-            dbError.message?.includes('network') || 
-            dbError.message?.includes('Failed to fetch') ||
-            dbError.code === 'PGRST301') {
-          throw new Error('Unable to connect to the server. Please check your internet connection and try again.');
-        }
-        
-        throw new Error('Database error: ' + (dbError.message || 'Unknown error occurred'));
-      }
-
-      // Handle database query errors
-      if (checkError) {
-        console.error('[AuthContext] Email check error details:', checkError);
-        
-        // Check for specific error types
-        if (checkError.code === 'PGRST116') {
-          // Table doesn't exist or permission denied
-          throw new Error('Database configuration error. Please contact support.');
-        } else if (checkError.message?.includes('JWT')) {
-          // Authentication/authorization error
-          throw new Error('Authentication error. Please try again.');
-        } else if (checkError.message?.includes('network') || checkError.message?.includes('fetch')) {
-          // Network error
-          throw new Error('Network error. Please check your connection and try again.');
-        }
-        
-        // Generic database error
-        throw new Error('Unable to verify email availability: ' + checkError.message);
-      }
-
-      // Check if email is already taken
-      if (existingUsers && existingUsers.length > 0) {
-        throw new Error('An account with this email already exists');
-      }
-
-      console.log('[AuthContext] Email is available');
-
-      // Hash password using bcrypt - with explicit error handling
-      console.log('[AuthContext] Starting password hashing...');
-      let passwordHash: string;
-      try {
-        // Test if hashPassword function is available
-        if (typeof hashPassword !== 'function') {
-          console.error('[AuthContext] hashPassword is not a function!');
-          throw new Error('Password hashing function not available');
-        }
-        
-        console.log('[AuthContext] Calling hashPassword function...');
-        passwordHash = await hashPassword(password);
-        console.log('[AuthContext] Password hashed successfully, hash length:', passwordHash?.length);
-        
-        // Verify the hash was created properly
-        if (!passwordHash || typeof passwordHash !== 'string' || passwordHash.length === 0) {
-          console.error('[AuthContext] Invalid password hash generated');
-          throw new Error('Invalid password hash generated');
-        }
-        
-        console.log('[AuthContext] Password hash validated');
-      } catch (hashError: any) {
-        console.error('[AuthContext] Password hashing error:', hashError);
-        console.error('[AuthContext] Error type:', typeof hashError);
-        console.error('[AuthContext] Error name:', hashError?.name);
-        console.error('[AuthContext] Error message:', hashError?.message);
-        console.error('[AuthContext] Error stack:', hashError?.stack);
-        
-        // Provide more specific error message
-        if (hashError.message?.includes('not available') || hashError.message?.includes('not a function')) {
-          throw new Error('Password encryption service is not available. Please restart the app and try again.');
-        }
-        
-        throw new Error('Failed to process password. Please try again.');
-      }
-
-      // Generate a UUID for the new user
-      const userId = generateUUID();
-      console.log('[AuthContext] Generated user ID:', userId);
-
-      // Create user profile in users table
-      console.log('[AuthContext] Creating user in database...');
-      
-      const newUserData = {
-        id: userId,
-        name: sanitizedName,
+      // Register with Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
         email: sanitizedEmail,
-        phone: sanitizedPhone,
-        password_hash: passwordHash,
-        email_verified: false,
-        phone_verified: false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      
-      console.log('[AuthContext] User data prepared (password_hash redacted)');
-      
-      let insertResult;
-      try {
-        console.log('[AuthContext] Inserting user into database...');
-        insertResult = await supabase
-          .from('users')
-          .insert(newUserData)
-          .select()
-          .single();
-        console.log('[AuthContext] Database insert completed');
-      } catch (insertException: any) {
-        console.error('[AuthContext] Insert exception:', insertException);
-        throw new Error('Database insert failed: ' + (insertException.message || 'Unknown error'));
-      }
+        password,
+        options: {
+          data: {
+            name: sanitizedName,
+            phone: sanitizedPhone,
+          },
+          emailRedirectTo: 'https://natively.dev/email-confirmed',
+        },
+      });
 
-      const { data: newUser, error: insertError } = insertResult;
-
-      if (insertError) {
-        console.error('[AuthContext] Registration error:', insertError);
-        console.error('[AuthContext] Error code:', insertError.code);
-        console.error('[AuthContext] Error details:', insertError.details);
-        console.error('[AuthContext] Error hint:', insertError.hint);
-        console.error('[AuthContext] Error message:', insertError.message);
+      if (error) {
+        console.error('[AuthContext] Registration error:', error);
         
-        // Handle specific insert errors
-        if (insertError.code === '23505') {
-          // Unique constraint violation
+        // Handle specific errors
+        if (error.message?.includes('already registered')) {
           throw new Error('An account with this email already exists');
-        } else if (insertError.code === '23503') {
-          // Foreign key constraint violation
-          throw new Error('Database constraint error. Please contact support.');
-        } else if (insertError.code === '42501') {
-          // Insufficient privilege
-          throw new Error('Permission denied. Please contact support.');
-        } else if (insertError.message?.includes('network') || insertError.message?.includes('fetch')) {
-          throw new Error('Network error during registration. Please try again.');
-        } else if (insertError.message?.includes('JWT')) {
-          throw new Error('Authentication error. Please try again.');
         }
         
-        throw new Error(insertError.message || 'Failed to create account');
+        throw error;
       }
 
-      if (!newUser) {
+      if (!data.user) {
         throw new Error('Failed to create user account. Please try again.');
       }
 
-      console.log('[AuthContext] User created successfully:', newUser.id);
+      console.log('[AuthContext] User registered successfully:', data.user.id);
 
-      // Show success message
+      // Show success message with email verification reminder
       Alert.alert(
         'Registration Successful!',
         'Your account has been created successfully!\n\n' +
-        'You can now sign in with your email and password.',
+        'Please check your email inbox and click the verification link to activate your account.\n\n' +
+        'You will need to verify your email before you can sign in.',
         [{ text: 'OK' }]
       );
+      
+      // Sign out immediately since email needs to be verified
+      await supabase.auth.signOut();
     } catch (error: any) {
       console.error('[AuthContext] Registration error:', error);
-      // Re-throw the error so it can be caught in the UI
       throw error;
     } finally {
       setIsLoading(false);
@@ -429,15 +258,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async () => {
     setIsLoading(true);
     try {
-      console.log('Logging out...');
+      console.log('[AuthContext] Logging out...');
       
-      await AsyncStorage.removeItem(SESSION_KEY);
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('[AuthContext] Logout error:', error);
+        throw error;
+      }
       
       setUser(null);
+      setSession(null);
       setPaymentMethods([]);
       setOrders([]);
+      
+      console.log('[AuthContext] Logout successful');
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('[AuthContext] Logout error:', error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -449,23 +286,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     setIsLoading(true);
     try {
-      console.log('Updating profile:', updates);
+      console.log('[AuthContext] Updating profile:', updates);
       
       // Update user profile in database
       const { error } = await supabase
         .from('users')
         .update({
           name: updates.name || user.name,
-          email: updates.email || user.email,
           phone: updates.phone || user.phone,
-          email_verified: updates.email && updates.email !== user.email ? false : user.emailVerified,
-          phone_verified: updates.phone && updates.phone !== user.phone ? false : user.phoneVerified,
         })
         .eq('id', user.id);
       
       if (error) {
+        console.error('[AuthContext] Update profile error:', error);
         Alert.alert('Update Error', error.message);
         throw error;
+      }
+      
+      // If email is being updated, use Supabase Auth
+      if (updates.email && updates.email !== user.email) {
+        const { error: emailError } = await supabase.auth.updateUser({
+          email: updates.email,
+        });
+        
+        if (emailError) {
+          console.error('[AuthContext] Update email error:', emailError);
+          Alert.alert('Update Error', emailError.message);
+          throw emailError;
+        }
+        
+        Alert.alert(
+          'Email Update',
+          'A verification email has been sent to your new email address. Please verify it to complete the change.'
+        );
       }
       
       // Reload profile
@@ -473,7 +326,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       Alert.alert('Success', 'Profile updated successfully');
     } catch (error) {
-      console.error('Update profile error:', error);
+      console.error('[AuthContext] Update profile error:', error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -485,13 +338,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     setIsLoading(true);
     try {
-      console.log('Resending email verification to:', user.email);
+      console.log('[AuthContext] Resending email verification to:', user.email);
       
-      // Note: Email verification requires additional setup
-      Alert.alert('Info', 'Email verification is currently disabled. Your account is active.');
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: user.email,
+        options: {
+          emailRedirectTo: 'https://natively.dev/email-confirmed',
+        },
+      });
       
+      if (error) {
+        console.error('[AuthContext] Resend email error:', error);
+        throw error;
+      }
+      
+      Alert.alert('Success', 'Verification email sent! Please check your inbox.');
     } catch (error) {
-      console.error('Resend email verification error:', error);
+      console.error('[AuthContext] Resend email verification error:', error);
+      Alert.alert('Error', 'Failed to send verification email. Please try again later.');
       throw error;
     } finally {
       setIsLoading(false);
@@ -503,13 +368,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     setIsLoading(true);
     try {
-      console.log('Resending phone verification to:', user.phone);
+      console.log('[AuthContext] Resending phone verification to:', user.phone);
       
-      // Note: Phone verification requires additional setup
       Alert.alert('Info', 'Phone verification is not yet configured. Please contact support.');
-      
     } catch (error) {
-      console.error('Resend phone verification error:', error);
+      console.error('[AuthContext] Resend phone verification error:', error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -521,7 +384,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!targetUserId) return;
     
     try {
-      console.log('Fetching payment methods...');
+      console.log('[AuthContext] Fetching payment methods...');
       
       const { data, error } = await supabase
         .from('payment_methods')
@@ -530,7 +393,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .order('created_at', { ascending: false });
       
       if (error) {
-        console.error('Fetch payment methods error:', error);
+        console.error('[AuthContext] Fetch payment methods error:', error);
         return;
       }
       
@@ -547,7 +410,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       setPaymentMethods(methods);
     } catch (error) {
-      console.error('Fetch payment methods error:', error);
+      console.error('[AuthContext] Fetch payment methods error:', error);
     }
   }, [user]);
 
@@ -556,7 +419,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     setIsLoading(true);
     try {
-      console.log('Adding payment method:', method);
+      console.log('[AuthContext] Adding payment method:', method);
       
       const { data, error } = await supabase
         .from('payment_methods')
@@ -590,7 +453,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await fetchPaymentMethods();
       Alert.alert('Success', 'Payment method added successfully');
     } catch (error) {
-      console.error('Add payment method error:', error);
+      console.error('[AuthContext] Add payment method error:', error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -602,7 +465,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     setIsLoading(true);
     try {
-      console.log('Removing payment method:', id);
+      console.log('[AuthContext] Removing payment method:', id);
       
       const { error } = await supabase
         .from('payment_methods')
@@ -618,7 +481,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await fetchPaymentMethods();
       Alert.alert('Success', 'Payment method removed successfully');
     } catch (error) {
-      console.error('Remove payment method error:', error);
+      console.error('[AuthContext] Remove payment method error:', error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -630,7 +493,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     setIsLoading(true);
     try {
-      console.log('Setting default payment method:', id);
+      console.log('[AuthContext] Setting default payment method:', id);
       
       // Unset all defaults
       await supabase
@@ -652,7 +515,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       await fetchPaymentMethods();
     } catch (error) {
-      console.error('Set default payment method error:', error);
+      console.error('[AuthContext] Set default payment method error:', error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -664,7 +527,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!targetUserId) return;
     
     try {
-      console.log('Fetching orders...');
+      console.log('[AuthContext] Fetching orders...');
       
       const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
@@ -676,7 +539,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .order('created_at', { ascending: false });
       
       if (ordersError) {
-        console.error('Fetch orders error:', ordersError);
+        console.error('[AuthContext] Fetch orders error:', ordersError);
         return;
       }
       
@@ -697,7 +560,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       setOrders(formattedOrders);
     } catch (error) {
-      console.error('Fetch orders error:', error);
+      console.error('[AuthContext] Fetch orders error:', error);
     }
   }, [user]);
 
@@ -709,7 +572,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
-        isAuthenticated: !!user,
+        isAuthenticated: !!user && !!session,
         isLoading,
         login,
         register,

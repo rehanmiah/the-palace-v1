@@ -85,7 +85,7 @@ const validatePassword = (password: string): { isValid: boolean; error?: string 
     return { isValid: false, error: 'Password must contain at least one lowercase letter' };
   }
   
-  // Check for at least one special character - Fixed: removed unnecessary escape characters
+  // Check for at least one special character
   if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
     return { isValid: false, error: 'Password must contain at least one special character (!@#$%^&*...)' };
   }
@@ -223,20 +223,20 @@ export default function RegisterScreen() {
       // Success message is shown in AuthContext
       router.back();
     } catch (error: any) {
-      console.log('Registration error:', error);
+      console.log('[RegisterScreen] Registration error:', error);
       const errorMessage = error?.message || 'Failed to create account. Please try again.';
       
       // Show more user-friendly error messages
-      if (errorMessage.includes('network') || errorMessage.includes('connection') || errorMessage.includes('internet')) {
-        Alert.alert(
-          'Connection Error',
-          'Unable to connect to the server. Please check your internet connection and try again.',
-          [{ text: 'OK' }]
-        );
-      } else if (errorMessage.includes('email already exists')) {
+      if (errorMessage.includes('already registered') || errorMessage.includes('already exists')) {
         Alert.alert(
           'Email Already Registered',
           'An account with this email already exists. Please use a different email or try logging in.',
+          [{ text: 'OK' }]
+        );
+      } else if (errorMessage.includes('network') || errorMessage.includes('connection') || errorMessage.includes('internet')) {
+        Alert.alert(
+          'Connection Error',
+          'Unable to connect to the server. Please check your internet connection and try again.',
           [{ text: 'OK' }]
         );
       } else {

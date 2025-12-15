@@ -34,13 +34,21 @@ export default function LoginScreen() {
       Alert.alert('Success', 'Logged in successfully!');
       router.back();
     } catch (error: any) {
-      console.log('Login error:', error);
+      console.log('[LoginScreen] Login error:', error);
       
       // Extract error message
       let errorMessage = 'Invalid email or password';
       
       if (error?.message) {
-        errorMessage = error.message;
+        if (error.message.includes('Email not verified')) {
+          errorMessage = 'Please verify your email address before signing in. Check your inbox for the verification link.';
+        } else if (error.message.includes('Invalid login credentials')) {
+          errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+        } else if (error.message.includes('Email not confirmed')) {
+          errorMessage = 'Please verify your email address before signing in. Check your inbox for the verification link.';
+        } else {
+          errorMessage = error.message;
+        }
       }
       
       Alert.alert('Login Error', errorMessage);
