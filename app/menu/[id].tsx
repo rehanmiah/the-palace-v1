@@ -12,6 +12,7 @@ import {
   Platform,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  TextInput,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { colors, buttonStyles } from '@/styles/commonStyles';
@@ -50,8 +51,12 @@ export default function MenuScreen() {
     { id: '3', label: 'Other', address: '789 Park Avenue, London, W1A 1CC' },
   ]);
 
-  // Sticky category state
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Sticky category and search state
   const [isCategorySticky, setIsCategorySticky] = useState(false);
+  const [isSearchSticky, setIsSearchSticky] = useState(false);
   const [categoryOffsetY, setCategoryOffsetY] = useState(0);
   const categoryRef = useRef<View>(null);
 
@@ -72,9 +77,18 @@ export default function MenuScreen() {
     );
   }
 
-  const filteredItems = selectedCategory
+  // Filter items by category first
+  const categoryFilteredItems = selectedCategory
     ? menuItems.filter((item) => item.category === selectedCategory)
     : menuItems;
+
+  // Then filter by search query within the selected category
+  const filteredItems = searchQuery.trim()
+    ? categoryFilteredItems.filter((item) =>
+        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    : categoryFilteredItems;
 
   const handleAddToCart = (menuItem: any, spiceLevel?: number) => {
     if (!restaurant.isOpen) {
@@ -111,21 +125,36 @@ export default function MenuScreen() {
     return parts[parts.length - 1] || '';
   };
 
-  // Handle scroll to determine if category should be sticky
+  // Handle scroll to determine if search and category should be sticky
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const scrollY = event.nativeEvent.contentOffset.y;
     
-    // The category section appears after the restaurant image (180px height)
+    // The search bar appears after the restaurant image (180px height)
     // We want it to stick when it reaches the top
-    const stickyThreshold = 180;
+    const searchStickyThreshold = 180;
     
-    if (scrollY >= stickyThreshold && !isCategorySticky) {
+    // The category section appears after search bar (60px)
+    const categoryStickyThreshold = 240;
+    
+    if (scrollY >= searchStickyThreshold && !isSearchSticky) {
+      setIsSearchSticky(true);
+      console.log('Search bar is now sticky');
+    } else if (scrollY < searchStickyThreshold && isSearchSticky) {
+      setIsSearchSticky(false);
+      console.log('Search bar is no longer sticky');
+    }
+
+    if (scrollY >= categoryStickyThreshold && !isCategorySticky) {
       setIsCategorySticky(true);
       console.log('Category section is now sticky');
-    } else if (scrollY < stickyThreshold && isCategorySticky) {
+    } else if (scrollY < categoryStickyThreshold && isCategorySticky) {
       setIsCategorySticky(false);
       console.log('Category section is no longer sticky');
     }
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
   };
 
   if (isLoading) {
@@ -210,9 +239,45 @@ export default function MenuScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Sticky Search Bar - Positioned absolutely when sticky */}
+      {isSearchSticky && (
+        <View style={styles.stickySearchSection}>
+          <View style={styles.searchContainer}>
+            <IconSymbol
+              ios_icon_name="magnifyingglass"
+              android_material_icon_name="search"
+              size={20}
+              color={colors.textSecondary}
+            />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search menu items..."
+              placeholderTextColor={colors.textSecondary}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
+                <IconSymbol
+                  ios_icon_name="xmark.circle.fill"
+                  android_material_icon_name="cancel"
+                  size={20}
+                  color={colors.textSecondary}
+                />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      )}
+
       {/* Sticky Category Section - Positioned absolutely when sticky */}
       {isCategorySticky && (
-        <View style={styles.stickyCategorySection}>
+        <View style={[
+          styles.stickyCategorySection,
+          isSearchSticky && styles.stickyCategorySectionWithSearch
+        ]}>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -262,7 +327,7 @@ export default function MenuScreen() {
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent,
-          isCategorySticky && styles.scrollContentWithStickyCategory,
+          (isCategorySticky || isSearchSticky) && styles.scrollContentWithSticky,
         ]}
         showsVerticalScrollIndicator={false}
         onScroll={handleScroll}
@@ -303,6 +368,37 @@ export default function MenuScreen() {
               </View>
             )}
           </TouchableOpacity>
+        </View>
+
+        {/* Search Bar - Normal position in scroll */}
+        <View style={styles.searchSection}>
+          <View style={styles.searchContainer}>
+            <IconSymbol
+              ios_icon_name="magnifyingglass"
+              android_material_icon_name="search"
+              size={20}
+              color={colors.textSecondary}
+            />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search menu items..."
+              placeholderTextColor={colors.textSecondary}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
+                <IconSymbol
+                  ios_icon_name="xmark.circle.fill"
+                  android_material_icon_name="cancel"
+                  size={20}
+                  color={colors.textSecondary}
+                />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         {/* Category Filter - From Database (Normal position in scroll) */}
@@ -356,15 +452,32 @@ export default function MenuScreen() {
 
         {/* Menu Items - Uber Eats Style */}
         <View style={styles.menuSection}>
-          {filteredItems.map((item, index) => (
-            <MenuItemRow
-              key={index}
-              item={item}
-              onAdd={handleAddToCart}
-              onUpdateQuantity={updateQuantity}
-              getItemQuantityInCart={getItemQuantityInCart}
-            />
-          ))}
+          {filteredItems.length > 0 ? (
+            filteredItems.map((item, index) => (
+              <MenuItemRow
+                key={index}
+                item={item}
+                onAdd={handleAddToCart}
+                onUpdateQuantity={updateQuantity}
+                getItemQuantityInCart={getItemQuantityInCart}
+              />
+            ))
+          ) : (
+            <View style={styles.noResultsContainer}>
+              <IconSymbol
+                ios_icon_name="magnifyingglass"
+                android_material_icon_name="search"
+                size={48}
+                color={colors.textSecondary}
+              />
+              <Text style={styles.noResultsText}>
+                No items found
+              </Text>
+              <Text style={styles.noResultsSubtext}>
+                Try adjusting your search or category filter
+              </Text>
+            </View>
+          )}
         </View>
       </ScrollView>
 
@@ -600,8 +713,8 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 100,
   },
-  scrollContentWithStickyCategory: {
-    paddingTop: 60, // Add padding when category is sticky to prevent content jump
+  scrollContentWithSticky: {
+    paddingTop: 120, // Add padding when search/category is sticky to prevent content jump
   },
   restaurantImageContainer: {
     width: '100%',
@@ -657,6 +770,45 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
+  searchSection: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: colors.background,
+  },
+  stickySearchSection: {
+    position: 'absolute',
+    top: Platform.OS === 'android' ? 156 : 156, // Position below the sticky header
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
+    elevation: 6,
+    zIndex: 99,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: colors.text,
+    paddingVertical: 0,
+  },
+  clearButton: {
+    padding: 4,
+  },
   categorySection: {
     paddingVertical: 12,
     backgroundColor: colors.background,
@@ -672,7 +824,10 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
     boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
     elevation: 5,
-    zIndex: 99,
+    zIndex: 98,
+  },
+  stickyCategorySectionWithSearch: {
+    top: Platform.OS === 'android' ? 216 : 216, // Position below the sticky search bar
   },
   categoryScroll: {
     paddingHorizontal: 16,
@@ -702,6 +857,25 @@ const styles = StyleSheet.create({
   menuSection: {
     paddingHorizontal: 16,
     paddingTop: 8,
+  },
+  noResultsContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 32,
+  },
+  noResultsText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  noResultsSubtext: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginTop: 8,
+    textAlign: 'center',
   },
   menuItem: {
     flexDirection: 'row',
