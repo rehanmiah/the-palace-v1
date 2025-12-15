@@ -328,10 +328,18 @@ export default function HomeScreen() {
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.categoryChip}
+              style={[
+                styles.categoryChip,
+                styles.categoryChipActive,
+              ]}
               onPress={() => handleCategorySelect('All Items')}
             >
-              <Text style={styles.categoryChipText}>
+              <Text
+                style={[
+                  styles.categoryChipText,
+                  styles.categoryChipTextActive,
+                ]}
+              >
                 All Items
               </Text>
             </TouchableOpacity>
@@ -425,9 +433,9 @@ export default function HomeScreen() {
 
 // Popular Dish Card Component
 function PopularDishCard({ dish, onAdd, onUpdateQuantity, getItemQuantityInCart }: any) {
-  // Always call hooks at the top level - use a fallback ID if dish is invalid
-  const dishId = dish?.id || 0;
-  const spiceLevelHook = useSpiceLevel(dishId);
+  // Always call hooks at the top level - use a safe fallback ID
+  const dishId = dish?.id ?? 0;
+  const { spiceLevel } = useSpiceLevel(dishId);
   
   // Now check if dish is valid after calling hooks
   if (!dish || !dish.id) {
@@ -435,7 +443,6 @@ function PopularDishCard({ dish, onAdd, onUpdateQuantity, getItemQuantityInCart 
     return null;
   }
 
-  const { spiceLevel } = spiceLevelHook;
   const quantity = getItemQuantityInCart(dish.id, spiceLevel);
 
   const handleAddToCart = () => {
@@ -515,17 +522,15 @@ function PopularDishCard({ dish, onAdd, onUpdateQuantity, getItemQuantityInCart 
 
 // Menu Item Row Component - Now with Card Style matching menu/[id].tsx
 function MenuItemRow({ item, onAdd, onUpdateQuantity, getItemQuantityInCart }: any) {
-  // Always call hooks at the top level - use a fallback ID if item is invalid
-  const itemId = item?.id || 0;
-  const spiceLevelHook = useSpiceLevel(itemId);
+  // Always call hooks at the top level - use a safe fallback ID
+  const itemId = item?.id ?? 0;
+  const { spiceLevel, cycleSpiceLevel } = useSpiceLevel(itemId);
   
   // Now check if item is valid after calling hooks
   if (!item || !item.id) {
     console.error('MenuItemRow: Invalid item data', item);
     return null;
   }
-
-  const { spiceLevel, cycleSpiceLevel } = spiceLevelHook;
 
   // Get quantity for this specific item with this specific spice level
   const quantity = getItemQuantityInCart(item.id, spiceLevel);
