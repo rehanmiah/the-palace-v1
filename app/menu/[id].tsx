@@ -54,11 +54,8 @@ export default function MenuScreen() {
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Sticky category and search state
-  const [isCategorySticky, setIsCategorySticky] = useState(false);
-  const [isSearchSticky, setIsSearchSticky] = useState(false);
-  const [categoryOffsetY, setCategoryOffsetY] = useState(0);
-  const categoryRef = useRef<View>(null);
+  // Combined sticky state for search + categories
+  const [isFilterSectionSticky, setIsFilterSectionSticky] = useState(false);
 
   // Set initial category from URL params
   useEffect(() => {
@@ -125,31 +122,20 @@ export default function MenuScreen() {
     return parts[parts.length - 1] || '';
   };
 
-  // Handle scroll to determine if search and category should be sticky
+  // Handle scroll to determine if the combined filter section should be sticky
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const scrollY = event.nativeEvent.contentOffset.y;
     
-    // The search bar appears after the restaurant image (180px height)
+    // The combined filter section (search + categories) appears after the restaurant image (180px height)
     // We want it to stick when it reaches the top
-    const searchStickyThreshold = 180;
+    const filterSectionStickyThreshold = 180;
     
-    // The category section appears after search bar (60px)
-    const categoryStickyThreshold = 240;
-    
-    if (scrollY >= searchStickyThreshold && !isSearchSticky) {
-      setIsSearchSticky(true);
-      console.log('Search bar is now sticky');
-    } else if (scrollY < searchStickyThreshold && isSearchSticky) {
-      setIsSearchSticky(false);
-      console.log('Search bar is no longer sticky');
-    }
-
-    if (scrollY >= categoryStickyThreshold && !isCategorySticky) {
-      setIsCategorySticky(true);
-      console.log('Category section is now sticky');
-    } else if (scrollY < categoryStickyThreshold && isCategorySticky) {
-      setIsCategorySticky(false);
-      console.log('Category section is no longer sticky');
+    if (scrollY >= filterSectionStickyThreshold && !isFilterSectionSticky) {
+      setIsFilterSectionSticky(true);
+      console.log('Filter section (search + categories) is now sticky');
+    } else if (scrollY < filterSectionStickyThreshold && isFilterSectionSticky) {
+      setIsFilterSectionSticky(false);
+      console.log('Filter section is no longer sticky');
     }
   };
 
@@ -239,9 +225,10 @@ export default function MenuScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Sticky Search Bar - Positioned absolutely when sticky */}
-      {isSearchSticky && (
-        <View style={styles.stickySearchSection}>
+      {/* Sticky Combined Filter Section (Search + Categories) - Positioned absolutely when sticky */}
+      {isFilterSectionSticky && (
+        <View style={styles.stickyFilterSection}>
+          {/* Search Bar */}
           <View style={styles.searchContainer}>
             <IconSymbol
               ios_icon_name="magnifyingglass"
@@ -269,15 +256,8 @@ export default function MenuScreen() {
               </TouchableOpacity>
             )}
           </View>
-        </View>
-      )}
 
-      {/* Sticky Category Section - Positioned absolutely when sticky */}
-      {isCategorySticky && (
-        <View style={[
-          styles.stickyCategorySection,
-          isSearchSticky && styles.stickyCategorySectionWithSearch
-        ]}>
+          {/* Category Chips */}
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -327,7 +307,7 @@ export default function MenuScreen() {
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent,
-          (isCategorySticky || isSearchSticky) && styles.scrollContentWithSticky,
+          isFilterSectionSticky && styles.scrollContentWithSticky,
         ]}
         showsVerticalScrollIndicator={false}
         onScroll={handleScroll}
@@ -370,8 +350,9 @@ export default function MenuScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Search Bar - Normal position in scroll */}
-        <View style={styles.searchSection}>
+        {/* Combined Filter Section (Search + Categories) - Normal position in scroll */}
+        <View style={styles.filterSection}>
+          {/* Search Bar */}
           <View style={styles.searchContainer}>
             <IconSymbol
               ios_icon_name="magnifyingglass"
@@ -399,13 +380,8 @@ export default function MenuScreen() {
               </TouchableOpacity>
             )}
           </View>
-        </View>
 
-        {/* Category Filter - From Database (Normal position in scroll) */}
-        <View 
-          ref={categoryRef}
-          style={styles.categorySection}
-        >
+          {/* Category Chips */}
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -450,7 +426,7 @@ export default function MenuScreen() {
           </ScrollView>
         </View>
 
-        {/* Menu Items - Uber Eats Style */}
+        {/* Menu Items Container - Separate but seamlessly integrated */}
         <View style={styles.menuSection}>
           {filteredItems.length > 0 ? (
             filteredItems.map((item, index) => (
@@ -714,13 +690,13 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   scrollContentWithSticky: {
-    paddingTop: 120, // Add padding when search/category is sticky to prevent content jump
+    paddingTop: 140, // Add padding when filter section is sticky to prevent content jump
   },
   restaurantImageContainer: {
     width: '100%',
     height: 180,
     position: 'relative',
-    marginBottom: 8,
+    marginBottom: 0, // No margin to seamlessly connect with filter section
   },
   restaurantImage: {
     width: '100%',
@@ -770,19 +746,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
-  searchSection: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+  // Combined Filter Section (Search + Categories) - Normal position
+  filterSection: {
     backgroundColor: colors.background,
+    paddingTop: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
-  stickySearchSection: {
+  // Sticky Combined Filter Section
+  stickyFilterSection: {
     position: 'absolute',
     top: Platform.OS === 'android' ? 156 : 156, // Position below the sticky header
     left: 0,
     right: 0,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
     backgroundColor: colors.background,
+    paddingTop: 12,
+    paddingBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
@@ -799,6 +779,8 @@ const styles = StyleSheet.create({
     gap: 8,
     borderWidth: 1,
     borderColor: colors.border,
+    marginHorizontal: 16,
+    marginBottom: 12,
   },
   searchInput: {
     flex: 1,
@@ -809,30 +791,9 @@ const styles = StyleSheet.create({
   clearButton: {
     padding: 4,
   },
-  categorySection: {
-    paddingVertical: 12,
-    backgroundColor: colors.background,
-  },
-  stickyCategorySection: {
-    position: 'absolute',
-    top: Platform.OS === 'android' ? 156 : 156, // Position below the sticky header
-    left: 0,
-    right: 0,
-    paddingVertical: 12,
-    backgroundColor: colors.background,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
-    elevation: 5,
-    zIndex: 98,
-  },
-  stickyCategorySectionWithSearch: {
-    top: Platform.OS === 'android' ? 216 : 216, // Position below the sticky search bar
-  },
   categoryScroll: {
     paddingHorizontal: 16,
     gap: 8,
-    marginBottom: 8,
   },
   categoryChip: {
     paddingHorizontal: 16,
@@ -854,9 +815,11 @@ const styles = StyleSheet.create({
   categoryChipTextActive: {
     color: '#FFFFFF',
   },
+  // Menu Items Container - Separate container
   menuSection: {
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 16,
+    backgroundColor: colors.background,
   },
   noResultsContainer: {
     alignItems: 'center',
