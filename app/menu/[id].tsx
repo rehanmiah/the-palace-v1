@@ -54,8 +54,9 @@ export default function MenuScreen() {
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Combined sticky state for search + categories
-  const [isFilterSectionSticky, setIsFilterSectionSticky] = useState(false);
+  // Scroll position state
+  const [scrollY, setScrollY] = useState(0);
+  const filterSectionRef = useRef<View>(null);
 
   // Set initial category from URL params
   useEffect(() => {
@@ -122,26 +123,18 @@ export default function MenuScreen() {
     return parts[parts.length - 1] || '';
   };
 
-  // Handle scroll to determine if the combined filter section should be sticky
+  // Handle scroll to track position
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const scrollY = event.nativeEvent.contentOffset.y;
-    
-    // The combined filter section (search + categories) appears after the restaurant image (180px height)
-    // We want it to stick when it reaches the top
-    const filterSectionStickyThreshold = 180;
-    
-    if (scrollY >= filterSectionStickyThreshold && !isFilterSectionSticky) {
-      setIsFilterSectionSticky(true);
-      console.log('Filter section (search + categories) is now sticky');
-    } else if (scrollY < filterSectionStickyThreshold && isFilterSectionSticky) {
-      setIsFilterSectionSticky(false);
-      console.log('Filter section is no longer sticky');
-    }
+    const currentScrollY = event.nativeEvent.contentOffset.y;
+    setScrollY(currentScrollY);
   };
 
   const clearSearch = () => {
     setSearchQuery('');
   };
+
+  // Determine if filter section should be sticky
+  const isFilterSectionSticky = scrollY >= 180;
 
   if (isLoading) {
     return (
@@ -225,90 +218,89 @@ export default function MenuScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Sticky Combined Filter Section (Search + Categories) - Positioned absolutely when sticky */}
+      {/* Sticky Combined Filter Section - Positioned absolutely when sticky */}
       {isFilterSectionSticky && (
-        <View style={styles.stickyFilterSection}>
-          {/* Search Bar */}
-          <View style={styles.searchContainer}>
-            <IconSymbol
-              ios_icon_name="magnifyingglass"
-              android_material_icon_name="search"
-              size={20}
-              color={colors.textSecondary}
-            />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search menu items..."
-              placeholderTextColor={colors.textSecondary}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
-                <IconSymbol
-                  ios_icon_name="xmark.circle.fill"
-                  android_material_icon_name="cancel"
-                  size={20}
-                  color={colors.textSecondary}
-                />
-              </TouchableOpacity>
-            )}
-          </View>
+        <View style={styles.stickyFilterSection} pointerEvents="box-none">
+          <View pointerEvents="auto">
+            {/* Search Bar */}
+            <View style={styles.searchContainer}>
+              <IconSymbol
+                ios_icon_name="magnifyingglass"
+                android_material_icon_name="search"
+                size={20}
+                color={colors.textSecondary}
+              />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search menu items..."
+                placeholderTextColor={colors.textSecondary}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
+                  <IconSymbol
+                    ios_icon_name="xmark.circle.fill"
+                    android_material_icon_name="cancel"
+                    size={20}
+                    color={colors.textSecondary}
+                  />
+                </TouchableOpacity>
+              )}
+            </View>
 
-          {/* Category Chips */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoryScroll}
-          >
-            <TouchableOpacity
-              style={[
-                styles.categoryChip,
-                !selectedCategory && styles.categoryChipActive,
-              ]}
-              onPress={() => setSelectedCategory(null)}
+            {/* Category Chips */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.categoryScroll}
             >
-              <Text
-                style={[
-                  styles.categoryChipText,
-                  !selectedCategory && styles.categoryChipTextActive,
-                ]}
-              >
-                All Items
-              </Text>
-            </TouchableOpacity>
-            {categories.map((category, index) => (
               <TouchableOpacity
-                key={index}
                 style={[
                   styles.categoryChip,
-                  selectedCategory === category.name && styles.categoryChipActive,
+                  !selectedCategory && styles.categoryChipActive,
                 ]}
-                onPress={() => setSelectedCategory(category.name)}
+                onPress={() => setSelectedCategory(null)}
               >
                 <Text
                   style={[
                     styles.categoryChipText,
-                    selectedCategory === category.name &&
-                      styles.categoryChipTextActive,
+                    !selectedCategory && styles.categoryChipTextActive,
                   ]}
                 >
-                  {category.name}
+                  All Items
                 </Text>
               </TouchableOpacity>
-            ))}
-          </ScrollView>
+              {categories.map((category, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.categoryChip,
+                    selectedCategory === category.name && styles.categoryChipActive,
+                  ]}
+                  onPress={() => setSelectedCategory(category.name)}
+                >
+                  <Text
+                    style={[
+                      styles.categoryChipText,
+                      selectedCategory === category.name &&
+                        styles.categoryChipTextActive,
+                    ]}
+                  >
+                    {category.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
         </View>
       )}
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[
-          styles.scrollContent,
-          isFilterSectionSticky && styles.scrollContentWithSticky,
-        ]}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         onScroll={handleScroll}
         scrollEventThrottle={16}
@@ -351,79 +343,89 @@ export default function MenuScreen() {
         </View>
 
         {/* Combined Filter Section (Search + Categories) - Normal position in scroll */}
-        <View style={styles.filterSection}>
-          {/* Search Bar */}
-          <View style={styles.searchContainer}>
-            <IconSymbol
-              ios_icon_name="magnifyingglass"
-              android_material_icon_name="search"
-              size={20}
-              color={colors.textSecondary}
-            />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search menu items..."
-              placeholderTextColor={colors.textSecondary}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
+        <View 
+          ref={filterSectionRef}
+          style={[
+            styles.filterSection,
+            isFilterSectionSticky && styles.filterSectionPlaceholder
+          ]}
+        >
+          {!isFilterSectionSticky && (
+            <>
+              {/* Search Bar */}
+              <View style={styles.searchContainer}>
                 <IconSymbol
-                  ios_icon_name="xmark.circle.fill"
-                  android_material_icon_name="cancel"
+                  ios_icon_name="magnifyingglass"
+                  android_material_icon_name="search"
                   size={20}
                   color={colors.textSecondary}
                 />
-              </TouchableOpacity>
-            )}
-          </View>
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Search menu items..."
+                  placeholderTextColor={colors.textSecondary}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
+                    <IconSymbol
+                      ios_icon_name="xmark.circle.fill"
+                      android_material_icon_name="cancel"
+                      size={20}
+                      color={colors.textSecondary}
+                    />
+                  </TouchableOpacity>
+                )}
+              </View>
 
-          {/* Category Chips */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoryScroll}
-          >
-            <TouchableOpacity
-              style={[
-                styles.categoryChip,
-                !selectedCategory && styles.categoryChipActive,
-              ]}
-              onPress={() => setSelectedCategory(null)}
-            >
-              <Text
-                style={[
-                  styles.categoryChipText,
-                  !selectedCategory && styles.categoryChipTextActive,
-                ]}
+              {/* Category Chips */}
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.categoryScroll}
               >
-                All Items
-              </Text>
-            </TouchableOpacity>
-            {categories.map((category, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.categoryChip,
-                  selectedCategory === category.name && styles.categoryChipActive,
-                ]}
-                onPress={() => setSelectedCategory(category.name)}
-              >
-                <Text
+                <TouchableOpacity
                   style={[
-                    styles.categoryChipText,
-                    selectedCategory === category.name &&
-                      styles.categoryChipTextActive,
+                    styles.categoryChip,
+                    !selectedCategory && styles.categoryChipActive,
                   ]}
+                  onPress={() => setSelectedCategory(null)}
                 >
-                  {category.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+                  <Text
+                    style={[
+                      styles.categoryChipText,
+                      !selectedCategory && styles.categoryChipTextActive,
+                    ]}
+                  >
+                    All Items
+                  </Text>
+                </TouchableOpacity>
+                {categories.map((category, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={[
+                      styles.categoryChip,
+                      selectedCategory === category.name && styles.categoryChipActive,
+                    ]}
+                    onPress={() => setSelectedCategory(category.name)}
+                  >
+                    <Text
+                      style={[
+                        styles.categoryChipText,
+                        selectedCategory === category.name &&
+                          styles.categoryChipTextActive,
+                      ]}
+                    >
+                      {category.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </>
+          )}
         </View>
 
         {/* Menu Items Container - Separate but seamlessly integrated */}
@@ -689,14 +691,11 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 100,
   },
-  scrollContentWithSticky: {
-    paddingTop: 140, // Add padding when filter section is sticky to prevent content jump
-  },
   restaurantImageContainer: {
     width: '100%',
     height: 180,
     position: 'relative',
-    marginBottom: 0, // No margin to seamlessly connect with filter section
+    marginBottom: 0,
   },
   restaurantImage: {
     width: '100%',
@@ -754,10 +753,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
+  // Placeholder to maintain layout when sticky
+  filterSectionPlaceholder: {
+    height: 140, // Approximate height of the filter section
+  },
   // Sticky Combined Filter Section
   stickyFilterSection: {
     position: 'absolute',
-    top: Platform.OS === 'android' ? 156 : 156, // Position below the sticky header
+    top: Platform.OS === 'android' ? 156 : 156,
     left: 0,
     right: 0,
     backgroundColor: colors.background,
