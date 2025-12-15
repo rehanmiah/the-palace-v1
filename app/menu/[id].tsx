@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,8 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { colors, buttonStyles } from '@/styles/commonStyles';
@@ -47,6 +49,11 @@ export default function MenuScreen() {
     { id: '2', label: 'Work', address: '456 Office Road, London, EC1A 1BB' },
     { id: '3', label: 'Other', address: '789 Park Avenue, London, W1A 1CC' },
   ]);
+
+  // Sticky category state
+  const [isCategorySticky, setIsCategorySticky] = useState(false);
+  const [categoryOffsetY, setCategoryOffsetY] = useState(0);
+  const categoryRef = useRef<View>(null);
 
   // Set initial category from URL params
   useEffect(() => {
@@ -102,6 +109,23 @@ export default function MenuScreen() {
   const getPostcode = (address: string) => {
     const parts = address.split(',').map(part => part.trim());
     return parts[parts.length - 1] || '';
+  };
+
+  // Handle scroll to determine if category should be sticky
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const scrollY = event.nativeEvent.contentOffset.y;
+    
+    // The category section appears after the restaurant image (180px height)
+    // We want it to stick when it reaches the top
+    const stickyThreshold = 180;
+    
+    if (scrollY >= stickyThreshold && !isCategorySticky) {
+      setIsCategorySticky(true);
+      console.log('Category section is now sticky');
+    } else if (scrollY < stickyThreshold && isCategorySticky) {
+      setIsCategorySticky(false);
+      console.log('Category section is no longer sticky');
+    }
   };
 
   if (isLoading) {
@@ -186,10 +210,63 @@ export default function MenuScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Sticky Category Section - Positioned absolutely when sticky */}
+      {isCategorySticky && (
+        <View style={styles.stickyCategorySection}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoryScroll}
+          >
+            <TouchableOpacity
+              style={[
+                styles.categoryChip,
+                !selectedCategory && styles.categoryChipActive,
+              ]}
+              onPress={() => setSelectedCategory(null)}
+            >
+              <Text
+                style={[
+                  styles.categoryChipText,
+                  !selectedCategory && styles.categoryChipTextActive,
+                ]}
+              >
+                All Items
+              </Text>
+            </TouchableOpacity>
+            {categories.map((category, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.categoryChip,
+                  selectedCategory === category.name && styles.categoryChipActive,
+                ]}
+                onPress={() => setSelectedCategory(category.name)}
+              >
+                <Text
+                  style={[
+                    styles.categoryChipText,
+                    selectedCategory === category.name &&
+                      styles.categoryChipTextActive,
+                  ]}
+                >
+                  {category.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          isCategorySticky && styles.scrollContentWithStickyCategory,
+        ]}
         showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
       >
         {/* Background Image with Cart Button */}
         <View style={styles.restaurantImageContainer}>
@@ -228,8 +305,11 @@ export default function MenuScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Category Filter - From Database */}
-        <View style={styles.categorySection}>
+        {/* Category Filter - From Database (Normal position in scroll) */}
+        <View 
+          ref={categoryRef}
+          style={styles.categorySection}
+        >
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -520,6 +600,9 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 100,
   },
+  scrollContentWithStickyCategory: {
+    paddingTop: 60, // Add padding when category is sticky to prevent content jump
+  },
   restaurantImageContainer: {
     width: '100%',
     height: 180,
@@ -577,6 +660,19 @@ const styles = StyleSheet.create({
   categorySection: {
     paddingVertical: 12,
     backgroundColor: colors.background,
+  },
+  stickyCategorySection: {
+    position: 'absolute',
+    top: Platform.OS === 'android' ? 156 : 156, // Position below the sticky header
+    left: 0,
+    right: 0,
+    paddingVertical: 12,
+    backgroundColor: colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
+    elevation: 5,
+    zIndex: 99,
   },
   categoryScroll: {
     paddingHorizontal: 16,
