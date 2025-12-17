@@ -4,10 +4,54 @@ import { CartProvider } from '@/contexts/CartContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { useColorScheme } from 'react-native';
 import { colors } from '@/styles/commonStyles';
+import { useEffect, useState } from 'react';
+import * as SplashScreen from 'expo-splash-screen';
+import VideoSplashScreen from '@/components/VideoSplashScreen';
+
+// Keep the native splash screen visible while we load resources
+SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  
+  const [showVideoSplash, setShowVideoSplash] = useState(true);
+  const [appIsReady, setAppIsReady] = useState(false);
+
+  useEffect(() => {
+    async function prepare() {
+      try {
+        // Pre-load any resources here (fonts, data, etc.)
+        console.log('Preparing app resources...');
+        
+        // Simulate loading time - replace with actual resource loading
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        console.log('App resources ready');
+        setAppIsReady(true);
+      } catch (error) {
+        console.warn('Error preparing app:', error);
+        setAppIsReady(true);
+      }
+    }
+
+    prepare();
+  }, []);
+
+  const handleSplashFinish = () => {
+    console.log('Splash screen finished');
+    setShowVideoSplash(false);
+  };
+
+  // Show video splash screen while app is loading or video is playing
+  if (!appIsReady || showVideoSplash) {
+    return (
+      <VideoSplashScreen
+        videoSource={require('@/assets/splash-video.mp4')}
+        onFinish={handleSplashFinish}
+        minDuration={2000}
+      />
+    );
+  }
+
   return (
     <AuthProvider>
       <CartProvider>

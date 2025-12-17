@@ -1,3 +1,4 @@
+
 {
   "expo": {
     "name": "The Palace",
@@ -39,6 +40,13 @@
         "expo-contacts",
         {
           "contactsPermission": "Allow The Palace to access your contacts to autofill delivery addresses."
+        }
+      ],
+      [
+        "expo-video",
+        {
+          "supportsBackgroundPlayback": false,
+          "supportsPictureInPicture": false
         }
       ]
     ],
