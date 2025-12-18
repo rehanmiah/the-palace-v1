@@ -203,6 +203,19 @@ export default function CartScreen() {
     return chilies;
   };
 
+  const getSpiceLevelLabel = (level: number): string => {
+    switch (level) {
+      case 1:
+        return '(HOT)';
+      case 2:
+        return '(Xtra HOT)';
+      case 3:
+        return '(Xtra Xtra HOT)';
+      default:
+        return '';
+    }
+  };
+
   if (cart.length === 0) {
     return (
       <View style={styles.container}>
@@ -451,9 +464,33 @@ export default function CartScreen() {
           ))}
         </View>
 
-        {/* Order Summary - Receipt View */}
+        {/* Order Summary - Receipt View with Item Breakdown */}
         <View style={styles.receiptCard}>
-          <Text style={styles.receiptTitle}>Order Summary</Text>
+          <Text style={styles.receiptTitle}>━━━ Order Summary ━━━</Text>
+          <View style={styles.receiptDivider} />
+
+          {/* Receipt-style item breakdown */}
+          <View style={styles.receiptItemsSection}>
+            {cart.map((item, index) => (
+              <View key={index} style={styles.receiptItemRow}>
+                <View style={styles.receiptItemLeft}>
+                  <Text style={styles.receiptItemQuantity}>{item.quantity}x</Text>
+                  <View style={styles.receiptItemDetails}>
+                    <Text style={styles.receiptItemName}>{item.dish.name}</Text>
+                    {item.spiceLevel && item.spiceLevel > 0 && (
+                      <Text style={styles.receiptItemSpice}>
+                        {getSpiceLevelLabel(item.spiceLevel)}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+                <Text style={styles.receiptItemPrice}>
+                  £{(item.dish.price * item.quantity).toFixed(2)}
+                </Text>
+              </View>
+            ))}
+          </View>
+
           <View style={styles.receiptDivider} />
 
           {/* Subtotal */}
@@ -907,23 +944,72 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
     elevation: 2,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   receiptTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: colors.text,
-    marginBottom: 12,
+    marginBottom: 8,
     textAlign: 'center',
+    letterSpacing: 1,
   },
   receiptDivider: {
     height: 1,
     backgroundColor: colors.border,
     marginVertical: 12,
+    borderStyle: 'dashed',
   },
   receiptDividerBold: {
     height: 2,
     backgroundColor: colors.text,
     marginVertical: 12,
+  },
+  receiptItemsSection: {
+    marginBottom: 8,
+  },
+  receiptItemRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 14,
+  },
+  receiptItemLeft: {
+    flexDirection: 'row',
+    flex: 1,
+    marginRight: 12,
+  },
+  receiptItemQuantity: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.text,
+    marginRight: 10,
+    minWidth: 28,
+    fontFamily: 'monospace',
+  },
+  receiptItemDetails: {
+    flex: 1,
+  },
+  receiptItemName: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: colors.text,
+    lineHeight: 20,
+  },
+  receiptItemSpice: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#C41E3A',
+    marginTop: 3,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
+  receiptItemPrice: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.text,
+    fontFamily: 'monospace',
   },
   receiptRow: {
     flexDirection: 'row',
@@ -942,6 +1028,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: colors.text,
+    fontFamily: 'monospace',
   },
   freeText: {
     fontSize: 12,
@@ -953,6 +1040,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: '#4CAF50',
+    fontFamily: 'monospace',
   },
   discountText: {
     fontSize: 12,
@@ -964,6 +1052,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: colors.primary,
+    fontFamily: 'monospace',
   },
   totalLabel: {
     fontSize: 18,
@@ -974,6 +1063,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     color: colors.primary,
+    fontFamily: 'monospace',
   },
   paymentOption: {
     flexDirection: 'row',
