@@ -435,7 +435,7 @@ export default function HomeScreen() {
 function PopularDishCard({ dish, onAdd, onUpdateQuantity, getItemQuantityInCart }: any) {
   // ALWAYS call hooks first, unconditionally - use safe default value
   const dishId = dish?.id ?? 0;
-  const { spiceLevel } = useSpiceLevel(dishId);
+  const { spiceLevel, cycleSpiceLevel } = useSpiceLevel(dishId);
   
   // NOW check validity after hooks are called
   if (!dish || !dish.id) {
@@ -449,12 +449,25 @@ function PopularDishCard({ dish, onAdd, onUpdateQuantity, getItemQuantityInCart 
     onAdd(dish, dish.spicy ? spiceLevel : undefined);
   };
 
+  const handleSpiceClick = () => {
+    console.log('Spice button clicked for:', dish.name, 'Current level:', spiceLevel);
+    cycleSpiceLevel();
+  };
+
   const renderChilies = (count: number) => {
     if (count === 0) return null;
+    
+    const chilies = [];
+    for (let i = 0; i < count; i++) {
+      chilies.push(
+        <Text key={i} style={styles.chilliEmoji}>🌶️</Text>
+      );
+    }
+    
     return (
-      <Text style={styles.spiceLevelEmojis}>
-        {'🌶️'.repeat(count)}
-      </Text>
+      <View style={styles.spiceLevelContainer}>
+        {chilies}
+      </View>
     );
   };
 
@@ -463,16 +476,30 @@ function PopularDishCard({ dish, onAdd, onUpdateQuantity, getItemQuantityInCart 
       <View style={styles.dishImageContainer}>
         <Image source={{ uri: dish.image_id || '' }} style={styles.dishImage} />
         {dish.spicy && (
-          <SpiceButton menuItemId={dish.id} />
+          <TouchableOpacity
+            style={styles.spiceButtonPopular}
+            onPress={handleSpiceClick}
+            activeOpacity={0.8}
+          >
+            <View style={styles.spiceButtonContent}>
+              <Text style={styles.spiceEmoji}>🌶️</Text>
+              {spiceLevel > 0 && (
+                <View style={styles.spiceBadge}>
+                  <Text style={styles.spiceBadgeText}>{spiceLevel}</Text>
+                </View>
+              )}
+            </View>
+          </TouchableOpacity>
         )}
       </View>
       <View style={styles.dishInfo}>
         <Text style={styles.dishName} numberOfLines={1}>
           {dish.name}
         </Text>
-        <View style={styles.priceRow}>
+        <View style={styles.dishPriceAndSpiceRow}>
           <Text style={styles.dishPrice}>£{dish.price.toFixed(2)}</Text>
-          {spiceLevel > 0 && renderChilies(spiceLevel)}
+          {/* Display spice emojis next to the price */}
+          {dish.spicy && spiceLevel > 0 && renderChilies(spiceLevel)}
         </View>
         <View style={styles.dishTags}>
           {dish.is_vegetarian && (
@@ -911,19 +938,25 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: 4,
   },
-  priceRow: {
+  dishPriceAndSpiceRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 8,
+    marginBottom: 4,
+    flexWrap: 'wrap',
   },
   dishPrice: {
     fontSize: 18,
     fontWeight: '700',
     color: colors.text,
   },
-  spiceLevelEmojis: {
-    fontSize: 14,
+  spiceLevelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  chilliEmoji: {
+    fontSize: 16,
   },
   dishTags: {
     flexDirection: 'row',
@@ -1050,15 +1083,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#000000',
   },
-  spiceLevelContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    marginTop: 2,
-  },
-  chilliEmoji: {
-    fontSize: 16,
-  },
   menuTags: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1089,6 +1113,17 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 6,
     left: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 20,
+    padding: 6,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.2)',
+    elevation: 4,
+    zIndex: 10,
+  },
+  spiceButtonPopular: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 20,
     padding: 6,
