@@ -901,6 +901,7 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 24,
+    zIndex: 50,
   },
   sectionHeader: {
     flexDirection: 'row',
