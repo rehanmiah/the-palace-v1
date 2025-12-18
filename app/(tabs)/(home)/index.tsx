@@ -446,11 +446,12 @@ function PopularDishCard({ dish, onAdd, onUpdateQuantity, getItemQuantityInCart 
   const quantity = getItemQuantityInCart(dish.id, spiceLevel);
 
   const handleAddToCart = () => {
-    onAdd(dish, dish.spicy ? spiceLevel : undefined);
+    console.log('PopularDishCard - Adding to cart:', dish.name, 'spice level:', spiceLevel);
+    onAdd(dish, spiceLevel);
   };
 
   const handleSpiceClick = () => {
-    console.log('Spice button clicked for:', dish.name, 'Current level:', spiceLevel);
+    console.log('PopularDishCard - Spice button clicked for:', dish.name, 'Current level:', spiceLevel);
     cycleSpiceLevel();
   };
 
@@ -471,26 +472,32 @@ function PopularDishCard({ dish, onAdd, onUpdateQuantity, getItemQuantityInCart 
     );
   };
 
+  console.log('PopularDishCard render:', {
+    name: dish.name,
+    isSpicy: dish.spicy,
+    spiceLevel: spiceLevel,
+    quantity: quantity
+  });
+
   return (
     <View style={styles.dishCard}>
       <View style={styles.dishImageContainer}>
         <Image source={{ uri: dish.image_id || '' }} style={styles.dishImage} />
-        {dish.spicy && (
-          <TouchableOpacity
-            style={styles.spiceButtonPopular}
-            onPress={handleSpiceClick}
-            activeOpacity={0.8}
-          >
-            <View style={styles.spiceButtonContent}>
-              <Text style={styles.spiceEmoji}>🌶️</Text>
-              {spiceLevel > 0 && (
-                <View style={styles.spiceBadge}>
-                  <Text style={styles.spiceBadgeText}>{spiceLevel}</Text>
-                </View>
-              )}
-            </View>
-          </TouchableOpacity>
-        )}
+        {/* Always show spice button for all dishes */}
+        <TouchableOpacity
+          style={styles.spiceButtonPopular}
+          onPress={handleSpiceClick}
+          activeOpacity={0.8}
+        >
+          <View style={styles.spiceButtonContent}>
+            <Text style={styles.spiceEmoji}>🌶️</Text>
+            {spiceLevel > 0 && (
+              <View style={styles.spiceBadge}>
+                <Text style={styles.spiceBadgeText}>{spiceLevel}</Text>
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
       </View>
       <View style={styles.dishInfo}>
         <Text style={styles.dishName} numberOfLines={1}>
@@ -499,12 +506,17 @@ function PopularDishCard({ dish, onAdd, onUpdateQuantity, getItemQuantityInCart 
         <View style={styles.dishPriceAndSpiceRow}>
           <Text style={styles.dishPrice}>£{dish.price.toFixed(2)}</Text>
           {/* Display spice emojis next to the price */}
-          {dish.spicy && spiceLevel > 0 && renderChilies(spiceLevel)}
+          {spiceLevel > 0 && renderChilies(spiceLevel)}
         </View>
         <View style={styles.dishTags}>
           {dish.is_vegetarian && (
             <View style={styles.vegTag}>
               <Text style={styles.vegTagText}>VEG</Text>
+            </View>
+          )}
+          {dish.spicy && (
+            <View style={styles.spicyTag}>
+              <Text style={styles.spicyTagText}>SPICY</Text>
             </View>
           )}
         </View>
@@ -563,12 +575,12 @@ function MenuItemRow({ item, onAdd, onUpdateQuantity, getItemQuantityInCart }: a
   const quantity = getItemQuantityInCart(item.id, spiceLevel);
 
   const handleAddToCart = () => {
-    console.log('Adding to cart with spice level:', spiceLevel);
+    console.log('MenuItemRow - Adding to cart with spice level:', spiceLevel);
     onAdd(item, spiceLevel);
   };
 
   const handleSpiceClick = () => {
-    console.log('Spice button clicked for:', item.name, 'Current level:', spiceLevel);
+    console.log('MenuItemRow - Spice button clicked for:', item.name, 'Current level:', spiceLevel);
     cycleSpiceLevel();
   };
 
@@ -974,6 +986,17 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     color: colors.text,
+  },
+  spicyTag: {
+    backgroundColor: '#FFE5E5',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  spicyTagText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#C41E3A',
   },
   spicyIcon: {
     fontSize: 14,
