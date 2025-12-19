@@ -19,7 +19,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { restaurants } from '@/data/restaurants';
 import AddressModal from '@/components/AddressModal';
 import { supabase } from '@/app/integrations/supabase/client';
-import { Stack } from 'expo-router';
 
 interface Address {
   id: string;
@@ -220,15 +219,8 @@ export default function CartScreen() {
   if (cart.length === 0) {
     return (
       <View style={styles.container}>
-        <Stack.Screen
-          options={{
-            headerShown: false,
-          }}
-        />
-        
-        {/* Fixed White Header */}
-        <View style={styles.fixedHeader}>
-          <TouchableOpacity 
+        <View style={styles.header}>
+          <TouchableOpacity
             style={styles.backButton}
             onPress={() => router.back()}
           >
@@ -236,13 +228,12 @@ export default function CartScreen() {
               ios_icon_name="chevron.left"
               android_material_icon_name="arrow-back"
               size={24}
-              color="#000000"
+              color={colors.text}
             />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Checkout/Cart</Text>
-          <View style={styles.headerSpacer} />
+          <View style={styles.placeholder} />
         </View>
-
         <View style={styles.emptyContainer}>
           <IconSymbol
             ios_icon_name="cart"
@@ -267,15 +258,8 @@ export default function CartScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen
-        options={{
-          headerShown: false,
-        }}
-      />
-
-      {/* Fixed White Header */}
-      <View style={styles.fixedHeader}>
-        <TouchableOpacity 
+      <View style={styles.header}>
+        <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
         >
@@ -283,11 +267,11 @@ export default function CartScreen() {
             ios_icon_name="chevron.left"
             android_material_icon_name="arrow-back"
             size={24}
-            color="#000000"
+            color={colors.text}
           />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Checkout/Cart</Text>
-        <View style={styles.headerSpacer} />
+        <View style={styles.placeholder} />
       </View>
 
       <ScrollView
@@ -683,36 +667,31 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  fixedHeader: {
-    backgroundColor: '#FFFFFF',
+  header: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingTop: 48,
-    paddingBottom: 16,
+    paddingBottom: 12,
+    backgroundColor: colors.background,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.08)',
-    elevation: 4,
-    zIndex: 1000,
   },
   backButton: {
     width: 40,
     height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.card,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 20,
-    backgroundColor: 'transparent',
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#000000',
-    flex: 1,
-    textAlign: 'center',
+    color: colors.text,
   },
-  headerSpacer: {
+  placeholder: {
     width: 40,
   },
   scrollView: {
