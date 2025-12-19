@@ -19,6 +19,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { restaurants } from '@/data/restaurants';
 import AddressModal from '@/components/AddressModal';
 import { supabase } from '@/app/integrations/supabase/client';
+import { Stack } from 'expo-router';
 
 interface Address {
   id: string;
@@ -219,21 +220,21 @@ export default function CartScreen() {
   if (cart.length === 0) {
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <IconSymbol
-              ios_icon_name="chevron.left"
-              android_material_icon_name="arrow-back"
-              size={24}
-              color={colors.text}
-            />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Checkout/Cart</Text>
-          <View style={styles.placeholder} />
-        </View>
+        <Stack.Screen
+          options={{
+            title: 'Checkout/Cart',
+            headerShown: true,
+            headerBackVisible: true,
+            headerStyle: {
+              backgroundColor: colors.background,
+            },
+            headerTintColor: colors.text,
+            headerTitleStyle: {
+              fontWeight: '700',
+              fontSize: 20,
+            },
+          }}
+        />
         <View style={styles.emptyContainer}>
           <IconSymbol
             ios_icon_name="cart"
@@ -258,21 +259,21 @@ export default function CartScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <IconSymbol
-            ios_icon_name="chevron.left"
-            android_material_icon_name="arrow-back"
-            size={24}
-            color={colors.text}
-          />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Checkout/Cart</Text>
-        <View style={styles.placeholder} />
-      </View>
+      <Stack.Screen
+        options={{
+          title: 'Checkout/Cart',
+          headerShown: true,
+          headerBackVisible: true,
+          headerStyle: {
+            backgroundColor: colors.background,
+          },
+          headerTintColor: colors.text,
+          headerTitleStyle: {
+            fontWeight: '700',
+            fontSize: 20,
+          },
+        }}
+      />
 
       <ScrollView
         style={styles.scrollView}
@@ -666,33 +667,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 48,
-    paddingBottom: 12,
-    backgroundColor: colors.background,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.card,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  placeholder: {
-    width: 40,
   },
   scrollView: {
     flex: 1,
