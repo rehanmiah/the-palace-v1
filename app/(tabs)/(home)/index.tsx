@@ -328,18 +328,10 @@ export default function HomeScreen() {
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[
-                styles.categoryChip,
-                styles.categoryChipActive,
-              ]}
+              style={styles.categoryChip}
               onPress={() => handleCategorySelect('All Items')}
             >
-              <Text
-                style={[
-                  styles.categoryChipText,
-                  styles.categoryChipTextActive,
-                ]}
-              >
+              <Text style={styles.categoryChipText}>
                 All Items
               </Text>
             </TouchableOpacity>
