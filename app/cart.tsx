@@ -231,7 +231,7 @@ export default function CartScreen() {
               color={colors.text}
             />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Checkout/Cart</Text>
+          <Text style={styles.headerTitle}>Cart</Text>
           <View style={styles.placeholder} />
         </View>
         <View style={styles.emptyContainer}>
@@ -270,8 +270,10 @@ export default function CartScreen() {
             color={colors.text}
           />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Checkout/Cart</Text>
-        <View style={styles.placeholder} />
+        <Text style={styles.headerTitle}>Checkout</Text>
+        <TouchableOpacity style={styles.clearButton} onPress={handleClearCart}>
+          <Text style={styles.clearButtonText}>Clear</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -279,6 +281,16 @@ export default function CartScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {/* Restaurant Info */}
+        {restaurant && (
+          <View style={styles.restaurantCard}>
+            <Text style={styles.restaurantName}>{restaurant.name}</Text>
+            <Text style={styles.restaurantDelivery}>
+              Delivery: {restaurant.deliveryTime}
+            </Text>
+          </View>
+        )}
+
         {/* Delivery/Collection Toggle */}
         <View style={styles.toggleSection}>
           <View style={styles.toggleContainer}>
@@ -326,9 +338,6 @@ export default function CartScreen() {
                 <Text style={styles.editText}>Edit</Text>
               </TouchableOpacity>
             </View>
-            {restaurant && (
-              <Text style={styles.deliveryTime}>Delivery: {restaurant.deliveryTime}</Text>
-            )}
             <View style={styles.addressDisplay}>
               <IconSymbol
                 ios_icon_name="location.fill"
@@ -691,6 +700,15 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.text,
   },
+  clearButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  clearButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.error,
+  },
   placeholder: {
     width: 40,
   },
@@ -699,6 +717,25 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 120,
+  },
+  restaurantCard: {
+    backgroundColor: colors.card,
+    padding: 16,
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 12,
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
+    elevation: 2,
+  },
+  restaurantName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  restaurantDelivery: {
+    fontSize: 14,
+    color: colors.textSecondary,
   },
   toggleSection: {
     paddingHorizontal: 16,
@@ -749,11 +786,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: colors.text,
-  },
-  deliveryTime: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginBottom: 12,
   },
   editText: {
     fontSize: 14,
