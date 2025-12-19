@@ -64,7 +64,14 @@ export default function RootLayout() {
           }}
         >
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="cart" options={{ presentation: 'modal', headerShown: true, title: 'Cart' }} />
+          <Stack.Screen 
+            name="cart" 
+            options={{ 
+              headerShown: false,
+              presentation: 'card',
+              animation: 'slide_from_right',
+            }} 
+          />
           <Stack.Screen name="login" options={{ presentation: 'modal', headerShown: true, title: 'Login' }} />
           <Stack.Screen name="register" options={{ presentation: 'modal', headerShown: true, title: 'Register' }} />
           <Stack.Screen name="account-settings" options={{ presentation: 'modal', headerShown: true, title: 'Account Settings' }} />
