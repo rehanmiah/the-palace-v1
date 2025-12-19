@@ -12,6 +12,7 @@ import {
   Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Stack } from 'expo-router';
 import { colors, buttonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { useCart } from '@/contexts/CartContext';
@@ -218,456 +219,490 @@ export default function CartScreen() {
 
   if (cart.length === 0) {
     return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
+      <>
+        <Stack.Screen
+          options={{
+            headerShown: true,
+            headerTitle: 'Checkout/Cart',
+            headerTitleAlign: 'center',
+            headerTitleStyle: {
+              fontSize: 18,
+              fontWeight: '700',
+              color: colors.text,
+            },
+            headerStyle: {
+              backgroundColor: colors.background,
+            },
+            headerShadowVisible: true,
+            headerLeft: () => (
+              <TouchableOpacity
+                style={styles.headerBackButton}
+                onPress={() => router.back()}
+              >
+                <IconSymbol
+                  ios_icon_name="chevron.left"
+                  android_material_icon_name="arrow-back"
+                  size={24}
+                  color={colors.text}
+                />
+              </TouchableOpacity>
+            ),
+          }}
+        />
+        <View style={styles.container}>
+          <View style={styles.emptyContainer}>
             <IconSymbol
-              ios_icon_name="chevron.left"
-              android_material_icon_name="arrow-back"
-              size={24}
-              color={colors.text}
+              ios_icon_name="cart"
+              android_material_icon_name="shopping-cart"
+              size={80}
+              color={colors.border}
             />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Cart</Text>
-          <View style={styles.placeholder} />
+            <Text style={styles.emptyTitle}>Your cart is empty</Text>
+            <Text style={styles.emptyText}>
+              Add items from the menu to get started
+            </Text>
+            <TouchableOpacity
+              style={[buttonStyles.primary, styles.browseButton]}
+              onPress={() => router.push('/(tabs)/(home)/')}
+            >
+              <Text style={buttonStyles.text}>Browse Menu</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-        <View style={styles.emptyContainer}>
-          <IconSymbol
-            ios_icon_name="cart"
-            android_material_icon_name="shopping-cart"
-            size={80}
-            color={colors.border}
-          />
-          <Text style={styles.emptyTitle}>Your cart is empty</Text>
-          <Text style={styles.emptyText}>
-            Add items from the menu to get started
-          </Text>
-          <TouchableOpacity
-            style={[buttonStyles.primary, styles.browseButton]}
-            onPress={() => router.push('/(tabs)/(home)/')}
-          >
-            <Text style={buttonStyles.text}>Browse Menu</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      </>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
+    <>
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          headerTitle: 'Checkout/Cart',
+          headerTitleAlign: 'center',
+          headerTitleStyle: {
+            fontSize: 18,
+            fontWeight: '700',
+            color: colors.text,
+          },
+          headerStyle: {
+            backgroundColor: colors.background,
+          },
+          headerShadowVisible: true,
+          headerLeft: () => (
+            <TouchableOpacity
+              style={styles.headerBackButton}
+              onPress={() => router.back()}
+            >
+              <IconSymbol
+                ios_icon_name="chevron.left"
+                android_material_icon_name="arrow-back"
+                size={24}
+                color={colors.text}
+              />
+            </TouchableOpacity>
+          ),
+        }}
+      />
+      <View style={styles.container}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
         >
-          <IconSymbol
-            ios_icon_name="chevron.left"
-            android_material_icon_name="arrow-back"
-            size={24}
-            color={colors.text}
-          />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Checkout</Text>
-        <TouchableOpacity style={styles.clearButton} onPress={handleClearCart}>
-          <Text style={styles.clearButtonText}>Clear</Text>
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Restaurant Info */}
-        {restaurant && (
-          <View style={styles.restaurantCard}>
-            <Text style={styles.restaurantName}>{restaurant.name}</Text>
-            <Text style={styles.restaurantDelivery}>
-              Delivery: {restaurant.deliveryTime}
-            </Text>
-          </View>
-        )}
-
-        {/* Delivery/Collection Toggle */}
-        <View style={styles.toggleSection}>
-          <View style={styles.toggleContainer}>
-            <TouchableOpacity
-              style={[
-                styles.toggleButton,
-                isDelivery && styles.toggleButtonActive,
-              ]}
-              onPress={() => setIsDelivery(true)}
-            >
-              <Text
-                style={[
-                  styles.toggleButtonText,
-                  isDelivery && styles.toggleButtonTextActive,
-                ]}
-              >
-                Delivery
+          {/* Restaurant Info */}
+          {restaurant && (
+            <View style={styles.restaurantCard}>
+              <Text style={styles.restaurantName}>{restaurant.name}</Text>
+              <Text style={styles.restaurantDelivery}>
+                Delivery: {restaurant.deliveryTime}
               </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.toggleButton,
-                !isDelivery && styles.toggleButtonActive,
-              ]}
-              onPress={() => setIsDelivery(false)}
-            >
-              <Text
-                style={[
-                  styles.toggleButtonText,
-                  !isDelivery && styles.toggleButtonTextActive,
-                ]}
-              >
-                Collection
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+            </View>
+          )}
 
-        {/* Delivery Address or Collection Name */}
-        {isDelivery ? (
-          <View style={styles.infoCard}>
-            <View style={styles.infoHeader}>
-              <Text style={styles.infoTitle}>Delivery Address</Text>
-              <TouchableOpacity onPress={() => setShowAddressModal(true)}>
-                <Text style={styles.editText}>Edit</Text>
+          {/* Delivery/Collection Toggle */}
+          <View style={styles.toggleSection}>
+            <View style={styles.toggleContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.toggleButton,
+                  isDelivery && styles.toggleButtonActive,
+                ]}
+                onPress={() => setIsDelivery(true)}
+              >
+                <Text
+                  style={[
+                    styles.toggleButtonText,
+                    isDelivery && styles.toggleButtonTextActive,
+                  ]}
+                >
+                  Delivery
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.toggleButton,
+                  !isDelivery && styles.toggleButtonActive,
+                ]}
+                onPress={() => setIsDelivery(false)}
+              >
+                <Text
+                  style={[
+                    styles.toggleButtonText,
+                    !isDelivery && styles.toggleButtonTextActive,
+                  ]}
+                >
+                  Collection
+                </Text>
               </TouchableOpacity>
             </View>
-            <View style={styles.addressDisplay}>
-              <IconSymbol
-                ios_icon_name="location.fill"
-                android_material_icon_name="location-on"
-                size={20}
-                color={colors.primary}
-              />
-              <View style={styles.addressTextContainer}>
-                <Text style={styles.addressLabel}>{selectedAddress.label}</Text>
-                <Text style={styles.addressText}>{selectedAddress.address}</Text>
+          </View>
+
+          {/* Delivery Address or Collection Name */}
+          {isDelivery ? (
+            <View style={styles.infoCard}>
+              <View style={styles.infoHeader}>
+                <Text style={styles.infoTitle}>Delivery Address</Text>
+                <TouchableOpacity onPress={() => setShowAddressModal(true)}>
+                  <Text style={styles.editText}>Edit</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.addressDisplay}>
+                <IconSymbol
+                  ios_icon_name="location.fill"
+                  android_material_icon_name="location-on"
+                  size={20}
+                  color={colors.primary}
+                />
+                <View style={styles.addressTextContainer}>
+                  <Text style={styles.addressLabel}>{selectedAddress.label}</Text>
+                  <Text style={styles.addressText}>{selectedAddress.address}</Text>
+                  {restaurant && (
+                    <Text style={styles.deliveryTimeText}>
+                      Delivery time: {restaurant.deliveryTime}
+                    </Text>
+                  )}
+                </View>
               </View>
             </View>
-          </View>
-        ) : (
-          <View style={styles.infoCard}>
-            <Text style={styles.infoTitle}>Collection Details</Text>
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Person collecting</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter name"
-                placeholderTextColor={colors.textSecondary}
-                value={collectionName}
-                onChangeText={setCollectionName}
-              />
+          ) : (
+            <View style={styles.infoCard}>
+              <Text style={styles.infoTitle}>Collection Details</Text>
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Person collecting</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter name"
+                  placeholderTextColor={colors.textSecondary}
+                  value={collectionName}
+                  onChangeText={setCollectionName}
+                />
+              </View>
             </View>
-          </View>
-        )}
+          )}
 
-        {/* Phone Number */}
-        <View style={styles.infoCard}>
-          <View style={styles.infoHeader}>
-            <Text style={styles.infoTitle}>Contact Number</Text>
-            {!showPhoneInput && phoneNumber && (
-              <TouchableOpacity onPress={() => setShowPhoneInput(true)}>
-                <Text style={styles.editText}>Edit</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-          {showPhoneInput || !phoneNumber ? (
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter phone number"
-                placeholderTextColor={colors.textSecondary}
-                value={phoneNumber}
-                onChangeText={setPhoneNumber}
-                keyboardType="phone-pad"
-                autoFocus={showPhoneInput}
-              />
-              {showPhoneInput && (
-                <TouchableOpacity
-                  style={styles.doneButton}
-                  onPress={() => setShowPhoneInput(false)}
-                >
-                  <Text style={styles.doneButtonText}>Done</Text>
+          {/* Phone Number */}
+          <View style={styles.infoCard}>
+            <View style={styles.infoHeader}>
+              <Text style={styles.infoTitle}>Contact Number</Text>
+              {!showPhoneInput && phoneNumber && (
+                <TouchableOpacity onPress={() => setShowPhoneInput(true)}>
+                  <Text style={styles.editText}>Edit</Text>
                 </TouchableOpacity>
               )}
             </View>
-          ) : (
-            <View style={styles.phoneDisplay}>
-              <IconSymbol
-                ios_icon_name="phone.fill"
-                android_material_icon_name="phone"
-                size={20}
-                color={colors.primary}
-              />
-              <Text style={styles.phoneText}>{phoneNumber}</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Cart Items with Images - Each spice level shown separately */}
-        <View style={styles.cartItemsCard}>
-          <Text style={styles.cartItemsTitle}>Your Order</Text>
-          {cart.map((item, index) => (
-            <View key={index} style={styles.cartItem}>
-              <Image 
-                source={{ uri: item.dish.image || '' }} 
-                style={styles.cartItemImage}
-              />
-              <View style={styles.cartItemInfo}>
-                <Text style={styles.cartItemName}>{item.dish.name}</Text>
-                {item.spiceLevel && item.spiceLevel > 0 && (
-                  <View style={styles.spiceLevelIndicator}>
-                    {renderChillies(item.spiceLevel)}
-                  </View>
+            {showPhoneInput || !phoneNumber ? (
+              <View style={styles.inputContainer}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter phone number"
+                  placeholderTextColor={colors.textSecondary}
+                  value={phoneNumber}
+                  onChangeText={setPhoneNumber}
+                  keyboardType="phone-pad"
+                  autoFocus={showPhoneInput}
+                />
+                {showPhoneInput && (
+                  <TouchableOpacity
+                    style={styles.doneButton}
+                    onPress={() => setShowPhoneInput(false)}
+                  >
+                    <Text style={styles.doneButtonText}>Done</Text>
+                  </TouchableOpacity>
                 )}
-                <Text style={styles.cartItemPrice}>
-                  £{item.dish.price.toFixed(2)}
-                </Text>
               </View>
-              <View style={styles.cartItemControls}>
-                <View style={styles.quantityControlCart}>
-                  <TouchableOpacity
-                    style={styles.quantityButtonCart}
-                    onPress={() => updateQuantity(item.dish.id, item.quantity - 1, item.spiceLevel)}
-                  >
-                    <IconSymbol
-                      ios_icon_name={item.quantity === 1 ? "trash.fill" : "minus"}
-                      android_material_icon_name={item.quantity === 1 ? "delete" : "remove"}
-                      size={16}
-                      color="#FFFFFF"
-                    />
-                  </TouchableOpacity>
-                  <Text style={styles.quantityTextCart}>{item.quantity}</Text>
-                  <TouchableOpacity
-                    style={styles.quantityButtonCart}
-                    onPress={() => updateQuantity(item.dish.id, item.quantity + 1, item.spiceLevel)}
-                  >
-                    <IconSymbol
-                      ios_icon_name="plus"
-                      android_material_icon_name="add"
-                      size={16}
-                      color="#FFFFFF"
-                    />
-                  </TouchableOpacity>
-                </View>
-                <Text style={styles.cartItemTotal}>
-                  £{(item.dish.price * item.quantity).toFixed(2)}
-                </Text>
+            ) : (
+              <View style={styles.phoneDisplay}>
+                <IconSymbol
+                  ios_icon_name="phone.fill"
+                  android_material_icon_name="phone"
+                  size={20}
+                  color={colors.primary}
+                />
+                <Text style={styles.phoneText}>{phoneNumber}</Text>
               </View>
-            </View>
-          ))}
-        </View>
+            )}
+          </View>
 
-        {/* Order Summary - Receipt View with Item Breakdown */}
-        <View style={styles.receiptCard}>
-          <Text style={styles.receiptTitle}>━━━ Order Summary ━━━</Text>
-          <View style={styles.receiptDivider} />
-
-          {/* Receipt-style item breakdown */}
-          <View style={styles.receiptItemsSection}>
+          {/* Cart Items with Images - Each spice level shown separately */}
+          <View style={styles.cartItemsCard}>
+            <Text style={styles.cartItemsTitle}>Your Order</Text>
             {cart.map((item, index) => (
-              <View key={index} style={styles.receiptItemRow}>
-                <View style={styles.receiptItemLeft}>
-                  <Text style={styles.receiptItemQuantity}>{item.quantity}x</Text>
-                  <View style={styles.receiptItemDetails}>
-                    <Text style={styles.receiptItemName}>{item.dish.name}</Text>
-                    {item.spiceLevel && item.spiceLevel > 0 && (
-                      <Text style={styles.receiptItemSpice}>
-                        {getSpiceLevelLabel(item.spiceLevel)}
-                      </Text>
-                    )}
-                  </View>
+              <View key={index} style={styles.cartItem}>
+                <Image 
+                  source={{ uri: item.dish.image || '' }} 
+                  style={styles.cartItemImage}
+                />
+                <View style={styles.cartItemInfo}>
+                  <Text style={styles.cartItemName}>{item.dish.name}</Text>
+                  {item.spiceLevel && item.spiceLevel > 0 && (
+                    <View style={styles.spiceLevelIndicator}>
+                      {renderChillies(item.spiceLevel)}
+                    </View>
+                  )}
+                  <Text style={styles.cartItemPrice}>
+                    £{item.dish.price.toFixed(2)}
+                  </Text>
                 </View>
-                <Text style={styles.receiptItemPrice}>
-                  £{(item.dish.price * item.quantity).toFixed(2)}
-                </Text>
+                <View style={styles.cartItemControls}>
+                  <View style={styles.quantityControlCart}>
+                    <TouchableOpacity
+                      style={styles.quantityButtonCart}
+                      onPress={() => updateQuantity(item.dish.id, item.quantity - 1, item.spiceLevel)}
+                    >
+                      <IconSymbol
+                        ios_icon_name={item.quantity === 1 ? "trash.fill" : "minus"}
+                        android_material_icon_name={item.quantity === 1 ? "delete" : "remove"}
+                        size={16}
+                        color="#FFFFFF"
+                      />
+                    </TouchableOpacity>
+                    <Text style={styles.quantityTextCart}>{item.quantity}</Text>
+                    <TouchableOpacity
+                      style={styles.quantityButtonCart}
+                      onPress={() => updateQuantity(item.dish.id, item.quantity + 1, item.spiceLevel)}
+                    >
+                      <IconSymbol
+                        ios_icon_name="plus"
+                        android_material_icon_name="add"
+                        size={16}
+                        color="#FFFFFF"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={styles.cartItemTotal}>
+                    £{(item.dish.price * item.quantity).toFixed(2)}
+                  </Text>
+                </View>
               </View>
             ))}
           </View>
 
-          <View style={styles.receiptDivider} />
+          {/* Order Summary - Receipt View with Item Breakdown */}
+          <View style={styles.receiptCard}>
+            <Text style={styles.receiptTitle}>━━━ Order Summary ━━━</Text>
+            <View style={styles.receiptDivider} />
 
-          {/* Subtotal */}
-          <View style={styles.receiptRow}>
-            <Text style={styles.receiptLabel}>Subtotal</Text>
-            <Text style={styles.receiptValue}>£{subtotal.toFixed(2)}</Text>
+            {/* Receipt-style item breakdown */}
+            <View style={styles.receiptItemsSection}>
+              {cart.map((item, index) => (
+                <View key={index} style={styles.receiptItemRow}>
+                  <View style={styles.receiptItemLeft}>
+                    <Text style={styles.receiptItemQuantity}>{item.quantity}x</Text>
+                    <View style={styles.receiptItemDetails}>
+                      <Text style={styles.receiptItemName}>{item.dish.name}</Text>
+                      {item.spiceLevel && item.spiceLevel > 0 && (
+                        <Text style={styles.receiptItemSpice}>
+                          {getSpiceLevelLabel(item.spiceLevel)}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                  <Text style={styles.receiptItemPrice}>
+                    £{(item.dish.price * item.quantity).toFixed(2)}
+                  </Text>
+                </View>
+              ))}
+            </View>
+
+            <View style={styles.receiptDivider} />
+
+            {/* Subtotal */}
+            <View style={styles.receiptRow}>
+              <Text style={styles.receiptLabel}>Subtotal</Text>
+              <Text style={styles.receiptValue}>£{subtotal.toFixed(2)}</Text>
+            </View>
+
+            {/* Delivery Fee */}
+            {isDelivery && (
+              <View style={styles.receiptRow}>
+                <View style={styles.receiptLabelContainer}>
+                  <Text style={styles.receiptLabel}>Delivery Fee</Text>
+                  {subtotal >= 15 && (
+                    <Text style={styles.freeText}>(Free over £15)</Text>
+                  )}
+                </View>
+                <Text style={styles.receiptValue}>
+                  {deliveryFee > 0 ? `£${deliveryFee.toFixed(2)}` : 'FREE'}
+                </Text>
+              </View>
+            )}
+
+            {/* Collection Discount */}
+            {!isDelivery && collectionDiscount > 0 && (
+              <View style={styles.receiptRow}>
+                <View style={styles.receiptLabelContainer}>
+                  <Text style={styles.receiptLabel}>Collection Discount</Text>
+                  <Text style={styles.discountText}>(10% off over £15)</Text>
+                </View>
+                <Text style={styles.discountValue}>-£{collectionDiscount.toFixed(2)}</Text>
+              </View>
+            )}
+
+            {/* No delivery fee for collection */}
+            {!isDelivery && (
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Delivery Fee</Text>
+                <Text style={styles.freeValue}>FREE</Text>
+              </View>
+            )}
+
+            <View style={styles.receiptDividerBold} />
+
+            {/* Total */}
+            <View style={styles.receiptRow}>
+              <Text style={styles.totalLabel}>Total</Text>
+              <Text style={styles.totalValue}>£{total.toFixed(2)}</Text>
+            </View>
           </View>
 
-          {/* Delivery Fee */}
-          {isDelivery && (
-            <View style={styles.receiptRow}>
-              <View style={styles.receiptLabelContainer}>
-                <Text style={styles.receiptLabel}>Delivery Fee</Text>
-                {subtotal >= 15 && (
-                  <Text style={styles.freeText}>(Free over £15)</Text>
-                )}
+          {/* Payment Method Selection */}
+          <View style={styles.infoCard}>
+            <Text style={styles.infoTitle}>Payment Method</Text>
+            
+            <TouchableOpacity
+              style={[
+                styles.paymentOption,
+                selectedPaymentMethod === 'card' && styles.paymentOptionSelected,
+              ]}
+              onPress={() => setSelectedPaymentMethod('card')}
+            >
+              <View style={styles.paymentOptionLeft}>
+                <View style={[
+                  styles.radioButton,
+                  selectedPaymentMethod === 'card' && styles.radioButtonSelected,
+                ]}>
+                  {selectedPaymentMethod === 'card' && (
+                    <View style={styles.radioButtonInner} />
+                  )}
+                </View>
+                <IconSymbol
+                  ios_icon_name="creditcard.fill"
+                  android_material_icon_name="credit-card"
+                  size={24}
+                  color={colors.text}
+                />
+                <View>
+                  <Text style={styles.paymentOptionTitle}>Card Payment</Text>
+                  {paymentMethods.length > 0 && (
+                    <Text style={styles.paymentOptionSubtitle}>
+                      {paymentMethods[0].brand} •••• {paymentMethods[0].last4}
+                    </Text>
+                  )}
+                </View>
               </View>
-              <Text style={styles.receiptValue}>
-                {deliveryFee > 0 ? `£${deliveryFee.toFixed(2)}` : 'FREE'}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.paymentOption,
+                selectedPaymentMethod === 'cash' && styles.paymentOptionSelected,
+              ]}
+              onPress={() => setSelectedPaymentMethod('cash')}
+            >
+              <View style={styles.paymentOptionLeft}>
+                <View style={[
+                  styles.radioButton,
+                  selectedPaymentMethod === 'cash' && styles.radioButtonSelected,
+                ]}>
+                  {selectedPaymentMethod === 'cash' && (
+                    <View style={styles.radioButtonInner} />
+                  )}
+                </View>
+                <IconSymbol
+                  ios_icon_name="banknote.fill"
+                  android_material_icon_name="payments"
+                  size={24}
+                  color={colors.text}
+                />
+                <View>
+                  <Text style={styles.paymentOptionTitle}>
+                    Cash on {isDelivery ? 'Delivery' : 'Collection'}
+                  </Text>
+                  <Text style={styles.paymentOptionSubtitle}>
+                    Pay when you receive your order
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          {/* Info Messages */}
+          {isDelivery && subtotal < 15 && (
+            <View style={styles.infoMessage}>
+              <IconSymbol
+                ios_icon_name="info.circle.fill"
+                android_material_icon_name="info"
+                size={20}
+                color={colors.secondary}
+              />
+              <Text style={styles.infoMessageText}>
+                £2.99 delivery fee applies for orders under £15
               </Text>
             </View>
           )}
 
-          {/* Collection Discount */}
-          {!isDelivery && collectionDiscount > 0 && (
-            <View style={styles.receiptRow}>
-              <View style={styles.receiptLabelContainer}>
-                <Text style={styles.receiptLabel}>Collection Discount</Text>
-                <Text style={styles.discountText}>(10% off over £15)</Text>
-              </View>
-              <Text style={styles.discountValue}>-£{collectionDiscount.toFixed(2)}</Text>
+          {!isDelivery && subtotal > 15 && (
+            <View style={styles.successMessage}>
+              <IconSymbol
+                ios_icon_name="checkmark.circle.fill"
+                android_material_icon_name="check-circle"
+                size={20}
+                color="#4CAF50"
+              />
+              <Text style={styles.successMessageText}>
+                10% collection discount applied!
+              </Text>
             </View>
           )}
+        </ScrollView>
 
-          {/* No delivery fee for collection */}
-          {!isDelivery && (
-            <View style={styles.receiptRow}>
-              <Text style={styles.receiptLabel}>Delivery Fee</Text>
-              <Text style={styles.freeValue}>FREE</Text>
-            </View>
-          )}
-
-          <View style={styles.receiptDividerBold} />
-
-          {/* Total */}
-          <View style={styles.receiptRow}>
-            <Text style={styles.totalLabel}>Total</Text>
-            <Text style={styles.totalValue}>£{total.toFixed(2)}</Text>
-          </View>
-        </View>
-
-        {/* Payment Method Selection */}
-        <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>Payment Method</Text>
-          
+        {/* Checkout Button */}
+        <View style={styles.checkoutContainer}>
           <TouchableOpacity
-            style={[
-              styles.paymentOption,
-              selectedPaymentMethod === 'card' && styles.paymentOptionSelected,
-            ]}
-            onPress={() => setSelectedPaymentMethod('card')}
+            style={[buttonStyles.primary, styles.checkoutButton]}
+            onPress={handleCheckout}
           >
-            <View style={styles.paymentOptionLeft}>
-              <View style={[
-                styles.radioButton,
-                selectedPaymentMethod === 'card' && styles.radioButtonSelected,
-              ]}>
-                {selectedPaymentMethod === 'card' && (
-                  <View style={styles.radioButtonInner} />
-                )}
-              </View>
-              <IconSymbol
-                ios_icon_name="creditcard.fill"
-                android_material_icon_name="credit-card"
-                size={24}
-                color={colors.text}
-              />
-              <View>
-                <Text style={styles.paymentOptionTitle}>Card Payment</Text>
-                {paymentMethods.length > 0 && (
-                  <Text style={styles.paymentOptionSubtitle}>
-                    {paymentMethods[0].brand} •••• {paymentMethods[0].last4}
-                  </Text>
-                )}
-              </View>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.paymentOption,
-              selectedPaymentMethod === 'cash' && styles.paymentOptionSelected,
-            ]}
-            onPress={() => setSelectedPaymentMethod('cash')}
-          >
-            <View style={styles.paymentOptionLeft}>
-              <View style={[
-                styles.radioButton,
-                selectedPaymentMethod === 'cash' && styles.radioButtonSelected,
-              ]}>
-                {selectedPaymentMethod === 'cash' && (
-                  <View style={styles.radioButtonInner} />
-                )}
-              </View>
-              <IconSymbol
-                ios_icon_name="banknote.fill"
-                android_material_icon_name="payments"
-                size={24}
-                color={colors.text}
-              />
-              <View>
-                <Text style={styles.paymentOptionTitle}>
-                  Cash on {isDelivery ? 'Delivery' : 'Collection'}
-                </Text>
-                <Text style={styles.paymentOptionSubtitle}>
-                  Pay when you receive your order
-                </Text>
-              </View>
-            </View>
+            <Text style={buttonStyles.text}>
+              Place Order • £{total.toFixed(2)}
+            </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Info Messages */}
-        {isDelivery && subtotal < 15 && (
-          <View style={styles.infoMessage}>
-            <IconSymbol
-              ios_icon_name="info.circle.fill"
-              android_material_icon_name="info"
-              size={20}
-              color={colors.secondary}
-            />
-            <Text style={styles.infoMessageText}>
-              £2.99 delivery fee applies for orders under £15
-            </Text>
-          </View>
-        )}
-
-        {!isDelivery && subtotal > 15 && (
-          <View style={styles.successMessage}>
-            <IconSymbol
-              ios_icon_name="checkmark.circle.fill"
-              android_material_icon_name="check-circle"
-              size={20}
-              color="#4CAF50"
-            />
-            <Text style={styles.successMessageText}>
-              10% collection discount applied!
-            </Text>
-          </View>
-        )}
-      </ScrollView>
-
-      {/* Checkout Button */}
-      <View style={styles.checkoutContainer}>
-        <TouchableOpacity
-          style={[buttonStyles.primary, styles.checkoutButton]}
-          onPress={handleCheckout}
-        >
-          <Text style={buttonStyles.text}>
-            Place Order • £{total.toFixed(2)}
-          </Text>
-        </TouchableOpacity>
+        {/* Address Selection Modal */}
+        <AddressModal
+          visible={showAddressModal}
+          onClose={() => setShowAddressModal(false)}
+          addresses={addresses}
+          selectedAddress={selectedAddress}
+          onSelectAddress={setSelectedAddress}
+          onAddAddress={handleAddAddress}
+          isDelivery={isDelivery}
+          collectionName={collectionName}
+          onCollectionNameChange={setCollectionName}
+        />
       </View>
-
-      {/* Address Selection Modal */}
-      <AddressModal
-        visible={showAddressModal}
-        onClose={() => setShowAddressModal(false)}
-        addresses={addresses}
-        selectedAddress={selectedAddress}
-        onSelectAddress={setSelectedAddress}
-        onAddAddress={handleAddAddress}
-        isDelivery={isDelivery}
-        collectionName={collectionName}
-        onCollectionNameChange={setCollectionName}
-      />
-    </View>
+    </>
   );
 }
 
@@ -676,53 +711,26 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 48,
-    paddingBottom: 12,
-    backgroundColor: colors.background,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  backButton: {
+  headerBackButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
     backgroundColor: colors.card,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  clearButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  clearButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.error,
-  },
-  placeholder: {
-    width: 40,
+    marginLeft: 8,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
+    paddingTop: 16,
     paddingBottom: 120,
   },
   restaurantCard: {
     backgroundColor: colors.card,
     padding: 16,
     marginHorizontal: 16,
-    marginTop: 16,
     borderRadius: 12,
     boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
     elevation: 2,
@@ -809,6 +817,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     lineHeight: 20,
+  },
+  deliveryTimeText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginTop: 4,
+    fontStyle: 'italic',
   },
   inputContainer: {
     marginTop: 8,
