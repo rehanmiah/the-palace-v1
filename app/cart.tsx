@@ -81,7 +81,7 @@ export default function CartScreen() {
     if (!phoneNumber && user?.phone) {
       setPhoneNumber(user.phone);
     }
-  }, [user]);
+  }, [user, phoneNumber]);
 
   const handleCheckout = async () => {
     if (cart.length === 0) {
@@ -278,13 +278,46 @@ export default function CartScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          headerTitle: 'Checkout/Cart',
+          headerTitle: () => (
+            <View style={styles.headerTitleContainer}>
+              <Text style={styles.headerTitleText}>Checkout/Cart</Text>
+              <View style={styles.headerToggleContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.headerToggleButton,
+                    isDelivery && styles.headerToggleButtonActive,
+                  ]}
+                  onPress={() => setIsDelivery(true)}
+                >
+                  <Text
+                    style={[
+                      styles.headerToggleButtonText,
+                      isDelivery && styles.headerToggleButtonTextActive,
+                    ]}
+                  >
+                    Delivery
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.headerToggleButton,
+                    !isDelivery && styles.headerToggleButtonActive,
+                  ]}
+                  onPress={() => setIsDelivery(false)}
+                >
+                  <Text
+                    style={[
+                      styles.headerToggleButtonText,
+                      !isDelivery && styles.headerToggleButtonTextActive,
+                    ]}
+                  >
+                    Collection
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ),
           headerTitleAlign: 'center',
-          headerTitleStyle: {
-            fontSize: 18,
-            fontWeight: '700',
-            color: colors.text,
-          },
           headerStyle: {
             backgroundColor: colors.background,
           },
@@ -310,59 +343,18 @@ export default function CartScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Restaurant Info */}
-          {restaurant && (
-            <View style={styles.restaurantCard}>
-              <Text style={styles.restaurantName}>{restaurant.name}</Text>
-              <Text style={styles.restaurantDelivery}>
-                Delivery: {restaurant.deliveryTime}
-              </Text>
-            </View>
-          )}
-
-          {/* Delivery/Collection Toggle */}
-          <View style={styles.toggleSection}>
-            <View style={styles.toggleContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.toggleButton,
-                  isDelivery && styles.toggleButtonActive,
-                ]}
-                onPress={() => setIsDelivery(true)}
-              >
-                <Text
-                  style={[
-                    styles.toggleButtonText,
-                    isDelivery && styles.toggleButtonTextActive,
-                  ]}
-                >
-                  Delivery
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.toggleButton,
-                  !isDelivery && styles.toggleButtonActive,
-                ]}
-                onPress={() => setIsDelivery(false)}
-              >
-                <Text
-                  style={[
-                    styles.toggleButtonText,
-                    !isDelivery && styles.toggleButtonTextActive,
-                  ]}
-                >
-                  Collection
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
           {/* Delivery Address or Collection Name */}
           {isDelivery ? (
             <View style={styles.infoCard}>
-              <View style={styles.infoHeader}>
-                <Text style={styles.infoTitle}>Delivery Address</Text>
+              <View style={styles.infoHeaderRow}>
+                <View style={styles.infoHeaderLeft}>
+                  <Text style={styles.infoTitle}>Delivery Address</Text>
+                  {restaurant && (
+                    <Text style={styles.deliveryTimeInline}>
+                      {restaurant.deliveryTime}
+                    </Text>
+                  )}
+                </View>
                 <TouchableOpacity onPress={() => setShowAddressModal(true)}>
                   <Text style={styles.editText}>Edit</Text>
                 </TouchableOpacity>
@@ -377,11 +369,6 @@ export default function CartScreen() {
                 <View style={styles.addressTextContainer}>
                   <Text style={styles.addressLabel}>{selectedAddress.label}</Text>
                   <Text style={styles.addressText}>{selectedAddress.address}</Text>
-                  {restaurant && (
-                    <Text style={styles.deliveryTimeText}>
-                      Delivery time: {restaurant.deliveryTime}
-                    </Text>
-                  )}
                 </View>
               </View>
             </View>
@@ -533,21 +520,6 @@ export default function CartScreen() {
               <Text style={styles.receiptValue}>£{subtotal.toFixed(2)}</Text>
             </View>
 
-            {/* Delivery Fee */}
-            {isDelivery && (
-              <View style={styles.receiptRow}>
-                <View style={styles.receiptLabelContainer}>
-                  <Text style={styles.receiptLabel}>Delivery Fee</Text>
-                  {subtotal >= 15 && (
-                    <Text style={styles.freeText}>(Free over £15)</Text>
-                  )}
-                </View>
-                <Text style={styles.receiptValue}>
-                  {deliveryFee > 0 ? `£${deliveryFee.toFixed(2)}` : 'FREE'}
-                </Text>
-              </View>
-            )}
-
             {/* Collection Discount */}
             {!isDelivery && collectionDiscount > 0 && (
               <View style={styles.receiptRow}>
@@ -559,14 +531,6 @@ export default function CartScreen() {
               </View>
             )}
 
-            {/* No delivery fee for collection */}
-            {!isDelivery && (
-              <View style={styles.receiptRow}>
-                <Text style={styles.receiptLabel}>Delivery Fee</Text>
-                <Text style={styles.freeValue}>FREE</Text>
-              </View>
-            )}
-
             <View style={styles.receiptDividerBold} />
 
             {/* Total */}
@@ -574,6 +538,23 @@ export default function CartScreen() {
               <Text style={styles.totalLabel}>Total</Text>
               <Text style={styles.totalValue}>£{total.toFixed(2)}</Text>
             </View>
+
+            {/* Delivery Fee Info - Now inside Order Summary below Total */}
+            {isDelivery && (
+              <View style={styles.deliveryFeeInfo}>
+                <IconSymbol
+                  ios_icon_name="info.circle.fill"
+                  android_material_icon_name="info"
+                  size={16}
+                  color={colors.textSecondary}
+                />
+                <Text style={styles.deliveryFeeText}>
+                  {deliveryFee > 0 
+                    ? `£${deliveryFee.toFixed(2)} delivery fee (Free over £15)` 
+                    : 'Free delivery on orders over £15'}
+                </Text>
+              </View>
+            )}
           </View>
 
           {/* Payment Method Selection */}
@@ -647,21 +628,19 @@ export default function CartScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Info Messages */}
-          {isDelivery && subtotal < 15 && (
-            <View style={styles.infoMessage}>
-              <IconSymbol
-                ios_icon_name="info.circle.fill"
-                android_material_icon_name="info"
-                size={20}
-                color={colors.secondary}
-              />
-              <Text style={styles.infoMessageText}>
-                £2.99 delivery fee applies for orders under £15
+          {/* Place Order Button - Now non-sticky, black, below payment methods */}
+          <View style={styles.placeOrderSection}>
+            <TouchableOpacity
+              style={styles.placeOrderButton}
+              onPress={handleCheckout}
+            >
+              <Text style={styles.placeOrderButtonText}>
+                Place Order • £{total.toFixed(2)}
               </Text>
-            </View>
-          )}
+            </TouchableOpacity>
+          </View>
 
+          {/* Info Messages */}
           {!isDelivery && subtotal > 15 && (
             <View style={styles.successMessage}>
               <IconSymbol
@@ -676,18 +655,6 @@ export default function CartScreen() {
             </View>
           )}
         </ScrollView>
-
-        {/* Checkout Button */}
-        <View style={styles.checkoutContainer}>
-          <TouchableOpacity
-            style={[buttonStyles.primary, styles.checkoutButton]}
-            onPress={handleCheckout}
-          >
-            <Text style={buttonStyles.text}>
-              Place Order • £{total.toFixed(2)}
-            </Text>
-          </TouchableOpacity>
-        </View>
 
         {/* Address Selection Modal */}
         <AddressModal
@@ -720,60 +687,47 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginLeft: 8,
   },
+  headerTitleContainer: {
+    alignItems: 'center',
+  },
+  headerTitleText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 8,
+  },
+  headerToggleContainer: {
+    flexDirection: 'row',
+    backgroundColor: colors.card,
+    borderRadius: 8,
+    padding: 3,
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
+    elevation: 2,
+  },
+  headerToggleButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 6,
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  headerToggleButtonActive: {
+    backgroundColor: '#000000',
+  },
+  headerToggleButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  headerToggleButtonTextActive: {
+    color: '#FFFFFF',
+  },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     paddingTop: 16,
-    paddingBottom: 120,
-  },
-  restaurantCard: {
-    backgroundColor: colors.card,
-    padding: 16,
-    marginHorizontal: 16,
-    borderRadius: 12,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
-    elevation: 2,
-  },
-  restaurantName: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 4,
-  },
-  restaurantDelivery: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  toggleSection: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-  toggleContainer: {
-    flexDirection: 'row',
-    backgroundColor: colors.card,
-    borderRadius: 8,
-    padding: 4,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.06)',
-    elevation: 2,
-  },
-  toggleButton: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderRadius: 6,
-  },
-  toggleButtonActive: {
-    backgroundColor: '#000000',
-  },
-  toggleButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  toggleButtonTextActive: {
-    color: '#FFFFFF',
+    paddingBottom: 40,
   },
   infoCard: {
     backgroundColor: colors.card,
@@ -790,10 +744,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
+  infoHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  infoHeaderLeft: {
+    flex: 1,
+  },
   infoTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: colors.text,
+  },
+  deliveryTimeInline: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginTop: 4,
+    fontWeight: '500',
   },
   editText: {
     fontSize: 14,
@@ -817,12 +786,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     lineHeight: 20,
-  },
-  deliveryTimeText: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginTop: 4,
-    fontStyle: 'italic',
   },
   inputContainer: {
     marginTop: 8,
@@ -1044,18 +1007,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontFamily: 'monospace',
   },
-  freeText: {
-    fontSize: 12,
-    color: '#4CAF50',
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  freeValue: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#4CAF50',
-    fontFamily: 'monospace',
-  },
   discountText: {
     fontSize: 12,
     color: colors.primary,
@@ -1078,6 +1029,21 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.primary,
     fontFamily: 'monospace',
+  },
+  deliveryFeeInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  deliveryFeeText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    flex: 1,
+    lineHeight: 18,
   },
   paymentOption: {
     flexDirection: 'row',
@@ -1128,20 +1094,23 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 2,
   },
-  infoMessage: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#E3F2FD',
-    padding: 12,
-    borderRadius: 8,
-    marginHorizontal: 16,
-    marginTop: 12,
-    gap: 10,
+  placeOrderSection: {
+    paddingHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 16,
   },
-  infoMessageText: {
-    fontSize: 14,
-    color: colors.text,
-    flex: 1,
+  placeOrderButton: {
+    backgroundColor: '#000000',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.15)',
+    elevation: 4,
+  },
+  placeOrderButtonText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   successMessage: {
     flexDirection: 'row',
@@ -1158,19 +1127,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontWeight: '600',
     flex: 1,
-  },
-  checkoutContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 16,
-    backgroundColor: colors.background,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  checkoutButton: {
-    width: '100%',
   },
   emptyContainer: {
     flex: 1,
