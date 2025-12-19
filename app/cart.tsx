@@ -319,7 +319,7 @@ export default function CartScreen() {
           ),
           headerTitleAlign: 'center',
           headerStyle: {
-            backgroundColor: colors.background,
+            backgroundColor: '#FFFFFF',
           },
           headerShadowVisible: true,
           headerLeft: () => (

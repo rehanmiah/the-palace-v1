@@ -719,7 +719,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   stickyHeader: {
-    backgroundColor: colors.background,
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
     paddingTop: Platform.OS === 'android' ? 48 : 48,
     paddingBottom: 12,

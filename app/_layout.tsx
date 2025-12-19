@@ -2,11 +2,12 @@
 import { Stack } from 'expo-router';
 import { CartProvider } from '@/contexts/CartContext';
 import { AuthProvider } from '@/contexts/AuthContext';
-import { useColorScheme } from 'react-native';
+import { useColorScheme, Platform } from 'react-native';
 import { colors } from '@/styles/commonStyles';
 import { useEffect, useState } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
 import VideoSplashScreen from '@/components/VideoSplashScreen';
+import { StatusBar } from 'expo-status-bar';
 
 // Keep the native splash screen visible while we load resources
 SplashScreen.preventAutoHideAsync();
@@ -55,12 +56,19 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <CartProvider>
+        {/* Global StatusBar - dark (black) text/icons on all pages for iOS */}
+        <StatusBar style="dark" />
         <Stack
           screenOptions={{
             headerShown: false,
             contentStyle: {
               backgroundColor: colorScheme === 'dark' ? '#000' : colors.background,
             },
+            // Ensure header has white background when shown
+            headerStyle: {
+              backgroundColor: '#FFFFFF',
+            },
+            headerTintColor: '#000000',
           }}
         >
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -72,11 +80,66 @@ export default function RootLayout() {
               animation: 'slide_from_right',
             }} 
           />
-          <Stack.Screen name="login" options={{ presentation: 'modal', headerShown: true, title: 'Login' }} />
-          <Stack.Screen name="register" options={{ presentation: 'modal', headerShown: true, title: 'Register' }} />
-          <Stack.Screen name="account-settings" options={{ presentation: 'modal', headerShown: true, title: 'Account Settings' }} />
-          <Stack.Screen name="payment-methods" options={{ presentation: 'modal', headerShown: true, title: 'Payment Methods' }} />
-          <Stack.Screen name="order-history" options={{ presentation: 'modal', headerShown: true, title: 'Order History' }} />
+          <Stack.Screen 
+            name="login" 
+            options={{ 
+              presentation: 'modal', 
+              headerShown: true, 
+              title: 'Login',
+              headerStyle: {
+                backgroundColor: '#FFFFFF',
+              },
+              headerTintColor: '#000000',
+            }} 
+          />
+          <Stack.Screen 
+            name="register" 
+            options={{ 
+              presentation: 'modal', 
+              headerShown: true, 
+              title: 'Register',
+              headerStyle: {
+                backgroundColor: '#FFFFFF',
+              },
+              headerTintColor: '#000000',
+            }} 
+          />
+          <Stack.Screen 
+            name="account-settings" 
+            options={{ 
+              presentation: 'modal', 
+              headerShown: true, 
+              title: 'Account Settings',
+              headerStyle: {
+                backgroundColor: '#FFFFFF',
+              },
+              headerTintColor: '#000000',
+            }} 
+          />
+          <Stack.Screen 
+            name="payment-methods" 
+            options={{ 
+              presentation: 'modal', 
+              headerShown: true, 
+              title: 'Payment Methods',
+              headerStyle: {
+                backgroundColor: '#FFFFFF',
+              },
+              headerTintColor: '#000000',
+            }} 
+          />
+          <Stack.Screen 
+            name="order-history" 
+            options={{ 
+              presentation: 'modal', 
+              headerShown: true, 
+              title: 'Order History',
+              headerStyle: {
+                backgroundColor: '#FFFFFF',
+              },
+              headerTintColor: '#000000',
+            }} 
+          />
         </Stack>
       </CartProvider>
     </AuthProvider>

@@ -132,7 +132,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Sticky Header with Delivery/Collection Toggle and Address - At the Top */}
+      {/* Sticky Header with Delivery/Collection Toggle and Address - White Background */}
       <View style={styles.stickyHeader}>
         {/* Delivery/Collection Toggle */}
         <View style={styles.toggleContainer}>
@@ -709,7 +709,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   stickyHeader: {
-    backgroundColor: colors.background,
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
     paddingTop: Platform.OS === 'android' ? 48 : 48,
     paddingBottom: 12,
