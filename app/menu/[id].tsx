@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   Image,
   Alert,
-  ActivityIndicator,
   Platform,
   NativeScrollEvent,
   NativeSyntheticEvent,
@@ -37,7 +36,7 @@ export default function MenuScreen() {
   const router = useRouter();
   const { id, category: categoryParam } = useLocalSearchParams<{ id: string; category?: string }>();
   const { addToCart, updateQuantity, getCartItemCount, getItemQuantityInCart, cart } = useCart();
-  const { menuItems, categories, isLoading } = useMenu();
+  const { menuItems, categories } = useMenu();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isDelivery, setIsDelivery] = useState(true);
   const [showAddressModal, setShowAddressModal] = useState(false);
@@ -234,15 +233,6 @@ export default function MenuScreen() {
     setCategoryScrollWidth(width);
     console.log('Category scroll content width:', width);
   };
-
-  if (isLoading) {
-    return (
-      <View style={[styles.container, styles.loadingContainer]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Loading menu...</Text>
-      </View>
-    );
-  }
 
   return (
     <View style={styles.container}>
@@ -727,15 +717,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-  },
-  loadingContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: colors.textSecondary,
   },
   stickyHeader: {
     backgroundColor: colors.background,

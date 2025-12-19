@@ -497,12 +497,14 @@ export default function CartScreen() {
                   <View style={styles.receiptItemLeft}>
                     <Text style={styles.receiptItemQuantity}>{item.quantity}x</Text>
                     <View style={styles.receiptItemDetails}>
-                      <Text style={styles.receiptItemName}>{item.dish.name}</Text>
-                      {item.spiceLevel && item.spiceLevel > 0 && (
-                        <Text style={styles.receiptItemSpice}>
-                          {getSpiceLevelLabel(item.spiceLevel)}
-                        </Text>
-                      )}
+                      <View style={styles.receiptItemNameRow}>
+                        <Text style={styles.receiptItemName}>{item.dish.name}</Text>
+                        {item.spiceLevel && item.spiceLevel > 0 && (
+                          <Text style={styles.receiptItemSpice}>
+                            {getSpiceLevelLabel(item.spiceLevel)}
+                          </Text>
+                        )}
+                      </View>
                     </View>
                   </View>
                   <Text style={styles.receiptItemPrice}>
@@ -968,6 +970,12 @@ const styles = StyleSheet.create({
   receiptItemDetails: {
     flex: 1,
   },
+  receiptItemNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
   receiptItemName: {
     fontSize: 15,
     fontWeight: '500',
@@ -978,7 +986,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
     color: '#C41E3A',
-    marginTop: 3,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
   },
