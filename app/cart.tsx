@@ -222,19 +222,27 @@ export default function CartScreen() {
       <View style={styles.container}>
         <Stack.Screen
           options={{
-            title: 'Checkout/Cart',
-            headerShown: true,
-            headerBackVisible: true,
-            headerStyle: {
-              backgroundColor: colors.background,
-            },
-            headerTintColor: colors.text,
-            headerTitleStyle: {
-              fontWeight: '700',
-              fontSize: 20,
-            },
+            headerShown: false,
           }}
         />
+        
+        {/* Fixed White Header */}
+        <View style={styles.fixedHeader}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <IconSymbol
+              ios_icon_name="chevron.left"
+              android_material_icon_name="arrow-back"
+              size={24}
+              color="#000000"
+            />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Checkout/Cart</Text>
+          <View style={styles.headerSpacer} />
+        </View>
+
         <View style={styles.emptyContainer}>
           <IconSymbol
             ios_icon_name="cart"
@@ -261,19 +269,26 @@ export default function CartScreen() {
     <View style={styles.container}>
       <Stack.Screen
         options={{
-          title: 'Checkout/Cart',
-          headerShown: true,
-          headerBackVisible: true,
-          headerStyle: {
-            backgroundColor: colors.background,
-          },
-          headerTintColor: colors.text,
-          headerTitleStyle: {
-            fontWeight: '700',
-            fontSize: 20,
-          },
+          headerShown: false,
         }}
       />
+
+      {/* Fixed White Header */}
+      <View style={styles.fixedHeader}>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <IconSymbol
+            ios_icon_name="chevron.left"
+            android_material_icon_name="arrow-back"
+            size={24}
+            color="#000000"
+          />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Checkout/Cart</Text>
+        <View style={styles.headerSpacer} />
+      </View>
 
       <ScrollView
         style={styles.scrollView}
@@ -667,6 +682,38 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  fixedHeader: {
+    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 48,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.08)',
+    elevation: 4,
+    zIndex: 1000,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 20,
+    backgroundColor: 'transparent',
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#000000',
+    flex: 1,
+    textAlign: 'center',
+  },
+  headerSpacer: {
+    width: 40,
   },
   scrollView: {
     flex: 1,
