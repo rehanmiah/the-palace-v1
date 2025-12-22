@@ -1,10 +1,11 @@
+
 {
   "expo": {
     "name": "The Palace",
     "slug": "The Palace",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/7d34c77e-831d-4ee0-b02c-b042a09f6fa5.jpeg",
+    "icon": "./assets/images/cc422469-2a7f-4e9d-81b1-2c1fe8901ef5.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -21,14 +22,14 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/7d34c77e-831d-4ee0-b02c-b042a09f6fa5.jpeg",
+        "foregroundImage": "./assets/images/cc422469-2a7f-4e9d-81b1-2c1fe8901ef5.png",
         "backgroundColor": "#1A1A1A"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.anonymous.Natively"
     },
     "web": {
-      "favicon": "./assets/images/7d34c77e-831d-4ee0-b02c-b042a09f6fa5.jpeg",
+      "favicon": "./assets/images/cc422469-2a7f-4e9d-81b1-2c1fe8901ef5.png",
       "bundler": "metro"
     },
     "plugins": [
